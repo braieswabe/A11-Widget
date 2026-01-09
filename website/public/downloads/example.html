@@ -15,9 +15,15 @@
     3. Open this file in a web browser
   -->
   
-  <!-- Widget CSS -->
-  <link rel="stylesheet" href="../a11y-widget.css" />
-  <!-- For CDN: <link rel="stylesheet" href="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.css" /> -->
+  <!-- Widget CSS - CDN with local fallback -->
+  <!-- Option 1: Use CDN (recommended for quick testing) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget.css" />
+  
+  <!-- Option 2: Use local files (download a11y-widget.css and place in same folder, then uncomment below) -->
+  <!-- <link rel="stylesheet" href="a11y-widget.css" /> -->
+  
+  <!-- Option 3: Use your own CDN -->
+  <!-- <link rel="stylesheet" href="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.css" /> -->
   
   <!-- Widget Configuration -->
   <script>
@@ -42,9 +48,15 @@
     };
   </script>
   
-  <!-- Widget Script -->
-  <script src="../a11y-widget.js" defer></script>
-  <!-- For CDN: <script src="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.js" defer></script> -->
+  <!-- Widget Script - CDN with local fallback -->
+  <!-- Option 1: Use CDN (recommended for quick testing) -->
+  <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget.js" defer></script>
+  
+  <!-- Option 2: Use local files (download a11y-widget.js and place in same folder, then uncomment below) -->
+  <!-- <script src="a11y-widget.js" defer></script> -->
+  
+  <!-- Option 3: Use your own CDN -->
+  <!-- <script src="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.js" defer></script> -->
   
   <style>
     /* Basic page styles */
@@ -243,7 +255,15 @@
     </div>
     
     <div class="note">
-      <p><strong>Note:</strong> This example uses local file paths. For production use, update the paths to point to your CDN:</p>
+      <p><strong>Note:</strong> This example uses CDN paths by default. The widget should work immediately when you open this file.</p>
+      <p><strong>To use local files:</strong></p>
+      <ol>
+        <li>Download <code>a11y-widget.css</code> and <code>a11y-widget.js</code> from the repository</li>
+        <li>Place them in the same folder as this HTML file</li>
+        <li>Uncomment the local file paths in the &lt;head&gt; section</li>
+        <li>Comment out the CDN paths</li>
+      </ol>
+      <p><strong>For production:</strong> Update the paths to point to your own CDN:</p>
       <pre><code>&lt;link rel="stylesheet" href="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.css" /&gt;
 &lt;script src="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.js" defer&gt;&lt;/script&gt;</code></pre>
     </div>

@@ -267,14 +267,14 @@
     // Contrast
     if (cfg.features.contrast) {
       var contrastRow = el("div", { class: "a11y-widget-row" });
-      contrastRow.appendChild(el("label", { for: "a11y-contrast", text: "Contrast" }));
-      var select = el("select", { id: "a11y-contrast", name: "contrast" });
+      contrastRow.appendChild(el("label", { for: "a11y-contrast", text: "Contrast Mode" }));
+      var select = el("select", { id: "a11y-contrast", name: "contrast", "aria-label": "Select contrast mode" });
       controls.contrastSelect = select;
       var opts = [
         ["default", "Default"],
         ["high", "High contrast"],
-        ["dark", "Dark"],
-        ["light", "Light"]
+        ["dark", "Dark theme"],
+        ["light", "Light theme"]
       ];
       for (var i = 0; i < opts.length; i++) {
         var o = el("option", { value: opts[i][0], text: opts[i][1] });
@@ -285,14 +285,14 @@
         onChange({ contrast: select.value });
       });
       contrastRow.appendChild(select);
-      contrastRow.appendChild(el("div", { class: "a11y-widget-help", text: "Changes colors on supported surfaces and the widget." }));
+      contrastRow.appendChild(el("div", { class: "a11y-widget-help", text: "Adjust color contrast for better visibility. Applies to widget and declared surfaces." }));
       panel.appendChild(contrastRow);
     }
 
     // Text size range 100–160
     if (cfg.features.fontScale) {
       var sizeRow = el("div", { class: "a11y-widget-row" });
-      sizeRow.appendChild(el("label", { for: "a11y-font", text: "Text size" }));
+      sizeRow.appendChild(el("label", { for: "a11y-font", text: "Text Size" }));
       var range = el("input", {
         id: "a11y-font",
         type: "range",
@@ -303,10 +303,10 @@
         "aria-valuemin": "100",
         "aria-valuemax": "160",
         "aria-valuenow": String(Math.round(prefs.fontScale * 100)),
-        "aria-label": "Text size"
+        "aria-label": "Text size slider: adjust from 100% to 160%"
       });
       controls.fontRange = range;
-      var val = el("div", { class: "a11y-widget-help", id: "a11y-font-val", text: Math.round(prefs.fontScale * 100) + "%" });
+      var val = el("div", { class: "a11y-widget-help", id: "a11y-font-val", text: Math.round(prefs.fontScale * 100) + "%", style: "font-weight: 600; color: #111;" });
       controls.fontValue = val;
       range.addEventListener("input", function () {
         var v = clamp(Number(range.value), 1.0, 1.6);
@@ -316,6 +316,7 @@
       });
       sizeRow.appendChild(range);
       sizeRow.appendChild(val);
+      sizeRow.appendChild(el("div", { class: "a11y-widget-help", text: "Scale text from 100% (normal) to 160% (large) for better readability." }));
       panel.appendChild(sizeRow);
     }
 
@@ -344,7 +345,7 @@
       }
       fs.appendChild(group);
       spacingRow.appendChild(fs);
-      spacingRow.appendChild(el("div", { class: "a11y-widget-help", text: "Adjusts line, letter, and paragraph spacing." }));
+      spacingRow.appendChild(el("div", { class: "a11y-widget-help", text: "Adjust line height, letter spacing, word spacing, and paragraph spacing for easier reading." }));
       panel.appendChild(spacingRow);
     }
 
@@ -365,10 +366,10 @@
     if (cfg.features.readableFont) {
       var readableRow = toggleRow(
         "a11y-readable-font",
-        "Readable font",
+        "Readable Font",
         prefs.readableFont,
         function (v) { onChange({ readableFont: v }); },
-        "Uses a system-readable sans-serif font on supported surfaces."
+        "Switch to a system-friendly sans-serif font that's easier to read. Applies to declared surfaces."
       );
       controls.readableFontCheckbox = readableRow.checkbox;
       panel.appendChild(readableRow.row);
@@ -377,10 +378,10 @@
     if (cfg.features.reduceMotion) {
       var motionRow = toggleRow(
         "a11y-reduce-motion",
-        "Reduce motion",
+        "Reduce Motion",
         prefs.reduceMotion,
         function (v) { onChange({ reduceMotion: v }); },
-        "Disables animations and transitions for the widget and supported surfaces."
+        "Disable animations, transitions, and motion effects. Helps users sensitive to motion."
       );
       controls.reduceMotionCheckbox = motionRow.checkbox;
       panel.appendChild(motionRow.row);
@@ -390,18 +391,39 @@
     if (cfg.features.presets) {
       panel.appendChild(el("div", { class: "a11y-divider" }));
       var presetRow = el("div", { class: "a11y-widget-row" });
-      presetRow.appendChild(el("div", { text: "Presets", class: "a11y-widget-help" }));
+      var presetLabel = el("div", { text: "Quick Presets", class: "a11y-widget-help" });
+      presetLabel.style.fontSize = "13px";
+      presetLabel.style.fontWeight = "650";
+      presetLabel.style.opacity = "1";
+      presetLabel.style.marginBottom = "0.5rem";
+      presetLabel.style.color = "#111";
+      presetRow.appendChild(presetLabel);
       var presets = el("div", { class: "a11y-widget-presets" });
 
-      var lowVision = el("button", { type: "button", class: "a11y-widget-btn", text: "Low vision" });
+      var lowVision = el("button", { 
+        type: "button", 
+        class: "a11y-widget-btn", 
+        text: "🔍 Low vision",
+        "aria-label": "Apply low vision preset: high contrast, larger text (140%), comfortable spacing"
+      });
       lowVision.addEventListener("click", function () {
         onChange({ contrast: "high", fontScale: 1.4, spacing: "comfortable" });
       });
-      var dyslexia = el("button", { type: "button", class: "a11y-widget-btn", text: "Dyslexia-friendly" });
+      var dyslexia = el("button", { 
+        type: "button", 
+        class: "a11y-widget-btn", 
+        text: "📖 Dyslexia-friendly",
+        "aria-label": "Apply dyslexia-friendly preset: readable font, comfortable spacing, reduced motion"
+      });
       dyslexia.addEventListener("click", function () {
         onChange({ readableFont: true, spacing: "comfortable", reduceMotion: true });
       });
-      var motion = el("button", { type: "button", class: "a11y-widget-btn", text: "Reduced motion" });
+      var motion = el("button", { 
+        type: "button", 
+        class: "a11y-widget-btn", 
+        text: "⏸️ Reduced motion",
+        "aria-label": "Apply reduced motion preset: disable animations and transitions"
+      });
       motion.addEventListener("click", function () {
         onChange({ reduceMotion: true });
       });
@@ -416,9 +438,19 @@
     // Reset
     if (cfg.features.reset) {
       panel.appendChild(el("div", { class: "a11y-divider" }));
-      var resetBtn = el("button", { type: "button", class: "a11y-widget-btn", text: "Reset settings" });
+      var resetRow = el("div", { class: "a11y-widget-row" });
+      var resetBtn = el("button", { 
+        type: "button", 
+        class: "a11y-widget-btn", 
+        text: "🔄 Reset to Defaults",
+        "aria-label": "Reset all accessibility settings to default values"
+      });
+      resetBtn.style.width = "100%";
+      resetBtn.style.marginTop = "0.5rem";
       resetBtn.addEventListener("click", function () { onReset(); });
-      panel.appendChild(resetBtn);
+      resetRow.appendChild(resetBtn);
+      resetRow.appendChild(el("div", { class: "a11y-widget-help", text: "Restore all settings to their default values." }));
+      panel.appendChild(resetRow);
     }
 
     // Open/close behaviour

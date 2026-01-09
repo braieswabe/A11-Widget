@@ -167,7 +167,7 @@ Content-Type: application/json
             </tbody>
           </table>
           <p style={{ marginTop: '1rem' }}>
-            <a href="../wcag-matrix.md" target="_blank" rel="noopener noreferrer">View detailed WCAG coverage matrix →</a>
+            <a href="https://github.com/braieswabe/A11-Widget/blob/main/wcag-matrix.md" target="_blank" rel="noopener noreferrer">View detailed WCAG coverage matrix →</a>
           </p>
         </div>
 
@@ -196,7 +196,7 @@ Content-Type: application/json
         </div>
 
         <p style={{ marginTop: '2rem' }}>
-          <a href="../support-statement.md" target="_blank" rel="noopener noreferrer">Read the full support statement →</a>
+          <a href="https://github.com/braieswabe/A11-Widget/blob/main/support-statement.md" target="_blank" rel="noopener noreferrer">Read the full support statement →</a>
         </p>
 
         <h2>Additional Resources</h2>
@@ -205,19 +205,19 @@ Content-Type: application/json
           <div className="card">
             <h3>Developer Guide</h3>
             <p>Architecture, code structure, and contributing guidelines.</p>
-            <a href="../docs/DEVELOPER.md" target="_blank" rel="noopener noreferrer" className="btn btn-secondary">View Guide</a>
+            <a href="https://github.com/braieswabe/A11-Widget/blob/main/docs/DEVELOPER.md" target="_blank" rel="noopener noreferrer" className="btn btn-secondary">View Guide</a>
           </div>
 
           <div className="card">
             <h3>Acceptance Tests</h3>
             <p>Complete test checklist for keyboard, screen reader, and visual tests.</p>
-            <a href="../docs/ACCEPTANCE_TESTS.md" target="_blank" rel="noopener noreferrer" className="btn btn-secondary">View Tests</a>
+            <a href="https://github.com/braieswabe/A11-Widget/blob/main/docs/ACCEPTANCE_TESTS.md" target="_blank" rel="noopener noreferrer" className="btn btn-secondary">View Tests</a>
           </div>
 
           <div className="card">
             <h3>Review & Testing</h3>
             <p>How to review the code and test the widget on your website.</p>
-            <a href="../docs/REVIEW_AND_TESTING.md" target="_blank" rel="noopener noreferrer" className="btn btn-secondary">View Guide</a>
+            <a href="https://github.com/braieswabe/A11-Widget/blob/main/docs/REVIEW_AND_TESTING.md" target="_blank" rel="noopener noreferrer" className="btn btn-secondary">View Guide</a>
           </div>
         </div>
 
@@ -229,8 +229,8 @@ Content-Type: application/json
             <li style={{ margin: '0.5rem 0' }}><Link to="/tutorials">→ Platform-Specific Tutorials</Link></li>
             <li style={{ margin: '0.5rem 0' }}><Link to="/examples">→ Live Examples</Link></li>
             <li style={{ margin: '0.5rem 0' }}><Link to="/download">→ Download Example HTML</Link></li>
-            <li style={{ margin: '0.5rem 0' }}><a href="../DEPLOYMENT.md" target="_blank" rel="noopener noreferrer">→ Deployment Guide</a></li>
-            <li style={{ margin: '0.5rem 0' }}><a href="../README.md" target="_blank" rel="noopener noreferrer">→ README</a></li>
+            <li style={{ margin: '0.5rem 0' }}><a href="https://github.com/braieswabe/A11-Widget/blob/main/DEPLOYMENT.md" target="_blank" rel="noopener noreferrer">→ Deployment Guide</a></li>
+            <li style={{ margin: '0.5rem 0' }}><a href="https://github.com/braieswabe/A11-Widget/blob/main/README.md" target="_blank" rel="noopener noreferrer">→ README</a></li>
           </ul>
         </div>
       </div>

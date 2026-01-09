@@ -22,6 +22,12 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Invalid event type' });
   }
 
+  // Check if database is configured
+  if (!process.env.NEON_DATABASE_URL) {
+    // Silently succeed if database not configured (telemetry is optional)
+    return res.status(200).json({ success: true, message: 'Telemetry disabled: database not configured' });
+  }
+
   try {
     const sql = neon(process.env.NEON_DATABASE_URL);
     await sql`
@@ -31,7 +37,8 @@ export default async function handler(req, res) {
     return res.status(201).json({ success: true });
   } catch (error) {
     console.error('Telemetry error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    // Return success even on error to not break widget functionality
+    return res.status(200).json({ success: false, error: 'Telemetry storage failed' });
   }
 }
 
