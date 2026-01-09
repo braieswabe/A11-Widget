@@ -7,6 +7,9 @@
     Or use the full widget file:
     <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget.js" defer></script>
 */
+// Immediate console log to verify script is loading
+console.log('[A11Y Loader] Script file loaded - v1.3 -', new Date().toISOString());
+
 (function() {
   "use strict";
   
