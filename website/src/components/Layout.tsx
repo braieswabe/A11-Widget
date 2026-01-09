@@ -72,7 +72,7 @@ export default function Layout({ children }: LayoutProps) {
         // GitHub raw serves files as text/plain, which browsers won't execute as JavaScript
         // jsDelivr serves JavaScript files with correct content-type
         // Versioned filenames bypass CDN caching (CDNs ignore query parameters)
-        const LOADER_VERSION = '1.3'
+        const LOADER_VERSION = '1.4'
         loaderUrl = `https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader-v${LOADER_VERSION}.js`
         fallbackUrl = `https://raw.githubusercontent.com/braieswabe/A11-Widget/main/a11y-widget-loader-v${LOADER_VERSION}.js`
       }
