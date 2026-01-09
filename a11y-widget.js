@@ -6,7 +6,7 @@
   "use strict";
 
   var DEFAULTS = {
-    siteId: null,
+    siteId: null,                    // Auto-detected from window.location.hostname if not provided
     position: "right",               // left|right
     locale: "en",
     zIndex: 2147483000,
@@ -550,6 +550,19 @@
         if (surfaces) cfg.surfaces = surfaces.split(",").map(function (s) { return s.trim(); }).filter(Boolean);
       }
     } catch (e) {}
+
+    // Auto-detect siteId from hostname if not provided
+    if (!cfg.siteId && typeof window !== "undefined" && window.location) {
+      try {
+        cfg.siteId = window.location.hostname || "default-site";
+        // Remove 'www.' prefix for cleaner IDs
+        if (cfg.siteId.startsWith("www.")) {
+          cfg.siteId = cfg.siteId.substring(4);
+        }
+      } catch (e) {
+        cfg.siteId = "default-site";
+      }
+    }
 
     // sanitise
     cfg.position = (cfg.position === "left") ? "left" : "right";

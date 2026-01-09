@@ -18,16 +18,16 @@ export default function Layout({ children }: LayoutProps) {
       link.href = '/a11y-widget.css'
       document.head.appendChild(link)
 
-      const configScript = document.createElement('script')
-      configScript.textContent = `
-        window.__A11Y_WIDGET__ = {
-          siteId: "docs-site",
-          position: "right",
-          surfaces: ["body", "main"],
-          enableTelemetry: false
-        };
-      `
-      document.head.appendChild(configScript)
+      // No configuration needed - widget auto-detects site from domain!
+      // Optional: customize if needed
+      // const configScript = document.createElement('script')
+      // configScript.textContent = `
+      //   window.__A11Y_WIDGET__ = {
+      //     position: "right",
+      //     surfaces: ["body", "main"]
+      //   };
+      // `
+      // document.head.appendChild(configScript)
 
       const widgetScript = document.createElement('script')
       widgetScript.id = 'a11y-widget-script'

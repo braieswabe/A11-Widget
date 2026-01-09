@@ -4,13 +4,6 @@ import './Pages.css'
 
 export default function Home() {
   const quickStartCode = `<link rel="stylesheet" href="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.css" />
-<script>
-  window.__A11Y_WIDGET__ = {
-    siteId: "YOUR_SITE_ID",
-    position: "right",
-    surfaces: ["body"]
-  };
-</script>
 <script src="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.js" defer></script>`
 
   return (
@@ -84,9 +77,17 @@ export default function Home() {
       <section className="section">
         <div className="container container-narrow">
           <h2 className="section-title">Quick Start</h2>
-          <p className="text-center">Add these two lines to your HTML and you're done:</p>
+          <p className="text-center"><strong>That's it!</strong> Just add these two lines - no configuration needed:</p>
           <CodeBlock code={quickStartCode} />
-          <div className="text-center">
+          <div style={{ marginTop: '1.5rem', padding: '1rem', background: 'var(--color-bg-light)', borderRadius: '8px', textAlign: 'left' }}>
+            <p style={{ margin: '0 0 0.5rem 0', fontWeight: 600 }}>✨ Zero Configuration:</p>
+            <ul style={{ margin: 0, paddingLeft: '1.5rem' }}>
+              <li>Site ID auto-detected from your domain</li>
+              <li>Smart defaults for all settings</li>
+              <li>Works immediately - no setup required</li>
+            </ul>
+          </div>
+          <div className="text-center" style={{ marginTop: '1.5rem' }}>
             <Link to="/getting-started" className="btn btn-primary">View Full Guide</Link>
           </div>
         </div>

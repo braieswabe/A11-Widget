@@ -4,22 +4,11 @@ import './Pages.css'
 
 export default function GettingStarted() {
   const canonicalCode = `<link rel="stylesheet" href="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.css" />
-<script>
-  window.__A11Y_WIDGET__ = {
-    siteId: "YOUR_SITE_ID",
-    position: "right",
-    surfaces: ["body"],
-    enableTelemetry: false
-  };
-</script>
 <script src="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.js" defer></script>`
 
   const cspCode = `<link rel="stylesheet" href="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.css" />
 <script
   src="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.js"
-  data-site-id="YOUR_SITE_ID"
-  data-position="right"
-  data-surfaces="body"
   defer
 ></script>`
 
@@ -77,24 +66,45 @@ export default function GettingStarted() {
 
         <h2>Installation Methods</h2>
 
-        <div className="card" style={{ marginBottom: '2rem' }}>
-          <h3>Method 1: Canonical Installation (Recommended)</h3>
-          <p>Add the widget code to your HTML <code>&lt;head&gt;</code> or before <code>&lt;/body&gt;</code>:</p>
+        <div className="card" style={{ marginBottom: '2rem', border: '2px solid var(--color-secondary)' }}>
+          <h3>✨ Super Simple Installation (No Configuration Needed!)</h3>
+          <p><strong>Just add these two lines and you're done!</strong> The widget automatically detects your site and works immediately:</p>
           <CodeBlock code={canonicalCode} />
+          <p style={{ marginTop: '1rem', fontSize: '0.875rem', color: 'var(--color-text-light)' }}>
+            ✅ No siteId needed - auto-detected from your domain<br/>
+            ✅ No configuration required - smart defaults<br/>
+            ✅ Works immediately - just include the files
+          </p>
         </div>
 
         <div className="card" style={{ marginBottom: '2rem' }}>
-          <h3>Method 2: CSP-Friendly Installation</h3>
-          <p>If your Content Security Policy blocks inline scripts, use data attributes:</p>
+          <h3>Optional: Customize Settings</h3>
+          <p>If you want to customize the widget, add optional configuration:</p>
+          <CodeBlock code={`<link rel="stylesheet" href="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.css" />
+<script>
+  window.__A11Y_WIDGET__ = {
+    position: "left",              // Optional: "left" or "right"
+    surfaces: ["body", "main"]     // Optional: CSS selectors
+  };
+</script>
+<script src="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.js" defer></script>`} />
+        </div>
+
+        <div className="card" style={{ marginBottom: '2rem' }}>
+          <h3>CSP-Friendly Installation</h3>
+          <p>If your Content Security Policy blocks inline scripts, use data attributes (still no siteId needed!):</p>
           <CodeBlock code={cspCode} />
         </div>
 
         <h2>Configuration</h2>
 
         <div className="card">
-          <h3>Basic Configuration</h3>
-          <p>The widget accepts these configuration options:</p>
+          <h3>Optional Configuration</h3>
+          <p><strong>All configuration is optional!</strong> The widget works with zero configuration. Only add these if you want to customize:</p>
           <CodeBlock code={configCode} language="javascript" />
+          <p style={{ marginTop: '1rem', padding: '0.75rem', background: 'var(--color-bg-light)', borderRadius: '4px', fontSize: '0.875rem' }}>
+            <strong>💡 Pro Tip:</strong> The widget automatically detects your siteId from <code>window.location.hostname</code>, so you never need to set it manually!
+          </p>
         </div>
 
         <h2>Surface Scoping</h2>

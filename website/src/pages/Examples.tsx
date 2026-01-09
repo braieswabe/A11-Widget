@@ -4,12 +4,6 @@ import './Pages.css'
 
 export default function Examples() {
   const basicCode = `<link rel="stylesheet" href="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.css" />
-<script>
-  window.__A11Y_WIDGET__ = {
-    siteId: "my-site",
-    surfaces: ["body"]
-  };
-</script>
 <script src="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.js" defer></script>`
 
   const advancedCode = `window.__A11Y_WIDGET__ = {
@@ -98,10 +92,13 @@ export default function Examples() {
 
         <h2>Code Examples</h2>
 
-        <div className="card" style={{ marginBottom: '2rem' }}>
-          <h3>Basic Implementation</h3>
-          <p>The simplest way to add the widget:</p>
+        <div className="card" style={{ marginBottom: '2rem', border: '2px solid var(--color-secondary)' }}>
+          <h3>✨ Basic Implementation (Zero Config!)</h3>
+          <p><strong>That's all you need!</strong> No configuration required:</p>
           <CodeBlock code={basicCode} />
+          <p style={{ marginTop: '1rem', fontSize: '0.875rem', color: 'var(--color-text-light)' }}>
+            The widget automatically detects your site and works immediately.
+          </p>
         </div>
 
         <div className="card" style={{ marginBottom: '2rem' }}>

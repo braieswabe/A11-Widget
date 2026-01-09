@@ -25,28 +25,20 @@
   <!-- Option 3: Use your own CDN -->
   <!-- <link rel="stylesheet" href="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.css" /> -->
   
-  <!-- Widget Configuration -->
+  <!-- Widget Configuration (Optional - widget works without any configuration!) -->
+  <!-- 
+    The widget auto-detects your site from the domain name.
+    Only add this if you want to customize settings:
+  -->
+  <!--
   <script>
     window.__A11Y_WIDGET__ = {
-      siteId: "example-site",
-      position: "right",              // Widget position: "left" or "right"
-      surfaces: ["body", "main"],     // CSS selectors for surfaces to transform
-      enableTelemetry: false,         // Set to true if you have telemetry endpoint
-      // telemetryEndpoint: "/api/telemetry",  // Uncomment if using telemetry
-      zIndex: 2147483000,             // Widget z-index (default is very high)
-      initialOpen: false,             // Set to true to open widget on page load
-      features: {                    // Feature flags (all enabled by default)
-        contrast: true,
-        fontScale: true,
-        spacing: true,
-        reduceMotion: true,
-        readableFont: true,
-        presets: true,
-        reset: true,
-        skipLink: true
-      }
+      position: "right",              // Optional: "left" or "right" (default: "right")
+      surfaces: ["body", "main"],     // Optional: CSS selectors (default: ["body"])
+      // All other settings use smart defaults - no configuration needed!
     };
   </script>
+  -->
   
   <!-- Widget Script - CDN with local fallback -->
   <!-- Option 1: Use CDN (recommended for quick testing) -->
