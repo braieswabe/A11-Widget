@@ -11,7 +11,7 @@
 // This runs BEFORE the IIFE, so it executes even if there's an error later
 // CRITICAL: If you don't see this message, the loader script is cached/old
 try {
-  console.log('[A11Y Loader] ✅ Script file loaded - v1.3 -', new Date().toISOString());
+  console.log('[A11Y Loader] ✅ Script file loaded - v1.4 -', new Date().toISOString());
   var scriptSrc = 'unknown';
   try {
     if (document.currentScript && document.currentScript.src) {
@@ -22,7 +22,7 @@ try {
     }
   } catch(e) {}
   console.log('[A11Y Loader] Script source:', scriptSrc);
-  console.log('[A11Y Loader] If you see this, the loader script v1.3 is executing');
+  console.log('[A11Y Loader] If you see this, the loader script v1.4 is executing');
 } catch(e) {
   console.log('[A11Y Loader] Script file parsed but error logging:', e);
 }
