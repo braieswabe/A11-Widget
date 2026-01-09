@@ -18,18 +18,30 @@
   var WIDGET_VERSION_KEY = "__a11y_widget_version";
   var LAST_UPDATE_CHECK_KEY = "__a11y_widget_last_check";
   
+  // Debug logging helper (works in production)
+  function debugLog(location, message, data, hypothesisId) {
+    try {
+      var logs = JSON.parse(localStorage.getItem('__a11y_debug_logs') || '[]');
+      logs.push({location: location, message: message, data: data, timestamp: Date.now(), hypothesisId: hypothesisId});
+      // Keep only last 100 logs
+      if (logs.length > 100) logs = logs.slice(-100);
+      localStorage.setItem('__a11y_debug_logs', JSON.stringify(logs));
+      console.log('[A11Y Debug]', location, message, data);
+    } catch(e) {}
+  }
+  
   // Check for widget version updates by fetching version from GitHub
   // This ensures we always get the latest widget even if loader is cached
   function checkForUpdates() {
     // #region agent log
-    fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'a11y-widget-loader.js:checkForUpdates',message:'checkForUpdates called',data:{timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A,B,D'})}).catch(()=>{});
+    debugLog('a11y-widget-loader.js:checkForUpdates', 'checkForUpdates called', {timestamp: Date.now()}, 'A,B,D');
     // #endregion
     var lastCheck = localStorage.getItem(LAST_UPDATE_CHECK_KEY);
     var now = Date.now();
     // Check every 5 minutes for updates
     if (lastCheck && (now - parseInt(lastCheck, 10)) < 300000) {
       // #region agent log
-      fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'a11y-widget-loader.js:checkForUpdates',message:'Skipping check - too soon',data:{lastCheck:lastCheck,now:now,diff:now-parseInt(lastCheck,10)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+      debugLog('a11y-widget-loader.js:checkForUpdates', 'Skipping check - too soon', {lastCheck: lastCheck, now: now, diff: now - parseInt(lastCheck, 10)}, 'B');
       // #endregion
       return; // Skip check if checked recently
     }
@@ -38,7 +50,7 @@
     
     // #region agent log
     var currentVersion = localStorage.getItem(WIDGET_VERSION_KEY);
-    fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'a11y-widget-loader.js:checkForUpdates',message:'Before HTTP request',data:{currentVersion:currentVersion,checkUrl:GITHUB_RAW_BASE + "a11y-widget.js?nocache=" + now},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A,B,D'})}).catch(()=>{});
+    debugLog('a11y-widget-loader.js:checkForUpdates', 'Before HTTP request', {currentVersion: currentVersion, checkUrl: GITHUB_RAW_BASE + "a11y-widget.js?nocache=" + now}, 'A,B,D');
     // #endregion
     
     // Fetch widget JS to check its version/update time
@@ -47,27 +59,37 @@
     xhr.onload = function() {
       var lastModified = xhr.getResponseHeader('Last-Modified') || xhr.getResponseHeader('Date');
       var currentVersion = localStorage.getItem(WIDGET_VERSION_KEY);
+      var allHeaders = {};
+      try {
+        var headerStr = xhr.getAllResponseHeaders();
+        if (headerStr) {
+          headerStr.split('\r\n').forEach(function(line) {
+            var parts = line.split(': ');
+            if (parts.length === 2) allHeaders[parts[0]] = parts[1];
+          });
+        }
+      } catch(e) {}
       
       // #region agent log
-      fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'a11y-widget-loader.js:xhr.onload',message:'HEAD request success',data:{lastModified:lastModified,currentVersion:currentVersion,status:xhr.status,allHeaders:Object.keys(xhr.getAllResponseHeaders ? xhr.getAllResponseHeaders().split('\r\n').reduce((acc,line)=>{var parts=line.split(': ');if(parts.length===2)acc[parts[0]]=parts[1];return acc;},{}) : {})},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A,B,D'})}).catch(()=>{});
+      debugLog('a11y-widget-loader.js:xhr.onload', 'HEAD request success', {lastModified: lastModified, currentVersion: currentVersion, status: xhr.status, allHeaders: allHeaders}, 'A,B,D');
       // #endregion
       
       if (lastModified && lastModified !== currentVersion) {
         // #region agent log
-        fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'a11y-widget-loader.js:xhr.onload',message:'Update detected - calling forceReloadWidget',data:{lastModified:lastModified,currentVersion:currentVersion},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+        debugLog('a11y-widget-loader.js:xhr.onload', 'Update detected - calling forceReloadWidget', {lastModified: lastModified, currentVersion: currentVersion}, 'D');
         // #endregion
         // Widget has been updated, force reload
         localStorage.setItem(WIDGET_VERSION_KEY, lastModified);
         forceReloadWidget();
       } else {
         // #region agent log
-        fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'a11y-widget-loader.js:xhr.onload',message:'No update detected',data:{lastModified:lastModified,currentVersion:currentVersion,areEqual:lastModified===currentVersion},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B,D'})}).catch(()=>{});
+        debugLog('a11y-widget-loader.js:xhr.onload', 'No update detected', {lastModified: lastModified, currentVersion: currentVersion, areEqual: lastModified === currentVersion}, 'B,D');
         // #endregion
       }
     };
     xhr.onerror = function() {
       // #region agent log
-      fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'a11y-widget-loader.js:xhr.onerror',message:'HEAD request failed - trying GET fallback',data:{status:xhr.status,readyState:xhr.readyState},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      debugLog('a11y-widget-loader.js:xhr.onerror', 'HEAD request failed - trying GET fallback', {status: xhr.status, readyState: xhr.readyState}, 'A');
       // #endregion
       // If HEAD fails, try GET with small range
       var xhr2 = new XMLHttpRequest();
@@ -78,12 +100,12 @@
         var currentVersion = localStorage.getItem(WIDGET_VERSION_KEY);
         
         // #region agent log
-        fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'a11y-widget-loader.js:xhr2.onload',message:'GET fallback success',data:{lastModified:lastModified,currentVersion:currentVersion,status:xhr2.status},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A,B,D'})}).catch(()=>{});
+        debugLog('a11y-widget-loader.js:xhr2.onload', 'GET fallback success', {lastModified: lastModified, currentVersion: currentVersion, status: xhr2.status}, 'A,B,D');
         // #endregion
         
         if (lastModified && lastModified !== currentVersion) {
           // #region agent log
-          fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'a11y-widget-loader.js:xhr2.onload',message:'Update detected in fallback - calling forceReloadWidget',data:{lastModified:lastModified,currentVersion:currentVersion},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+          debugLog('a11y-widget-loader.js:xhr2.onload', 'Update detected in fallback - calling forceReloadWidget', {lastModified: lastModified, currentVersion: currentVersion}, 'D');
           // #endregion
           localStorage.setItem(WIDGET_VERSION_KEY, lastModified);
           forceReloadWidget();
@@ -91,7 +113,7 @@
       };
       xhr2.onerror = function() {
         // #region agent log
-        fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'a11y-widget-loader.js:xhr2.onerror',message:'GET fallback also failed',data:{status:xhr2.status,readyState:xhr2.readyState},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+        debugLog('a11y-widget-loader.js:xhr2.onerror', 'GET fallback also failed', {status: xhr2.status, readyState: xhr2.readyState}, 'A');
         // #endregion
       };
       xhr2.send();
@@ -101,7 +123,7 @@
   
   function forceReloadWidget() {
     // #region agent log
-    fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'a11y-widget-loader.js:forceReloadWidget',message:'forceReloadWidget called',data:{hasWidget:!!window.__a11yWidget},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+    debugLog('a11y-widget-loader.js:forceReloadWidget', 'forceReloadWidget called', {hasWidget: !!window.__a11yWidget}, 'D');
     // #endregion
     // Remove existing widget completely
     var existingCSS = document.getElementById("a11y-widget-stylesheet") || 
@@ -138,7 +160,7 @@
   
   function loadWidget() {
     // #region agent log
-    fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'a11y-widget-loader.js:loadWidget',message:'loadWidget called',data:{timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+    debugLog('a11y-widget-loader.js:loadWidget', 'loadWidget called', {timestamp: Date.now()}, 'E');
     // #endregion
     // Force reload: Always reload CSS and JS to ensure latest version
     // Remove existing CSS and JS to force fresh loads
@@ -172,13 +194,13 @@
     cssLink.crossOrigin = "anonymous";
     
     // #region agent log
-    fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'a11y-widget-loader.js:loadWidget',message:'Loading CSS',data:{cssUrl:cssUrl},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+    debugLog('a11y-widget-loader.js:loadWidget', 'Loading CSS', {cssUrl: cssUrl}, 'E');
     // #endregion
     
     // Fallback to jsDelivr if raw GitHub fails
     cssLink.onerror = function() {
       // #region agent log
-      fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'a11y-widget-loader.js:cssLink.onerror',message:'CSS raw GitHub failed - using jsDelivr',data:{fallbackUrl:CDN_BASE + "a11y-widget.css?v=" + timestamp + "&_=" + random + "&nocache=" + timestamp},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A,E'})}).catch(()=>{});
+      debugLog('a11y-widget-loader.js:cssLink.onerror', 'CSS raw GitHub failed - using jsDelivr', {fallbackUrl: CDN_BASE + "a11y-widget.css?v=" + timestamp + "&_=" + random + "&nocache=" + timestamp}, 'A,E');
       // #endregion
       cssLink.href = CDN_BASE + "a11y-widget.css?v=" + timestamp + "&_=" + random + "&nocache=" + timestamp;
     };
@@ -196,13 +218,13 @@
     script.crossOrigin = "anonymous";
     
     // #region agent log
-    fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'a11y-widget-loader.js:loadWidget',message:'Loading JS',data:{scriptUrl:scriptUrl},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+    debugLog('a11y-widget-loader.js:loadWidget', 'Loading JS', {scriptUrl: scriptUrl}, 'E');
     // #endregion
     
     // Fallback to jsDelivr if raw GitHub fails
     script.onerror = function() {
       // #region agent log
-      fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'a11y-widget-loader.js:script.onerror',message:'JS raw GitHub failed - using jsDelivr',data:{fallbackUrl:CDN_BASE + "a11y-widget.js?v=" + timestamp + "&_=" + random + "&nocache=" + timestamp},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A,E'})}).catch(()=>{});
+      debugLog('a11y-widget-loader.js:script.onerror', 'JS raw GitHub failed - using jsDelivr', {fallbackUrl: CDN_BASE + "a11y-widget.js?v=" + timestamp + "&_=" + random + "&nocache=" + timestamp}, 'A,E');
       // #endregion
       script.src = CDN_BASE + "a11y-widget.js?v=" + timestamp + "&_=" + random + "&nocache=" + timestamp;
     };
@@ -219,11 +241,11 @@
   // Check if we need to reload the loader script itself (if cached version is old)
   var currentLoaderVersion = document.currentScript ? document.currentScript.getAttribute("data-version") : null;
   // #region agent log
-  fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'a11y-widget-loader.js:init',message:'Loader script initialized',data:{currentLoaderVersion:currentLoaderVersion,LOADER_VERSION:LOADER_VERSION,scriptSrc:document.currentScript ? document.currentScript.src : 'unknown'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+  debugLog('a11y-widget-loader.js:init', 'Loader script initialized', {currentLoaderVersion: currentLoaderVersion, LOADER_VERSION: LOADER_VERSION, scriptSrc: document.currentScript ? document.currentScript.src : 'unknown'}, 'C');
   // #endregion
   if (currentLoaderVersion && currentLoaderVersion !== LOADER_VERSION) {
     // #region agent log
-    fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'a11y-widget-loader.js:init',message:'Loader version mismatch - reloading loader',data:{currentLoaderVersion:currentLoaderVersion,LOADER_VERSION:LOADER_VERSION},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+    debugLog('a11y-widget-loader.js:init', 'Loader version mismatch - reloading loader', {currentLoaderVersion: currentLoaderVersion, LOADER_VERSION: LOADER_VERSION}, 'C');
     // #endregion
     // Loader script is outdated, reload it
     var newLoader = document.createElement("script");
