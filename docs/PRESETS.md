@@ -4,13 +4,19 @@ This document explains the accessibility presets implemented in the widget, base
 
 ## Preset Overview
 
-The widget provides 5 quick presets based on established accessibility standards:
+The widget provides 11 quick presets based on established accessibility standards:
 
 1. **Low Vision** — For users with visual impairments
 2. **Dyslexia-Friendly** — For users with dyslexia
 3. **Reduced Motion** — For users sensitive to motion
 4. **High Contrast** — Enhanced contrast for better visibility
 5. **Large Text** — Larger text size for easier reading
+6. **Extra Large** — Maximum text size for severe vision impairments
+7. **Dark Theme** — Dark mode for light sensitivity and eye strain
+8. **Reading Mode** — Optimized settings for reading comprehension
+9. **Focus Mode** — Minimal distractions for better concentration
+10. **Color Blind** — Enhanced contrast for color vision deficiencies
+11. **Minimal** — Simple readable font and spacing settings
 
 ## Preset Configurations
 
@@ -154,6 +160,12 @@ When testing presets, verify:
 3. **Reduced Motion**: All animations/transitions disabled, spacing comfortable
 4. **High Contrast**: Contrast filter applied, colors more distinct
 5. **Large Text**: Text is 150% larger, spacing comfortable, font is sans-serif
+6. **Extra Large**: Text is 160% larger, spacing is maximum, high contrast enabled
+7. **Dark Theme**: Dark background with light text, comfortable spacing, motion reduced
+8. **Reading Mode**: Comfortable spacing, readable font, text is 110% larger, motion reduced
+9. **Focus Mode**: Motion reduced, comfortable spacing, readable font
+10. **Color Blind**: High contrast enabled, readable font, comfortable spacing
+11. **Minimal**: Readable font and comfortable spacing only
 
 All presets should:
 - Apply settings immediately

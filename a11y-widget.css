@@ -827,7 +827,7 @@ html.a11y-widget-hidden .accessibility-widget {
 
 .a11y-widget-presets{
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   gap: 0.5rem;
   margin-top: 0.5rem;
 }

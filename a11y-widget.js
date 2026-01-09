@@ -495,12 +495,116 @@
           readableFont: true
         });
       });
+      
+      // Extra Large Text Preset - WCAG 2.1 SC 1.4.4 (Resize Text)
+      // Recommended: 160% text size for severe vision impairments
+      var extraLargeText = el("button", { 
+        type: "button", 
+        class: "a11y-widget-btn", 
+        text: "🔠 Extra Large",
+        "aria-label": "Apply extra large text preset: 160% text size with maximum spacing for severe vision impairments"
+      });
+      extraLargeText.addEventListener("click", function () {
+        onChange({ 
+          fontScale: 1.6,  // 160% - Maximum supported
+          spacing: "max",
+          readableFont: true,
+          contrast: "high"
+        });
+      });
+      
+      // Dark Theme Preset - For light sensitivity and eye strain
+      // Recommended: Dark contrast mode with comfortable settings
+      var darkTheme = el("button", { 
+        type: "button", 
+        class: "a11y-widget-btn", 
+        text: "🌙 Dark Theme",
+        "aria-label": "Apply dark theme preset: dark contrast mode with comfortable spacing and readable font"
+      });
+      darkTheme.addEventListener("click", function () {
+        onChange({ 
+          contrast: "dark",
+          spacing: "comfortable",
+          readableFont: true,
+          reduceMotion: true
+        });
+      });
+      
+      // Reading Mode Preset - Optimized for reading comprehension
+      // Recommended: Comfortable spacing, readable font, reduced motion
+      var readingMode = el("button", { 
+        type: "button", 
+        class: "a11y-widget-btn", 
+        text: "📚 Reading Mode",
+        "aria-label": "Apply reading mode preset: optimized spacing, readable font, reduced motion for better reading comprehension"
+      });
+      readingMode.addEventListener("click", function () {
+        onChange({ 
+          spacing: "comfortable",
+          readableFont: true,
+          reduceMotion: true,
+          fontScale: 1.1  // Slightly larger for easier reading
+        });
+      });
+      
+      // Focus Mode Preset - Minimal distractions for concentration
+      // Recommended: Reduced motion, comfortable spacing, readable font
+      var focusMode = el("button", { 
+        type: "button", 
+        class: "a11y-widget-btn", 
+        text: "🎯 Focus Mode",
+        "aria-label": "Apply focus mode preset: reduced motion and comfortable spacing to minimize distractions"
+      });
+      focusMode.addEventListener("click", function () {
+        onChange({ 
+          reduceMotion: true,
+          spacing: "comfortable",
+          readableFont: true
+        });
+      });
+      
+      // Color Blind Friendly Preset - Enhanced contrast without color dependency
+      // Recommended: High contrast mode with readable font
+      var colorBlindFriendly = el("button", { 
+        type: "button", 
+        class: "a11y-widget-btn", 
+        text: "🎨 Color Blind",
+        "aria-label": "Apply color blind friendly preset: high contrast mode with readable font for better color distinction"
+      });
+      colorBlindFriendly.addEventListener("click", function () {
+        onChange({ 
+          contrast: "high",
+          readableFont: true,
+          spacing: "comfortable"
+        });
+      });
+      
+      // Minimal Preset - Simplest settings for basic needs
+      // Recommended: Just readable font and comfortable spacing
+      var minimal = el("button", { 
+        type: "button", 
+        class: "a11y-widget-btn", 
+        text: "✨ Minimal",
+        "aria-label": "Apply minimal preset: readable font and comfortable spacing with default settings"
+      });
+      minimal.addEventListener("click", function () {
+        onChange({ 
+          readableFont: true,
+          spacing: "comfortable"
+        });
+      });
 
       presets.appendChild(lowVision);
       presets.appendChild(dyslexia);
       presets.appendChild(motion);
       presets.appendChild(highContrast);
       presets.appendChild(largeText);
+      presets.appendChild(extraLargeText);
+      presets.appendChild(darkTheme);
+      presets.appendChild(readingMode);
+      presets.appendChild(focusMode);
+      presets.appendChild(colorBlindFriendly);
+      presets.appendChild(minimal);
       presetRow.appendChild(presets);
       content.appendChild(presetRow);
     }
