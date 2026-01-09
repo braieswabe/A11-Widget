@@ -14,6 +14,18 @@
   var GITHUB_BRANCH = "main";
   var CDN_BASE = "https://cdn.jsdelivr.net/gh/" + GITHUB_REPO + "@" + GITHUB_BRANCH + "/";
   var GITHUB_RAW_BASE = "https://raw.githubusercontent.com/" + GITHUB_REPO + "/" + GITHUB_BRANCH + "/";
+  var LOADER_VERSION = "1.1"; // Increment this when loader logic changes
+  
+  // Check if we need to reload the loader script itself (if cached version is old)
+  var currentLoaderVersion = document.currentScript ? document.currentScript.getAttribute("data-version") : null;
+  if (currentLoaderVersion && currentLoaderVersion !== LOADER_VERSION) {
+    // Loader script is outdated, reload it
+    var newLoader = document.createElement("script");
+    newLoader.src = GITHUB_RAW_BASE + "a11y-widget-loader.js?v=" + Date.now();
+    newLoader.setAttribute("data-version", LOADER_VERSION);
+    document.head.appendChild(newLoader);
+    return; // Exit, let new loader handle the rest
+  }
   
   // Force reload: Always reload CSS and JS to ensure latest version
   // Remove existing CSS and JS to force fresh loads
