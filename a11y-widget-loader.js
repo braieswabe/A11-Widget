@@ -355,11 +355,13 @@ try {
     // #endregion
     localStorage.setItem('__a11y_loader_version', LOADER_VERSION);
     
-    // If current script version also doesn't match, reload it
+    // If current script version also doesn't match, reload it using versioned filename with jsDelivr
+    // Use jsDelivr because GitHub raw serves files as text/plain, which browsers won't execute
     if (currentLoaderVersion && currentLoaderVersion !== LOADER_VERSION) {
       var newLoader = document.createElement("script");
-      newLoader.src = GITHUB_RAW_BASE + "a11y-widget-loader.js?v=" + Date.now() + "&_=" + Math.random() + "&force=" + Date.now();
+      newLoader.src = CDN_BASE + "a11y-widget-loader-v" + LOADER_VERSION + ".js";
       newLoader.setAttribute("data-version", LOADER_VERSION);
+      newLoader.defer = true;
       document.head.appendChild(newLoader);
       return; // Exit, let new loader handle the rest
     }
