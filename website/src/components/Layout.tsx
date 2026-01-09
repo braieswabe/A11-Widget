@@ -47,9 +47,8 @@ export default function Layout({ children }: LayoutProps) {
       const loaderScript = document.createElement('script')
       loaderScript.id = 'a11y-widget-loader'
       
-      // In development, load from local files; in production, try raw GitHub first, fallback to jsDelivr
+      // In development, load from local files; in production, use versioned loader
       const timestamp = Date.now() // Use milliseconds for better cache-busting
-      const random = Math.random().toString(36).substring(7)
       const isDev = import.meta.env.DEV
       
       let loaderUrl: string
