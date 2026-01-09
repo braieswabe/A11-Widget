@@ -47,8 +47,9 @@ export default function Layout({ children }: LayoutProps) {
       const loaderScript = document.createElement('script')
       loaderScript.id = 'a11y-widget-loader'
       
-      // In development, load from local files; in production, load from GitHub CDN
-      const timestamp = Math.floor(Date.now() / 1000)
+      // In development, load from local files; in production, load from raw GitHub for immediate updates
+      const timestamp = Date.now() // Use milliseconds for better cache-busting
+      const random = Math.random().toString(36).substring(7)
       const isDev = import.meta.env.DEV
       
       let loaderUrl: string
@@ -64,8 +65,9 @@ export default function Layout({ children }: LayoutProps) {
         // Then load JS directly
         loaderUrl = '/a11y-widget.js?v=' + timestamp
       } else {
-        // Production: Use GitHub CDN
-        loaderUrl = `https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js?v=${timestamp}`
+        // Production: Use raw GitHub URL for immediate updates (bypasses CDN caching)
+        // This ensures all changes are immediately visible on the deployed site
+        loaderUrl = `https://raw.githubusercontent.com/braieswabe/A11-Widget/main/a11y-widget-loader.js?v=${timestamp}&_=${random}`
       }
       
       loaderScript.src = loaderUrl
