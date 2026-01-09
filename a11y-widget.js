@@ -805,24 +805,32 @@
     return cfg;
   }
 
-  // Auto-load CSS from GitHub if not already loaded
+  // Auto-load CSS from GitHub if not already loaded by loader script
+  // This is a fallback for direct widget.js usage (without loader)
   // Includes cache-busting to ensure updates propagate to all users
   function ensureCSS() {
-    if (document.getElementById("a11y-widget-stylesheet")) return;
+    // Check if CSS was already loaded by loader script
+    var existingCSS = document.getElementById("a11y-widget-stylesheet") || 
+                      document.querySelector('link[href*="a11y-widget.css"]');
+    if (existingCSS) {
+      // CSS already loaded by loader script, don't duplicate
+      return;
+    }
     
+    // Fallback: Load CSS if loader script wasn't used
     var link = document.createElement("link");
     link.id = "a11y-widget-stylesheet";
     link.rel = "stylesheet";
     // Use raw GitHub URL for immediate updates (no CDN caching delay)
     // Add cache-busting to ensure fresh loads when GitHub updates
     var timestamp = Math.floor(Date.now() / 1000); // Use seconds for better cache busting
-    var rawUrl = "https://raw.githubusercontent.com/" + GITHUB_REPO + "/" + GITHUB_BRANCH + "/a11y-widget.css?t=" + timestamp;
+    var rawUrl = "https://raw.githubusercontent.com/" + GITHUB_REPO + "/" + GITHUB_BRANCH + "/a11y-widget.css?v=" + timestamp;
     link.href = rawUrl;
     link.crossOrigin = "anonymous";
     
     // Fallback to jsDelivr CDN if raw GitHub fails
     link.onerror = function() {
-      link.href = CDN_BASE + "a11y-widget.css?t=" + timestamp;
+      link.href = CDN_BASE + "a11y-widget.css?v=" + timestamp;
     };
     
     document.head.appendChild(link);
