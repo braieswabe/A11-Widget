@@ -45,11 +45,8 @@ export default function Layout({ children }: LayoutProps) {
           </button>
           <ul className={`nav-links ${mobileMenuOpen ? 'active' : ''}`}>
             <li><Link to="/" className={isActive('/') ? 'active' : ''}>Home</Link></li>
-            <li><Link to="/getting-started" className={isActive('/getting-started') ? 'active' : ''}>Getting Started</Link></li>
-            <li><Link to="/tutorials" className={isActive('/tutorials') ? 'active' : ''}>Tutorials</Link></li>
-            <li><Link to="/examples" className={isActive('/examples') ? 'active' : ''}>Examples</Link></li>
+            <li><Link to="/getting-started" className={isActive('/getting-started') ? 'active' : ''}>Installation</Link></li>
             <li><Link to="/download" className={isActive('/download') ? 'active' : ''}>Download</Link></li>
-            <li><Link to="/docs" className={isActive('/docs') ? 'active' : ''}>Documentation</Link></li>
           </ul>
         </nav>
       </header>
@@ -61,11 +58,8 @@ export default function Layout({ children }: LayoutProps) {
       <footer className="footer">
         <div className="container">
           <div className="footer-links">
-            <Link to="/getting-started">Getting Started</Link>
-            <Link to="/tutorials">Tutorials</Link>
-            <Link to="/examples">Examples</Link>
+            <Link to="/getting-started">Installation</Link>
             <Link to="/download">Download</Link>
-            <Link to="/docs">Documentation</Link>
           </div>
           <p>Accessibility Widget v1 — WCAG 2.1 AA-aligned enhancements for supported surfaces only.</p>
         </div>
