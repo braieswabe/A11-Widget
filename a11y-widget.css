@@ -897,6 +897,7 @@ html.a11y-widget-hidden .accessibility-widget {
   background: var(--a11y-color-bg);
   cursor: pointer;
   font-size: 13px;
+  transition: all 0.2s ease;
   font-weight: 600;
   transition: all 0.2s ease;
   min-width: 100px;
