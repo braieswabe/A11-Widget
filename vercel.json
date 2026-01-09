@@ -1,5 +1,9 @@
 {
   "version": 2,
+  "buildCommand": "cd website && npm install && npm run build",
+  "outputDirectory": "website/dist",
+  "installCommand": "cd website && npm install",
+  "framework": null,
   "headers": [
     {
       "source": "/a11y-widget/v1/(.*)",
@@ -32,20 +36,20 @@
       ]
     },
     {
-      "source": "/website/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=3600"
-        }
-      ]
-    },
-    {
       "source": "/assets/(.*)",
       "headers": [
         {
           "key": "Cache-Control",
           "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/downloads/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600"
         }
       ]
     }
@@ -61,11 +65,11 @@
     },
     {
       "source": "/downloads/(.*)",
-      "destination": "/website/downloads/$1"
+      "destination": "/downloads/$1"
     },
     {
-      "source": "/((?!api|a11y-widget|downloads|assets).*)",
-      "destination": "/website/dist/index.html"
+      "source": "/((?!api|a11y-widget|downloads|assets|_next).*)",
+      "destination": "/index.html"
     }
   ]
 }

@@ -1,9 +1,51 @@
 {
   "buildCommand": "npm install && npm run build",
   "outputDirectory": "dist",
+  "framework": null,
+  "headers": [
+    {
+      "source": "/a11y-widget/v1/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        }
+      ]
+    },
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/downloads/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600"
+        }
+      ]
+    }
+  ],
   "rewrites": [
     {
-      "source": "/((?!api|a11y-widget|downloads).*)",
+      "source": "/a11y-widget/v1/a11y-widget.js",
+      "destination": "/a11y-widget.js"
+    },
+    {
+      "source": "/a11y-widget/v1/a11y-widget.css",
+      "destination": "/a11y-widget.css"
+    },
+    {
+      "source": "/((?!api|a11y-widget|downloads|assets|_next).*)",
       "destination": "/index.html"
     }
   ]
