@@ -256,21 +256,9 @@
       "aria-expanded": "false",
       "aria-label": "Open accessibility settings",
       "aria-haspopup": "dialog",
-      title: "Accessibility Settings"
-    });
-    
-    // Create button content with icon and text
-    var toggleIcon = el("span", { 
-      class: "a11y-widget-toggle-icon",
-      "aria-hidden": "true",
-      html: "♿"
-    });
-    var toggleText = el("span", { 
-      class: "a11y-widget-toggle-text",
+      title: "Accessibility Settings",
       text: "Accessibility"
     });
-    toggle.appendChild(toggleIcon);
-    toggle.appendChild(toggleText);
 
     var panel = el("div", {
       id: "a11y-widget-panel",

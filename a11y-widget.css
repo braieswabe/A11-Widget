@@ -367,20 +367,20 @@ html.a11y-widget-hidden .accessibility-widget {
   border-radius: var(--a11y-radius);
   padding: 0.75rem 1.25rem;
   font-size: 14px;
-  line-height: 1.2;
+  line-height: 1.4;
   cursor: pointer;
   background: var(--a11y-color-secondary);
   color: #fff;
   box-shadow: var(--a11y-shadow-button);
   min-width: 48px;
   min-height: 48px;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
   transition: all 0.2s ease;
   font-weight: 600;
   font-family: var(--a11y-font-family);
+  white-space: nowrap;
 }
 
 #a11y-widget-toggle:hover{
@@ -409,33 +409,19 @@ html.a11y-widget-hidden .accessibility-widget {
   background: var(--a11y-color-primary-light);
 }
 
-.a11y-widget-toggle-icon{
-  font-size: 18px;
-  line-height: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.a11y-widget-toggle-text{
-  font-size: 14px;
-  font-weight: 500;
-  white-space: nowrap;
-}
-
-/* Hide text on very small screens, show icon only */
+/* Responsive: Hide text on very small screens, show icon only */
 @media (max-width: 480px) {
-  .a11y-widget-toggle-text{
-    display: none;
-  }
   #a11y-widget-toggle{
     padding: 0.75rem;
     min-width: 48px;
     min-height: 48px;
     border-radius: var(--a11y-radius);
+    font-size: 0;
   }
-  .a11y-widget-toggle-icon{
-    font-size: 20px;
+  #a11y-widget-toggle::before{
+    content: "♿";
+    font-size: 18px;
+    line-height: 1;
   }
 }
 
@@ -460,6 +446,11 @@ html.a11y-widget-hidden .accessibility-widget {
   }
   #a11y-widget-toggle:focus-visible{
     outline-color: var(--a11y-color-secondary);
+  }
+  @media (max-width: 480px) {
+    #a11y-widget-toggle::before{
+      color: #fff;
+    }
   }
 }
 
