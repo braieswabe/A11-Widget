@@ -51,8 +51,7 @@ export default function Layout({ children }: LayoutProps) {
       const timestamp = Math.floor(Date.now() / 1000)
       const loaderUrl = `https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js?v=${timestamp}`
       loaderScript.src = loaderUrl
-      loaderScript.defer = true
-      loaderScript.async = false // Ensure proper loading order
+      loaderScript.defer = true // Defer ensures script runs after DOM is parsed
       
       // Track loading state
       loaderScript.onload = () => {
