@@ -1,4 +1,4 @@
-/*! a11y-widget-loader.js — Zero-Config Loader v1.4
+/*! a11y-widget-loader.js — Zero-Config Loader v1.3
     Just include this single script tag and the widget loads automatically from GitHub!
     
     Usage:
@@ -11,7 +11,7 @@
 // This runs BEFORE the IIFE, so it executes even if there's an error later
 // CRITICAL: If you don't see this message, the loader script is cached/old
 try {
-  console.log('[A11Y Loader] ✅ Script file loaded - v1.4 -', new Date().toISOString());
+  console.log('[A11Y Loader] ✅ Script file loaded - v1.3 -', new Date().toISOString());
   var scriptSrc = 'unknown';
   try {
     if (document.currentScript && document.currentScript.src) {
@@ -22,7 +22,7 @@ try {
     }
   } catch(e) {}
   console.log('[A11Y Loader] Script source:', scriptSrc);
-  console.log('[A11Y Loader] If you see this, the loader script v1.4 is executing');
+  console.log('[A11Y Loader] If you see this, the loader script v1.3 is executing');
 } catch(e) {
   console.log('[A11Y Loader] Script file parsed but error logging:', e);
 }
@@ -34,7 +34,7 @@ try {
   var GITHUB_BRANCH = "main";
   var CDN_BASE = "https://cdn.jsdelivr.net/gh/" + GITHUB_REPO + "@" + GITHUB_BRANCH + "/";
   var GITHUB_RAW_BASE = "https://raw.githubusercontent.com/" + GITHUB_REPO + "/" + GITHUB_BRANCH + "/";
-  var LOADER_VERSION = "1.4"; // Increment this when loader logic changes
+  var LOADER_VERSION = "1.3"; // Increment this when loader logic changes
   var LOADER_VERSION_KEY = "__a11y_loader_version";
   var WIDGET_VERSION_KEY = "__a11y_widget_version";
   var LAST_UPDATE_CHECK_KEY = "__a11y_widget_last_check";
@@ -297,8 +297,16 @@ try {
     cssLink.crossOrigin = "anonymous";
     
     // #region agent log
-    debugLog('a11y-widget-loader.js:loadWidget', 'Loading CSS', {cssUrl: cssUrl}, 'E');
+    debugLog('a11y-widget-loader.js:loadWidget', 'Loading CSS', {cssUrl: cssUrl, timestamp: timestamp}, 'E');
     // #endregion
+    
+    // Track CSS load success
+    cssLink.onload = function() {
+      // #region agent log
+      debugLog('a11y-widget-loader.js:cssLink.onload', 'CSS loaded successfully', {cssUrl: cssLink.href}, 'E');
+      // #endregion
+      console.log('[A11Y] CSS loaded from:', cssLink.href);
+    };
     
     // Fallback to raw GitHub if jsDelivr fails (though it may not work due to content-type)
     cssLink.onerror = function() {
@@ -322,8 +330,26 @@ try {
     script.crossOrigin = "anonymous";
     
     // #region agent log
-    debugLog('a11y-widget-loader.js:loadWidget', 'Loading JS', {scriptUrl: scriptUrl}, 'E');
+    debugLog('a11y-widget-loader.js:loadWidget', 'Loading JS', {scriptUrl: scriptUrl, timestamp: timestamp}, 'E');
     // #endregion
+    
+    // Track JS load success
+    script.onload = function() {
+      // #region agent log
+      debugLog('a11y-widget-loader.js:script.onload', 'JS loaded successfully', {scriptUrl: script.src}, 'E');
+      // #endregion
+      console.log('[A11Y] JS loaded from:', script.src);
+      // Check if widget initialized
+      setTimeout(function() {
+        if (window.__a11yWidget && window.__a11yWidget.__loaded) {
+          console.log('[A11Y] Widget initialized successfully');
+          debugLog('a11y-widget-loader.js:script.onload', 'Widget initialized', {widgetLoaded: true}, 'E');
+        } else {
+          console.warn('[A11Y] Widget JS loaded but widget not initialized yet');
+          debugLog('a11y-widget-loader.js:script.onload', 'Widget not initialized', {widgetLoaded: false, hasWidget: !!window.__a11yWidget}, 'E');
+        }
+      }, 1000);
+    };
     
     // Fallback to raw GitHub if jsDelivr fails (though it may not work due to content-type)
     script.onerror = function() {
