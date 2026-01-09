@@ -11,29 +11,14 @@ export default function Layout({ children }: LayoutProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   useEffect(() => {
-    // Load widget script
-    if (!document.getElementById('a11y-widget-script')) {
-      const link = document.createElement('link')
-      link.rel = 'stylesheet'
-      link.href = '/a11y-widget.css'
-      document.head.appendChild(link)
-
-      // No configuration needed - widget auto-detects site from domain!
-      // Optional: customize if needed
-      // const configScript = document.createElement('script')
-      // configScript.textContent = `
-      //   window.__A11Y_WIDGET__ = {
-      //     position: "right",
-      //     surfaces: ["body", "main"]
-      //   };
-      // `
-      // document.head.appendChild(configScript)
-
-      const widgetScript = document.createElement('script')
-      widgetScript.id = 'a11y-widget-script'
-      widgetScript.src = '/a11y-widget.js'
-      widgetScript.defer = true
-      document.body.appendChild(widgetScript)
+    // Load widget from GitHub CDN - updates automatically propagate to all users!
+    // This ensures all existing integrations get updates automatically
+    if (!document.getElementById('a11y-widget-loader')) {
+      const loaderScript = document.createElement('script')
+      loaderScript.id = 'a11y-widget-loader'
+      loaderScript.src = 'https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js'
+      loaderScript.defer = true
+      document.head.appendChild(loaderScript)
     }
   }, [])
 

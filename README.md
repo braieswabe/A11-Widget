@@ -26,6 +26,8 @@ Just add this single line to your HTML:
 
 That's it! The widget loads automatically from GitHub. No configuration needed.
 
+**✨ Automatic Updates**: When you update the widget files in the GitHub repository, all existing integrations automatically receive the updates. The loader script includes cache-busting to ensure users always get the latest version.
+
 ### Optional: Customize Settings
 
 If you want to customize the widget, add configuration before the loader script:

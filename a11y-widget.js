@@ -662,18 +662,20 @@
   }
 
   // Auto-load CSS from GitHub if not already loaded
+  // Includes cache-busting to ensure updates propagate to all users
   function ensureCSS() {
     if (document.getElementById("a11y-widget-stylesheet")) return;
     
     var link = document.createElement("link");
     link.id = "a11y-widget-stylesheet";
     link.rel = "stylesheet";
-    link.href = CDN_BASE + "a11y-widget.css";
+    // Add cache-busting to ensure fresh loads when GitHub updates
+    link.href = CDN_BASE + "a11y-widget.css?v=" + new Date().getTime();
     link.crossOrigin = "anonymous";
     
     // Fallback to GitHub raw if jsDelivr fails
     link.onerror = function() {
-      link.href = "https://raw.githubusercontent.com/" + GITHUB_REPO + "/" + GITHUB_BRANCH + "/a11y-widget.css";
+      link.href = "https://raw.githubusercontent.com/" + GITHUB_REPO + "/" + GITHUB_BRANCH + "/a11y-widget.css?v=" + new Date().getTime();
     };
     
     document.head.appendChild(link);

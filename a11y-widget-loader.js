@@ -24,17 +24,20 @@
   var cssLoaded = document.getElementById("a11y-widget-stylesheet") || 
                   document.querySelector('link[href*="a11y-widget.css"]');
   
-  // Load CSS from GitHub
+  // Load CSS from GitHub with cache-busting to ensure updates propagate
   if (!cssLoaded) {
     var cssLink = document.createElement("link");
     cssLink.id = "a11y-widget-stylesheet";
     cssLink.rel = "stylesheet";
-    cssLink.href = CDN_BASE + "a11y-widget.css";
+    // Add cache-busting query parameter to force fresh loads when GitHub updates
+    // This ensures all existing integrations get updates automatically
+    var cssUrl = CDN_BASE + "a11y-widget.css?v=" + new Date().getTime();
+    cssLink.href = cssUrl;
     cssLink.crossOrigin = "anonymous";
     
     // Fallback to GitHub raw if jsDelivr fails
     cssLink.onerror = function() {
-      cssLink.href = GITHUB_RAW_BASE + "a11y-widget.css";
+      cssLink.href = GITHUB_RAW_BASE + "a11y-widget.css?v=" + new Date().getTime();
     };
     
     document.head.appendChild(cssLink);
@@ -47,13 +50,16 @@
   if (!scriptLoaded) {
     var script = document.createElement("script");
     script.id = "a11y-widget-script";
-    script.src = CDN_BASE + "a11y-widget.js";
+    // Add cache-busting query parameter to force fresh loads when GitHub updates
+    // This ensures all existing integrations get updates automatically
+    var scriptUrl = CDN_BASE + "a11y-widget.js?v=" + new Date().getTime();
+    script.src = scriptUrl;
     script.defer = true;
     script.crossOrigin = "anonymous";
     
     // Fallback to GitHub raw if jsDelivr fails
     script.onerror = function() {
-      script.src = GITHUB_RAW_BASE + "a11y-widget.js";
+      script.src = GITHUB_RAW_BASE + "a11y-widget.js?v=" + new Date().getTime();
     };
     
     // Insert before first script or append to head
