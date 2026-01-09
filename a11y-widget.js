@@ -179,6 +179,7 @@
     var html = document.documentElement;
     html.setAttribute("data-a11y", "true");
     html.setAttribute("data-a11y-global-mode", prefs.globalMode ? "1" : "0");
+    html.setAttribute("data-a11y-global-font", prefs.globalModeFont || "system"); // Set global font attribute
     html.setAttribute("data-a11y-contrast", prefs.contrast);
     html.setAttribute("data-a11y-spacing", prefs.spacing);
     html.setAttribute("data-a11y-readable-font", prefs.readableFont ? "1" : "0");
@@ -1286,6 +1287,8 @@
       marginsCheckbox: null,
       cursorCheckbox: null,
       magnifierCheckbox: null,
+      magnifierZoomSlider: null,
+      magnifierControlsContainer: null,
       dictionaryCheckbox: null,
       translationCheckbox: null,
       globalModeCheckbox: null
@@ -1851,11 +1854,60 @@
         "a11y-magnifier",
         "🔍 Page Magnifier",
         prefs.magnifierEnabled,
-        function (v) { onChange({ magnifierEnabled: v }); },
+        function (v) { 
+          onChange({ magnifierEnabled: v });
+          // Show/hide magnifier zoom slider dynamically
+          updateMagnifierControls(v);
+        },
         "Zoom parts of the page on hover for closer inspection."
       );
       controls.magnifierCheckbox = magnifierRow.checkbox;
       content.appendChild(magnifierRow.row);
+      
+      // Magnifier zoom slider container (will be shown/hidden)
+      var magnifierControlsContainer = el("div", { 
+        id: "a11y-magnifier-controls",
+        class: "a11y-widget-row",
+        style: "margin-top: 0.5rem; padding-left: 1.5rem; display: " + (prefs.magnifierEnabled ? "block" : "none") + ";"
+      });
+      
+      magnifierControlsContainer.appendChild(el("label", { 
+        for: "a11y-magnifier-zoom", 
+        text: "Zoom Level: " + (prefs.magnifierZoom || 2.0) + "x", 
+        style: "font-size: 12px; display: block; margin-bottom: 0.5rem;" 
+      }));
+      
+      var magnifierZoomSlider = el("input", {
+        id: "a11y-magnifier-zoom",
+        type: "range",
+        min: "1.5",
+        max: "5.0",
+        step: "0.5",
+        value: String(prefs.magnifierZoom || 2.0),
+        style: "width: 100%; margin-top: 0.5rem;"
+      });
+      controls.magnifierZoomSlider = magnifierZoomSlider;
+      
+      magnifierZoomSlider.addEventListener("input", function() {
+        var zoomValue = parseFloat(magnifierZoomSlider.value);
+        var label = magnifierControlsContainer.querySelector("label");
+        if (label) {
+          label.textContent = "Zoom Level: " + zoomValue + "x";
+        }
+        onChange({ magnifierZoom: zoomValue });
+      });
+      
+      magnifierControlsContainer.appendChild(magnifierZoomSlider);
+      content.appendChild(magnifierControlsContainer);
+      controls.magnifierControlsContainer = magnifierControlsContainer;
+      
+      // Function to show/hide magnifier controls
+      function updateMagnifierControls(enabled) {
+        if (controls.magnifierControlsContainer) {
+          controls.magnifierControlsContainer.style.display = enabled ? "block" : "none";
+        }
+      }
+      controls.updateMagnifierControls = updateMagnifierControls;
     }
 
     // Dictionary
