@@ -19,11 +19,24 @@
   
   // IMMEDIATE: Check if this loader script is outdated and force reload
   // This runs BEFORE any other code to catch cached loader scripts
+  var shouldExit = false;
   (function checkLoaderVersion() {
     try {
       var storedVersion = localStorage.getItem(LOADER_VERSION_KEY);
-      var currentScript = document.currentScript || document.querySelector('script[src*="a11y-widget-loader.js"]');
+      // Find the script tag that loaded this file
+      var scripts = document.querySelectorAll('script[src*="a11y-widget-loader.js"]');
+      var currentScript = null;
+      for (var i = 0; i < scripts.length; i++) {
+        if (scripts[i].src && (scripts[i].src.indexOf('a11y-widget-loader.js') !== -1)) {
+          currentScript = scripts[i];
+          break;
+        }
+      }
       var scriptVersion = currentScript ? currentScript.getAttribute("data-version") : null;
+      
+      // #region agent log
+      console.log('[A11Y Debug] Loader version check:', {storedVersion: storedVersion, LOADER_VERSION: LOADER_VERSION, scriptVersion: scriptVersion, scriptSrc: currentScript ? currentScript.src : 'not found'});
+      // #endregion
       
       // If stored version doesn't match, or script version doesn't match, reload
       if (storedVersion !== LOADER_VERSION || (scriptVersion && scriptVersion !== LOADER_VERSION)) {
@@ -52,7 +65,8 @@
         };
         
         document.head.appendChild(newLoader);
-        return; // Exit - let new loader handle everything
+        shouldExit = true; // Mark to exit outer function
+        return;
       }
       
       // Mark this version as loaded
@@ -61,6 +75,11 @@
       console.error('[A11Y] Error checking loader version:', e);
     }
   })();
+  
+  // Exit if loader needs to be reloaded
+  if (shouldExit) {
+    return;
+  }
   var WIDGET_VERSION_KEY = "__a11y_widget_version";
   var LAST_UPDATE_CHECK_KEY = "__a11y_widget_last_check";
   
