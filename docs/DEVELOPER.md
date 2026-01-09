@@ -13,6 +13,7 @@ Located in `buildWidget()` function. Handles:
 - Panel open/close behavior
 - Focus management
 - Keyboard event handling
+- Global keyboard shortcut (Alt+A by default) to open/close widget
 
 ### 2. PreferenceStore (localStorage/cookie)
 
@@ -100,9 +101,13 @@ Emits telemetry events:
 Add new feature flag or config option:
 
 ```javascript
-features: {
-  // ... existing features
-  newFeature: true
+var DEFAULTS = {
+  // ... existing options
+  keyboardShortcut: "Alt+A",  // Global keyboard shortcut
+  features: {
+    // ... existing features
+    newFeature: true
+  }
 }
 ```
 

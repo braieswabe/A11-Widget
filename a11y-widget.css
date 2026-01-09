@@ -66,6 +66,38 @@ html[data-a11y]{
   line-height: inherit;
 }
 
+/* Global Mode: Apply transformations to entire website */
+html[data-a11y][data-a11y-global-mode="1"] {
+  /* Override all fonts globally */
+  font-family: var(--a11y-font-family, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Noto Sans", "Liberation Sans", sans-serif) !important;
+}
+
+html[data-a11y][data-a11y-global-mode="1"] * {
+  /* Apply font scaling globally */
+  font-size: calc(1em * var(--a11y-font-scale, 1)) !important;
+  line-height: var(--a11y-line-height, 1.4) !important;
+}
+
+html[data-a11y][data-a11y-global-mode="1"][data-a11y-readable-font="1"] * {
+  /* Override all fonts with readable font globally */
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Noto Sans", "Liberation Sans", sans-serif !important;
+}
+
+/* Global Mode: Apply spacing globally */
+html[data-a11y][data-a11y-global-mode="1"] p,
+html[data-a11y][data-a11y-global-mode="1"] li,
+html[data-a11y][data-a11y-global-mode="1"] div,
+html[data-a11y][data-a11y-global-mode="1"] span,
+html[data-a11y][data-a11y-global-mode="1"] article,
+html[data-a11y][data-a11y-global-mode="1"] section {
+  letter-spacing: var(--a11y-letter-spacing, 0) !important;
+  word-spacing: var(--a11y-word-spacing, 0) !important;
+}
+
+html[data-a11y][data-a11y-global-mode="1"] p {
+  margin-bottom: var(--a11y-paragraph-spacing, 0.75em) !important;
+}
+
 /* Spacing presets: JS sets data-a11y-spacing */
 html[data-a11y][data-a11y-spacing="normal"]{
   --a11y-line-height: 1.4;
@@ -107,13 +139,140 @@ html[data-a11y][data-a11y-reduce-motion="1"] #a11y-widget-root *{
   animation: none !important;
 }
 
+/* Reading Ruler */
+html[data-a11y][data-a11y-reading-ruler="1"] {
+  --a11y-reading-ruler-height: 3px;
+  --a11y-reading-ruler-color: #0066cc;
+}
+
+/* Screen Mask - handled by JavaScript overlay */
+
+/* Text-Only Mode */
+html[data-a11y][data-a11y-text-only="1"] [data-a11y-surface="true"] img,
+html[data-a11y][data-a11y-text-only="1"] [data-a11y-surface="true"] svg,
+html[data-a11y][data-a11y-text-only="1"] [data-a11y-surface="true"] video,
+html[data-a11y][data-a11y-text-only="1"] [data-a11y-surface="true"] iframe,
+html[data-a11y][data-a11y-text-only="1"] [data-a11y-surface="true"] canvas,
+html[data-a11y][data-a11y-text-only="1"] [data-a11y-surface="true"] embed,
+html[data-a11y][data-a11y-text-only="1"] [data-a11y-surface="true"] object {
+  display: none !important;
+}
+
+html[data-a11y][data-a11y-text-only="1"] [data-a11y-surface="true"] {
+  background-image: none !important;
+}
+
+/* Margins */
+html[data-a11y][data-a11y-margins="1"] [data-a11y-surface="true"] {
+  padding-left: var(--a11y-margins-size, 0px) !important;
+  padding-right: var(--a11y-margins-size, 0px) !important;
+  max-width: calc(100% - (var(--a11y-margins-size, 0px) * 2)) !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+/* Cursor Options */
+html[data-a11y][data-a11y-cursor="large"] * {
+  cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="%23000" d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/></svg>') 12 12, auto !important;
+}
+
+html[data-a11y][data-a11y-cursor="extra-large"] * {
+  cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><path fill="%23000" stroke="%23fff" stroke-width="1" d="M4 4l9.43 22.63 3.35-9.86 9.86-3.35L4 4z"/></svg>') 16 16, auto !important;
+}
+
+html[data-a11y][data-a11y-cursor="large"] *:hover,
+html[data-a11y][data-a11y-cursor="extra-large"] *:hover {
+  cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="%230066cc" d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/></svg>') 12 12, pointer !important;
+}
+
+/* Magnifier - handled by JavaScript overlay */
+#a11y-magnifier {
+  position: fixed;
+  pointer-events: none;
+  z-index: 2147482997;
+  width: 200px;
+  height: 200px;
+  border: 2px solid #0066cc;
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow: 0 0 20px rgba(0,0,0,0.5);
+  display: none;
+  background: white;
+}
+
+#a11y-magnifier::before {
+  content: attr(data-zoom) "x";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 24px;
+  font-weight: bold;
+  color: #0066cc;
+  z-index: 1;
+}
+
 /* Contrast modes: applied ONLY to our surfaces by setting data-a11y-contrast on html */
-html[data-a11y][data-a11y-contrast="default"]{}
+html[data-a11y][data-a11y-contrast="default"] {
+  /* Default contrast - no changes needed */
+}
 
 /* High Contrast Mode */
 html[data-a11y][data-a11y-contrast="high"] [data-a11y-surface="true"],
 html[data-a11y][data-a11y-contrast="high"] #a11y-widget-root{
   filter: contrast(1.25);
+}
+
+/* Global Mode: High Contrast applied globally */
+html[data-a11y][data-a11y-global-mode="1"][data-a11y-contrast="high"] * {
+  filter: contrast(1.25) !important;
+}
+
+/* Global Mode: Dark Theme applied globally */
+html[data-a11y][data-a11y-global-mode="1"][data-a11y-contrast="dark"] * {
+  background: #0d1117 !important;
+  color: #e6edf3 !important;
+}
+
+html[data-a11y][data-a11y-global-mode="1"][data-a11y-contrast="dark"] h1,
+html[data-a11y][data-a11y-global-mode="1"][data-a11y-contrast="dark"] h2,
+html[data-a11y][data-a11y-global-mode="1"][data-a11y-contrast="dark"] h3,
+html[data-a11y][data-a11y-global-mode="1"][data-a11y-contrast="dark"] h4,
+html[data-a11y][data-a11y-global-mode="1"][data-a11y-contrast="dark"] h5,
+html[data-a11y][data-a11y-global-mode="1"][data-a11y-contrast="dark"] h6 {
+  color: #ffffff !important;
+}
+
+html[data-a11y][data-a11y-global-mode="1"][data-a11y-contrast="dark"] a {
+  color: #58a6ff !important;
+}
+
+html[data-a11y][data-a11y-global-mode="1"][data-a11y-contrast="dark"] button,
+html[data-a11y][data-a11y-global-mode="1"][data-a11y-contrast="dark"] input,
+html[data-a11y][data-a11y-global-mode="1"][data-a11y-contrast="dark"] select,
+html[data-a11y][data-a11y-global-mode="1"][data-a11y-contrast="dark"] textarea {
+  background: #21262d !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Global Mode: Light Theme applied globally */
+html[data-a11y][data-a11y-global-mode="1"][data-a11y-contrast="light"] * {
+  background: #ffffff !important;
+  color: #000000 !important;
+}
+
+html[data-a11y][data-a11y-global-mode="1"][data-a11y-contrast="light"] a {
+  color: #0066cc !important;
+}
+
+html[data-a11y][data-a11y-global-mode="1"][data-a11y-contrast="light"] button,
+html[data-a11y][data-a11y-global-mode="1"][data-a11y-contrast="light"] input,
+html[data-a11y][data-a11y-global-mode="1"][data-a11y-contrast="light"] select,
+html[data-a11y][data-a11y-global-mode="1"][data-a11y-contrast="light"] textarea {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border-color: #000000 !important;
 }
 
 /* Dark Theme Mode - Comprehensive styling following WCAG AA best practices */

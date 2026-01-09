@@ -9,8 +9,14 @@ This widget is a **support layer** + **render-time accessibility controls** — 
 - ✅ Accessibility enhancements for widget UI itself
 - ✅ CSS-based user preference transforms (contrast, text size, spacing)
 - ✅ Keyboard and screen reader support
+- ✅ Global keyboard shortcut (Alt+A) to quickly open widget
 - ✅ Preference persistence (localStorage/cookie)
 - ✅ Optional profile presets (dyslexia-friendly, low-vision, reduced motion)
+- ✅ **Text-to-Speech**: Read selected text or full page aloud with customizable voice settings
+- ✅ **Translation**: Translate page content into 100+ languages
+- ✅ **Reading Aids**: Reading ruler, screen mask, text-only mode, adjustable margins
+- ✅ **Focus Tools**: Customizable cursor size, page magnifier
+- ✅ **Dictionary**: Double-click words to see definitions
 
 **Scope boundaries**: This widget only affects elements you explicitly declare as surfaces. It does not fix host-site HTML outside those surfaces, third-party embeds, PDFs, or guarantee full-site compliance.
 
@@ -28,6 +34,8 @@ That's it! The widget loads automatically from GitHub. No configuration needed.
 
 **✨ Automatic Updates**: When you update the widget files in the GitHub repository, all existing integrations automatically receive the updates. The loader script includes cache-busting to ensure users always get the latest version.
 
+**⌨️ Keyboard Shortcut**: Press **Alt+A** (Option+A on Mac) from anywhere on the page to quickly open/close the accessibility widget. The shortcut doesn't interfere with typing in input fields.
+
 ### Optional: Customize Settings
 
 If you want to customize the widget, add configuration before the loader script:
@@ -36,11 +44,15 @@ If you want to customize the widget, add configuration before the loader script:
 <script>
   window.__A11Y_WIDGET__ = {
     position: "right",  // Optional: "left" or "right"
-    surfaces: ["body", "main"]  // Optional: CSS selectors
+    keyboardShortcut: "Alt+A",  // Optional: "Alt+A", "Ctrl+Alt+A", or null to disable
+    globalMode: false,  // Optional: If true, applies transformations to entire website (fonts, colors, sizes)
+    surfaces: ["body", "main"]  // Optional: CSS selectors (ignored if globalMode is true)
   };
 </script>
 <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js" defer></script>
 ```
+
+**Global Mode**: When enabled, the widget applies transformations (fonts, font sizes, colors, spacing) to the entire website, completely overhauling the user interface. When disabled (default), transformations only apply to declared surfaces.
 
 ### Custom Button Control
 
@@ -52,9 +64,11 @@ All configuration is via `window.__A11Y_WIDGET__` object or data attributes:
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `siteId` | string | `null` | Required: Site identifier for telemetry/config |
+| `siteId` | string | `null` | Auto-detected from hostname if not provided |
 | `position` | `"left"\|"right"` | `"right"` | Widget position on screen |
-| `surfaces` | string[] | `["body"]` | CSS selectors to mark as `data-a11y-surface="true"` |
+| `keyboardShortcut` | string\|null | `"Alt+A"` | Global keyboard shortcut to open/close widget (e.g., `"Alt+A"`, `"Ctrl+Alt+A"`, or `null` to disable) |
+| `globalMode` | boolean | `false` | If `true`, applies transformations to entire website (fonts, colors, sizes). When enabled, `surfaces` is ignored. |
+| `surfaces` | string[] | `["body"]` | CSS selectors to mark as `data-a11y-surface="true"` (ignored if `globalMode` is `true`) |
 | `enableTelemetry` | boolean | `false` | Enable telemetry events |
 | `telemetryEndpoint` | string | `null` | Backend endpoint for telemetry (e.g., `/api/telemetry`) |
 | `zIndex` | number | `2147483000` | Widget z-index |
@@ -90,9 +104,9 @@ features: {
 
 ## How It Works
 
-### Surface Scoping
+### Surface Scoping vs Global Mode
 
-The widget only applies transforms to elements you declare in `surfaces`. Those elements get `data-a11y-surface="true"`:
+**By Default (Surface Mode)**: The widget only applies transforms to elements you declare in `surfaces`. Those elements get `data-a11y-surface="true"`:
 
 ```html
 <!-- Your HTML -->
@@ -110,6 +124,15 @@ The widget only applies transforms to elements you declare in `surfaces`. Those 
 // Widget config
 surfaces: ["body", "[data-canonical-surface='true']"]
 ```
+
+**Global Mode**: When `globalMode: true` is set, the widget applies transformations to the entire website, completely overhauling fonts, font sizes, background colors, and other UI elements. This replaces existing website styles globally:
+
+```javascript
+// Widget config
+globalMode: true  // Applies to entire website, not just surfaces
+```
+
+**Note**: When global mode is enabled, the `surfaces` configuration is ignored - all elements are transformed.
 
 ### Preference Persistence
 

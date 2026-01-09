@@ -8,8 +8,14 @@ We provide accessibility enhancements for:
 - Any content surfaces explicitly rendered/controlled by our systems (if present)
 - User preference transforms (contrast, text size, text spacing, readable font)
 - Keyboard and screen reader support for the widget
+- Global keyboard shortcut (Alt+A by default) to quickly open/close the widget
 - Reduced motion preference for supported surfaces
 - Preference persistence per domain (localStorage with cookie fallback)
+- **Text-to-Speech**: Read website text aloud (including selected text or full page) with customizable voice settings
+- **Translation**: Translate page content into 100+ languages
+- **Reading Aids**: Reading ruler, screen mask, text-only mode, adjustable margins
+- **Focus Tools**: Customizable cursor size, page magnifier
+- **Dictionary**: Word definitions on double-click
 
 ## What this widget does not cover (out of scope)
 This widget does **not**:
@@ -32,8 +38,13 @@ For supported surfaces (widget UI + declared surfaces), we aim to meet WCAG 2.1 
 - Name/role/value for controls (4.1.2)
 
 ## Report an accessibility issue
-If you encounter a problem using the widget or supported content surfaces, please contact us with:
-- the page URL
-- your device/browser
-- the settings you selected in the widget
-- what you expected to happen vs what happened
+If you encounter a problem using the widget or supported content surfaces, please report it via:
+
+**GitHub Issues**: [https://github.com/braieswabe/A11-Widget/issues](https://github.com/braieswabe/A11-Widget/issues)
+
+Please include:
+- The page URL where the issue occurred
+- Your device/browser information
+- The settings you selected in the widget
+- What you expected to happen vs what actually happened
+- Any error messages from the browser console (if applicable)

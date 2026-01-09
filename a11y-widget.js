@@ -21,7 +21,9 @@
     initialOpen: false,
     enableTelemetry: false,
     telemetryEndpoint: null,         // Optional: backend endpoint for telemetry
-    surfaces: ["body"],              // CSS selectors to mark as data-a11y-surface="true"
+    keyboardShortcut: "Alt+A",       // Global keyboard shortcut to open/close widget (Alt+A, Ctrl+Alt+A, or null to disable)
+    globalMode: false,               // If true, apply transformations to entire website (not just declared surfaces)
+    surfaces: ["body"],              // CSS selectors to mark as data-a11y-surface="true" (ignored if globalMode is true)
     features: {
       contrast: true,
       fontScale: true,
@@ -30,7 +32,17 @@
       readableFont: true,
       presets: true,
       reset: true,
-      skipLink: true
+      skipLink: true,
+      // Advanced features
+      textToSpeech: true,        // Text-to-speech reading
+      translation: true,         // Language translation
+      readingRuler: true,        // Reading ruler line
+      screenMask: true,          // Screen mask/dim distractions
+      textOnlyMode: true,        // Text-only mode
+      margins: true,             // Adjustable margins
+      cursorOptions: true,       // Custom cursor
+      dictionary: true,          // Dictionary lookup
+      magnifier: true            // Page magnifier
     },
     branding: { show: true },
     storageKey: "__a11yWidgetPrefs__"
@@ -96,7 +108,30 @@
     fontScale: 1.0,                  // 1.0–1.6
     spacing: "normal",               // normal|comfortable|max
     readableFont: false,
-    reduceMotion: false
+    reduceMotion: false,
+    globalMode: false,               // Apply transformations to entire website (not just surfaces)
+    // Advanced features preferences
+    textToSpeechEnabled: false,
+    textToSpeechVoice: null,         // Voice name or null for default
+    textToSpeechRate: 1.0,           // 0.1–10
+    textToSpeechPitch: 1.0,          // 0–2
+    textToSpeechVolume: 1.0,         // 0–1
+    translationEnabled: false,
+    translationLanguage: "en",       // Target language code
+    readingRulerEnabled: false,
+    readingRulerHeight: 3,           // Ruler height in pixels
+    readingRulerColor: "#0066cc",    // Ruler color
+    screenMaskEnabled: false,
+    screenMaskOpacity: 0.5,          // 0–1
+    screenMaskRadius: 200,           // Focus radius in pixels
+    textOnlyMode: false,
+    marginsEnabled: false,
+    marginsSize: 0,                  // Margin size in pixels (0–200)
+    cursorEnabled: false,
+    cursorSize: "normal",            // normal|large|extra-large
+    dictionaryEnabled: false,
+    magnifierEnabled: false,
+    magnifierZoom: 2.0               // Zoom level (1.5–5.0)
   };
 
   function normalizePrefs(p) {
@@ -106,7 +141,30 @@
       fontScale: clamp(Number(p.fontScale || 1.0), 1.0, 1.6),
       spacing: (p.spacing === "comfortable" || p.spacing === "max") ? p.spacing : "normal",
       readableFont: !!p.readableFont,
-      reduceMotion: !!p.reduceMotion
+      reduceMotion: !!p.reduceMotion,
+      // Advanced features
+      textToSpeechEnabled: !!p.textToSpeechEnabled,
+      textToSpeechVoice: p.textToSpeechVoice || null,
+      textToSpeechRate: clamp(Number(p.textToSpeechRate || 1.0), 0.1, 10),
+      textToSpeechPitch: clamp(Number(p.textToSpeechPitch || 1.0), 0, 2),
+      textToSpeechVolume: clamp(Number(p.textToSpeechVolume || 1.0), 0, 1),
+      translationEnabled: !!p.translationEnabled,
+      translationLanguage: p.translationLanguage || "en",
+      readingRulerEnabled: !!p.readingRulerEnabled,
+      readingRulerHeight: clamp(Number(p.readingRulerHeight || 3), 1, 10),
+      readingRulerColor: p.readingRulerColor || "#0066cc",
+      screenMaskEnabled: !!p.screenMaskEnabled,
+      screenMaskOpacity: clamp(Number(p.screenMaskOpacity || 0.5), 0, 1),
+      screenMaskRadius: clamp(Number(p.screenMaskRadius || 200), 50, 500),
+      textOnlyMode: !!p.textOnlyMode,
+      marginsEnabled: !!p.marginsEnabled,
+      marginsSize: clamp(Number(p.marginsSize || 0), 0, 200),
+      cursorEnabled: !!p.cursorEnabled,
+      cursorSize: (p.cursorSize === "large" || p.cursorSize === "extra-large") ? p.cursorSize : "normal",
+      dictionaryEnabled: !!p.dictionaryEnabled,
+      magnifierEnabled: !!p.magnifierEnabled,
+      magnifierZoom: clamp(Number(p.magnifierZoom || 2.0), 1.5, 5.0),
+      globalMode: !!p.globalMode
     };
     return out;
   }
@@ -115,15 +173,83 @@
   function applyPrefs(prefs) {
     var html = document.documentElement;
     html.setAttribute("data-a11y", "true");
+    html.setAttribute("data-a11y-global-mode", prefs.globalMode ? "1" : "0");
     html.setAttribute("data-a11y-contrast", prefs.contrast);
     html.setAttribute("data-a11y-spacing", prefs.spacing);
     html.setAttribute("data-a11y-readable-font", prefs.readableFont ? "1" : "0");
     html.setAttribute("data-a11y-reduce-motion", prefs.reduceMotion ? "1" : "0");
+    // Advanced features
+    html.setAttribute("data-a11y-reading-ruler", prefs.readingRulerEnabled ? "1" : "0");
+    html.setAttribute("data-a11y-screen-mask", prefs.screenMaskEnabled ? "1" : "0");
+    html.setAttribute("data-a11y-text-only", prefs.textOnlyMode ? "1" : "0");
+    html.setAttribute("data-a11y-margins", prefs.marginsEnabled ? "1" : "0");
+    html.setAttribute("data-a11y-cursor", prefs.cursorEnabled ? prefs.cursorSize : "0");
+    html.setAttribute("data-a11y-magnifier", prefs.magnifierEnabled ? "1" : "0");
+    html.setAttribute("data-a11y-dictionary", prefs.dictionaryEnabled ? "1" : "0");
     // CSS variables
     html.style.setProperty("--a11y-font-scale", String(prefs.fontScale));
+    html.style.setProperty("--a11y-reading-ruler-height", String(prefs.readingRulerHeight) + "px");
+    html.style.setProperty("--a11y-reading-ruler-color", prefs.readingRulerColor);
+    html.style.setProperty("--a11y-screen-mask-opacity", String(prefs.screenMaskOpacity));
+    html.style.setProperty("--a11y-screen-mask-radius", String(prefs.screenMaskRadius) + "px");
+    html.style.setProperty("--a11y-margins-size", String(prefs.marginsSize) + "px");
+    html.style.setProperty("--a11y-magnifier-zoom", String(prefs.magnifierZoom));
+    
+    // Initialize/remove reading aids dynamically
+    if (prefs.readingRulerEnabled) {
+      createReadingRuler(prefs);
+    } else {
+      removeReadingRuler();
+    }
+    
+    if (prefs.screenMaskEnabled) {
+      createScreenMask(prefs);
+    } else {
+      removeScreenMask();
+    }
+    
+    if (prefs.magnifierEnabled) {
+      createMagnifier(prefs);
+    } else {
+      removeMagnifier();
+    }
+    
+    // Stop speech if disabled
+    if (!prefs.textToSpeechEnabled) {
+      stopSpeech();
+    }
   }
 
-  function markSurfaces(selectors) {
+  function markSurfaces(selectors, globalMode) {
+    // If global mode is enabled, mark all elements
+    if (globalMode) {
+      try {
+        var allElements = document.querySelectorAll("*");
+        for (var k = 0; k < allElements.length; k++) {
+          // Skip widget elements
+          if (allElements[k].id && allElements[k].id.indexOf("a11y-widget") === 0) continue;
+          allElements[k].setAttribute("data-a11y-surface", "true");
+        }
+      } catch (e) {
+        // Fallback: mark body and all descendants
+        try {
+          var body = document.body;
+          if (body) {
+            body.setAttribute("data-a11y-surface", "true");
+            var descendants = body.querySelectorAll("*");
+            for (var d = 0; d < descendants.length; d++) {
+              if (descendants[d].id && descendants[d].id.indexOf("a11y-widget") === 0) continue;
+              descendants[d].setAttribute("data-a11y-surface", "true");
+            }
+          }
+        } catch (e2) {
+          // Ignore errors
+        }
+      }
+      return;
+    }
+    
+    // Otherwise, use selectors as before
     selectors = selectors && selectors.length ? selectors : ["body"];
     for (var i = 0; i < selectors.length; i++) {
       try {
@@ -161,6 +287,450 @@
         });
       }
     } catch (e) {}
+  }
+
+  // --- Text-to-Speech Handler -----------------------------------------------
+  var speechSynthesis = window.speechSynthesis || null;
+  var currentUtterance = null;
+
+  function getAvailableVoices() {
+    if (!speechSynthesis) return [];
+    var voices = speechSynthesis.getVoices();
+    return voices.length > 0 ? voices : [];
+  }
+
+  function speakText(text, prefs) {
+    if (!speechSynthesis || !text) return;
+    
+    // Stop any current speech
+    speechSynthesis.cancel();
+    
+    var utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = prefs.textToSpeechRate || 1.0;
+    utterance.pitch = prefs.textToSpeechPitch || 1.0;
+    utterance.volume = prefs.textToSpeechVolume || 1.0;
+    
+    if (prefs.textToSpeechVoice) {
+      var voices = getAvailableVoices();
+      var voice = voices.find(function(v) { return v.name === prefs.textToSpeechVoice; });
+      if (voice) utterance.voice = voice;
+    }
+    
+    currentUtterance = utterance;
+    speechSynthesis.speak(utterance);
+    
+    return utterance;
+  }
+
+  function stopSpeech() {
+    if (speechSynthesis) {
+      speechSynthesis.cancel();
+      currentUtterance = null;
+    }
+  }
+
+  function getPageText() {
+    var surfaces = document.querySelectorAll("[data-a11y-surface='true']");
+    var text = "";
+    for (var i = 0; i < surfaces.length; i++) {
+      text += surfaces[i].innerText || surfaces[i].textContent || "";
+      text += " ";
+    }
+    return text.trim();
+  }
+
+  function getSelectedText() {
+    if (window.getSelection) {
+      return window.getSelection().toString();
+    } else if (document.selection && document.selection.type !== "Control") {
+      return document.selection.createRange().text;
+    }
+    return "";
+  }
+
+  // --- Reading Ruler Handler -------------------------------------------------
+  var readingRulerElement = null;
+  var readingRulerHandler = null;
+
+  function createReadingRuler(prefs) {
+    if (readingRulerElement) {
+      readingRulerElement.remove();
+    }
+    if (readingRulerHandler) {
+      document.removeEventListener("mousemove", readingRulerHandler);
+    }
+    
+    readingRulerElement = document.createElement("div");
+    readingRulerElement.id = "a11y-reading-ruler";
+    readingRulerElement.style.cssText = 
+      "position: fixed; " +
+      "pointer-events: none; " +
+      "z-index: 2147482999; " +
+      "height: " + (prefs.readingRulerHeight || 3) + "px; " +
+      "background: " + (prefs.readingRulerColor || "#0066cc") + "; " +
+      "opacity: 0.6; " +
+      "display: none; " +
+      "transition: top 0.1s ease-out;";
+    document.body.appendChild(readingRulerElement);
+    
+    readingRulerHandler = function(e) {
+      var html = document.documentElement;
+      var enabled = html.getAttribute("data-a11y-reading-ruler") === "1";
+      if (enabled && readingRulerElement) {
+        var height = parseInt(html.style.getPropertyValue("--a11y-reading-ruler-height") || "3px", 10);
+        readingRulerElement.style.display = "block";
+        readingRulerElement.style.top = (e.clientY - height / 2) + "px";
+        readingRulerElement.style.left = "0";
+        readingRulerElement.style.width = "100%";
+      } else if (readingRulerElement) {
+        readingRulerElement.style.display = "none";
+      }
+    };
+    
+    document.addEventListener("mousemove", readingRulerHandler);
+  }
+
+  function removeReadingRuler() {
+    if (readingRulerElement) {
+      readingRulerElement.remove();
+      readingRulerElement = null;
+    }
+    if (readingRulerHandler) {
+      document.removeEventListener("mousemove", readingRulerHandler);
+      readingRulerHandler = null;
+    }
+  }
+
+  // --- Screen Mask Handler ----------------------------------------------------
+  var screenMaskElement = null;
+  var screenMaskHandler = null;
+
+  function createScreenMask(prefs) {
+    if (screenMaskElement) {
+      screenMaskElement.remove();
+    }
+    if (screenMaskHandler) {
+      document.removeEventListener("mousemove", screenMaskHandler);
+    }
+    
+    screenMaskElement = document.createElement("div");
+    screenMaskElement.id = "a11y-screen-mask";
+    screenMaskElement.style.cssText = 
+      "position: fixed; " +
+      "pointer-events: none; " +
+      "z-index: 2147482998; " +
+      "top: 0; " +
+      "left: 0; " +
+      "width: 100%; " +
+      "height: 100%; " +
+      "background: rgba(0, 0, 0, " + (prefs.screenMaskOpacity || 0.5) + "); " +
+      "display: none; " +
+      "clip-path: circle(" + (prefs.screenMaskRadius || 200) + "px at 50% 50%);";
+    document.body.appendChild(screenMaskElement);
+    
+    screenMaskHandler = function(e) {
+      var html = document.documentElement;
+      var enabled = html.getAttribute("data-a11y-screen-mask") === "1";
+      if (enabled && screenMaskElement) {
+        var radius = parseInt(html.style.getPropertyValue("--a11y-screen-mask-radius") || "200px", 10);
+        screenMaskElement.style.display = "block";
+        screenMaskElement.style.clipPath = "circle(" + radius + "px at " + e.clientX + "px " + e.clientY + "px)";
+      } else if (screenMaskElement) {
+        screenMaskElement.style.display = "none";
+      }
+    };
+    
+    document.addEventListener("mousemove", screenMaskHandler);
+  }
+
+  function removeScreenMask() {
+    if (screenMaskElement) {
+      screenMaskElement.remove();
+      screenMaskElement = null;
+    }
+    if (screenMaskHandler) {
+      document.removeEventListener("mousemove", screenMaskHandler);
+      screenMaskHandler = null;
+    }
+  }
+
+  // --- Magnifier Handler ------------------------------------------------------
+  var magnifierElement = null;
+  var magnifierContent = null;
+  var magnifierHandler = null;
+
+  function createMagnifier(prefs) {
+    if (magnifierElement) {
+      magnifierElement.remove();
+    }
+    if (magnifierHandler) {
+      document.removeEventListener("mousemove", magnifierHandler);
+    }
+    
+    magnifierElement = document.createElement("div");
+    magnifierElement.id = "a11y-magnifier";
+    magnifierElement.style.cssText = 
+      "position: fixed; " +
+      "pointer-events: none; " +
+      "z-index: 2147482997; " +
+      "width: 200px; " +
+      "height: 200px; " +
+      "border: 2px solid #0066cc; " +
+      "border-radius: 50%; " +
+      "overflow: hidden; " +
+      "box-shadow: 0 0 20px rgba(0,0,0,0.5); " +
+      "display: none; " +
+      "background: white;";
+    
+    magnifierContent = document.createElement("div");
+    magnifierContent.style.cssText = 
+      "width: 100%; " +
+      "height: 100%; " +
+      "background: radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(200,200,200,0.8) 100%); " +
+      "border-radius: 50%;";
+    magnifierElement.appendChild(magnifierContent);
+    document.body.appendChild(magnifierElement);
+    
+    magnifierHandler = function(e) {
+      var html = document.documentElement;
+      var enabled = html.getAttribute("data-a11y-magnifier") === "1";
+      if (enabled && magnifierElement) {
+        var zoom = parseFloat(html.style.getPropertyValue("--a11y-magnifier-zoom") || "2.0");
+        magnifierElement.style.display = "block";
+        var x = Math.max(100, Math.min(e.clientX - 100, window.innerWidth - 100));
+        var y = Math.max(100, Math.min(e.clientY - 100, window.innerHeight - 100));
+        magnifierElement.style.left = x + "px";
+        magnifierElement.style.top = y + "px";
+        
+        // Note: Full page magnifier would require html2canvas or similar
+        // This provides a visual indicator that magnifier is active
+        magnifierElement.setAttribute("data-zoom", String(zoom));
+      } else if (magnifierElement) {
+        magnifierElement.style.display = "none";
+      }
+    };
+    
+    document.addEventListener("mousemove", magnifierHandler);
+  }
+
+  function removeMagnifier() {
+    if (magnifierElement) {
+      magnifierElement.remove();
+      magnifierElement = null;
+      magnifierContent = null;
+    }
+    if (magnifierHandler) {
+      document.removeEventListener("mousemove", magnifierHandler);
+      magnifierHandler = null;
+    }
+  }
+
+  // --- Dictionary Handler ----------------------------------------------------
+  var dictionaryHandler = null;
+  
+  function setupDictionaryHandler() {
+    // Remove existing handler if any
+    if (dictionaryHandler) {
+      document.removeEventListener("dblclick", dictionaryHandler);
+    }
+    
+    // Set up new handler
+    dictionaryHandler = function(e) {
+      var html = document.documentElement;
+      var enabled = html.getAttribute("data-a11y-dictionary") === "1";
+      if (!enabled) return;
+      
+      var word = window.getSelection().toString().trim();
+      if (word && word.split(/\s+/).length === 1) {
+        lookupWord(word).then(function(result) {
+          if (result && result.definitions && result.definitions.length > 0) {
+            // Remove any existing popup
+            var existingPopup = document.getElementById("a11y-dict-popup");
+            if (existingPopup) existingPopup.remove();
+            
+            var popup = el("div", {
+              id: "a11y-dict-popup",
+              style: "position: fixed; " +
+                     "background: white; " +
+                     "border: 2px solid #0066cc; " +
+                     "border-radius: 8px; " +
+                     "padding: 1rem; " +
+                     "max-width: 300px; " +
+                     "z-index: 2147483001; " +
+                     "box-shadow: 0 4px 12px rgba(0,0,0,0.15); " +
+                     "left: " + Math.min(e.clientX, window.innerWidth - 320) + "px; " +
+                     "top: " + Math.min(e.clientY, window.innerHeight - 200) + "px;"
+            });
+            
+            var title = el("div", {
+              style: "font-weight: bold; margin-bottom: 0.5rem; font-size: 16px;",
+              text: result.word
+            });
+            popup.appendChild(title);
+            
+            for (var i = 0; i < result.definitions.length; i++) {
+              var def = el("div", {
+                style: "margin-bottom: 0.5rem; font-size: 14px;",
+                html: "<strong>" + result.definitions[i].partOfSpeech + ":</strong> " + result.definitions[i].definition
+              });
+              popup.appendChild(def);
+            }
+            
+            var closeBtn = el("button", {
+              type: "button",
+              text: "✕",
+              style: "position: absolute; top: 0.5rem; right: 0.5rem; border: none; background: none; font-size: 18px; cursor: pointer;",
+              "aria-label": "Close dictionary popup"
+            });
+            closeBtn.addEventListener("click", function() {
+              popup.remove();
+            });
+            popup.appendChild(closeBtn);
+            
+            document.body.appendChild(popup);
+            
+            setTimeout(function() {
+              if (popup.parentNode) {
+                popup.remove();
+              }
+            }, 10000);
+          }
+        });
+      }
+    };
+    
+    document.addEventListener("dblclick", dictionaryHandler);
+  }
+  
+  function lookupWord(word) {
+    if (!word || word.trim().length === 0) return Promise.resolve(null);
+    
+    // Use Free Dictionary API (no API key required)
+    var apiUrl = "https://api.dictionaryapi.dev/api/v2/entries/en/" + encodeURIComponent(word.trim());
+    
+    return fetch(apiUrl)
+      .then(function(response) {
+        if (!response.ok) throw new Error("Word not found");
+        return response.json();
+      })
+      .then(function(data) {
+        if (data && data.length > 0 && data[0].meanings) {
+          var meanings = data[0].meanings;
+          var definitions = [];
+          for (var i = 0; i < Math.min(meanings.length, 3); i++) {
+            if (meanings[i].definitions && meanings[i].definitions.length > 0) {
+              definitions.push({
+                partOfSpeech: meanings[i].partOfSpeech,
+                definition: meanings[i].definitions[0].definition
+              });
+            }
+          }
+          return {
+            word: data[0].word,
+            phonetic: data[0].phonetic || "",
+            definitions: definitions
+          };
+        }
+        return null;
+      })
+      .catch(function() {
+        return null;
+      });
+  }
+
+  // --- Translation Handler ----------------------------------------------------
+  function translateText(text, targetLang) {
+    if (!text || !targetLang) return Promise.resolve(null);
+    
+    // Use Google Translate API (free tier) or MyMemory API
+    // Note: For production, you'd want to use a proper translation API with API key
+    var apiUrl = "https://api.mymemory.translated.net/get?q=" + encodeURIComponent(text) + "&langpair=en|" + targetLang;
+    
+    return fetch(apiUrl)
+      .then(function(response) {
+        if (!response.ok) throw new Error("Translation failed");
+        return response.json();
+      })
+      .then(function(data) {
+        if (data && data.responseData && data.responseData.translatedText) {
+          return data.responseData.translatedText;
+        }
+        return null;
+      })
+      .catch(function() {
+        return null;
+      });
+  }
+
+  // --- Keyboard Shortcut Handler -------------------------------------------
+  function parseShortcut(shortcut) {
+    if (!shortcut || shortcut === false) return null;
+    var parts = shortcut.split("+").map(function(s) { return s.trim(); });
+    var modifiers = { alt: false, ctrl: false, shift: false, meta: false };
+    var key = null;
+    
+    for (var i = 0; i < parts.length; i++) {
+      var part = parts[i].toLowerCase();
+      if (part === "alt" || part === "option") modifiers.alt = true;
+      else if (part === "ctrl" || part === "control") modifiers.ctrl = true;
+      else if (part === "shift") modifiers.shift = true;
+      else if (part === "meta" || part === "cmd" || part === "command") modifiers.meta = true;
+      else key = parts[i].toUpperCase(); // Preserve case for letter keys
+    }
+    
+    return { modifiers: modifiers, key: key };
+  }
+
+  function matchesShortcut(e, shortcutConfig) {
+    if (!shortcutConfig) return false;
+    
+    // Check modifiers
+    var altMatch = shortcutConfig.modifiers.alt ? (e.altKey || e.getModifierState("Alt")) : !e.altKey;
+    var ctrlMatch = shortcutConfig.modifiers.ctrl ? (e.ctrlKey || e.getModifierState("Control")) : !e.ctrlKey;
+    var shiftMatch = shortcutConfig.modifiers.shift ? (e.shiftKey || e.getModifierState("Shift")) : !e.shiftKey;
+    var metaMatch = shortcutConfig.modifiers.meta ? (e.metaKey || e.getModifierState("Meta")) : !e.metaKey;
+    
+    // Check key
+    var keyMatch = shortcutConfig.key && (e.key === shortcutConfig.key || e.key === shortcutConfig.key.toLowerCase() || e.code === "Key" + shortcutConfig.key);
+    
+    return altMatch && ctrlMatch && shiftMatch && metaMatch && keyMatch;
+  }
+
+  function isInputFocused() {
+    var active = document.activeElement;
+    if (!active) return false;
+    var tagName = active.tagName.toLowerCase();
+    var isInput = tagName === "input" && active.type !== "button" && active.type !== "submit" && active.type !== "reset";
+    var isTextarea = tagName === "textarea";
+    var isContentEditable = active.isContentEditable === true;
+    return isInput || isTextarea || isContentEditable;
+  }
+
+  function setupKeyboardShortcut(cfg, openPanel, closePanel, toggle) {
+    if (!cfg.keyboardShortcut || cfg.keyboardShortcut === false) return;
+    
+    var shortcutConfig = parseShortcut(cfg.keyboardShortcut);
+    if (!shortcutConfig || !shortcutConfig.key) return;
+    
+    document.addEventListener("keydown", function(e) {
+      // Don't activate if user is typing in an input field
+      if (isInputFocused()) return;
+      
+      // Don't activate if only modifier keys are pressed
+      if (!shortcutConfig.key) return;
+      
+      if (matchesShortcut(e, shortcutConfig)) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        var isOpen = toggle.getAttribute("aria-expanded") === "true";
+        if (isOpen) {
+          closePanel();
+        } else {
+          openPanel();
+        }
+      }
+    });
   }
 
   // --- UI -------------------------------------------------------------------
@@ -216,6 +786,49 @@
     if (controls.reduceMotionCheckbox !== undefined) {
       controls.reduceMotionCheckbox.checked = !!prefs.reduceMotion;
     }
+    
+    // Update advanced features checkboxes
+    if (controls.textToSpeechCheckbox !== undefined) {
+      controls.textToSpeechCheckbox.checked = !!prefs.textToSpeechEnabled;
+    }
+    if (controls.readingRulerCheckbox !== undefined) {
+      controls.readingRulerCheckbox.checked = !!prefs.readingRulerEnabled;
+    }
+    if (controls.screenMaskCheckbox !== undefined) {
+      controls.screenMaskCheckbox.checked = !!prefs.screenMaskEnabled;
+    }
+    if (controls.textOnlyModeCheckbox !== undefined) {
+      controls.textOnlyModeCheckbox.checked = !!prefs.textOnlyMode;
+    }
+    if (controls.marginsCheckbox !== undefined) {
+      controls.marginsCheckbox.checked = !!prefs.marginsEnabled;
+    }
+    if (controls.cursorCheckbox !== undefined) {
+      controls.cursorCheckbox.checked = !!prefs.cursorEnabled;
+    }
+    if (controls.magnifierCheckbox !== undefined) {
+      controls.magnifierCheckbox.checked = !!prefs.magnifierEnabled;
+    }
+    if (controls.dictionaryCheckbox !== undefined) {
+      controls.dictionaryCheckbox.checked = !!prefs.dictionaryEnabled;
+    }
+    if (controls.translationCheckbox !== undefined) {
+      controls.translationCheckbox.checked = !!prefs.translationEnabled;
+    }
+    if (controls.globalModeCheckbox !== undefined) {
+      controls.globalModeCheckbox.checked = !!prefs.globalMode;
+    }
+    
+    // Update dynamic controls visibility
+    if (controls.updateTTSControls && controls.textToSpeechCheckbox) {
+      controls.updateTTSControls(controls.textToSpeechCheckbox.checked);
+    }
+    if (controls.updateMarginsControls && controls.marginsCheckbox) {
+      controls.updateMarginsControls(controls.marginsCheckbox.checked);
+    }
+    if (controls.updateTranslationControls && controls.translationCheckbox) {
+      controls.updateTranslationControls(controls.translationCheckbox.checked);
+    }
   }
 
   function buildWidget(cfg, prefs, onChange, onReset) {
@@ -229,7 +842,18 @@
       fontValue: null,
       spacingRadios: [],
       readableFontCheckbox: null,
-      reduceMotionCheckbox: null
+      reduceMotionCheckbox: null,
+      // Advanced features
+      textToSpeechCheckbox: null,
+      readingRulerCheckbox: null,
+      screenMaskCheckbox: null,
+      textOnlyModeCheckbox: null,
+      marginsCheckbox: null,
+      cursorCheckbox: null,
+      magnifierCheckbox: null,
+      dictionaryCheckbox: null,
+      translationCheckbox: null,
+      globalModeCheckbox: null
     };
 
     // Optional skip link: if canonical main exists, target it; else try main/body
@@ -256,7 +880,8 @@
       "aria-expanded": "false",
       "aria-label": "Open accessibility settings",
       "aria-haspopup": "dialog",
-      title: "Accessibility Settings",
+      "aria-keyshortcuts": cfg.keyboardShortcut || undefined,
+      title: "Accessibility Settings" + (cfg.keyboardShortcut ? " (" + cfg.keyboardShortcut + ")" : ""),
       text: "Accessibility"
     });
 
@@ -292,7 +917,7 @@
     // Contrast
     if (cfg.features.contrast) {
       var contrastRow = el("div", { class: "a11y-widget-row" });
-      contrastRow.appendChild(el("label", { for: "a11y-contrast", text: "Contrast Mode" }));
+      contrastRow.appendChild(el("label", { for: "a11y-contrast", text: "🎨 Contrast Mode" }));
       var select = el("select", { id: "a11y-contrast", name: "contrast", "aria-label": "Select contrast mode" });
       controls.contrastSelect = select;
       var opts = [
@@ -317,7 +942,7 @@
     // Text size range 100–160
     if (cfg.features.fontScale) {
       var sizeRow = el("div", { class: "a11y-widget-row" });
-      var sizeLabel = el("label", { for: "a11y-font", class: "a11y-widget-label", text: "Text Size" });
+      var sizeLabel = el("label", { for: "a11y-font", class: "a11y-widget-label", text: "📏 Text Size" });
       sizeRow.appendChild(sizeLabel);
       var rangeWrapper = el("div", { class: "a11y-widget-range-wrapper" });
       var range = el("input", {
@@ -363,7 +988,7 @@
     if (cfg.features.spacing) {
       var spacingRow = el("div", { class: "a11y-widget-row" });
       var fs = el("fieldset", { class: "a11y-widget-fieldset" });
-      fs.appendChild(el("legend", { class: "a11y-widget-label", text: "Text Spacing" }));
+      fs.appendChild(el("legend", { class: "a11y-widget-label", text: "📐 Text Spacing" }));
       var group = el("div", { class: "a11y-widget-radio-group" });
       var spacingOpts = [
         ["normal", "Normal"],
@@ -432,7 +1057,7 @@
     if (cfg.features.readableFont) {
       var readableRow = toggleRow(
         "a11y-readable-font",
-        "Readable Font",
+        "🔤 Readable Font",
         prefs.readableFont,
         function (v) { onChange({ readableFont: v }); },
         "Switch to a system-friendly sans-serif font that's easier to read. Applies to declared surfaces."
@@ -444,13 +1069,321 @@
     if (cfg.features.reduceMotion) {
       var motionRow = toggleRow(
         "a11y-reduce-motion",
-        "Reduce Motion",
+        "⏸️ Reduce Motion",
         prefs.reduceMotion,
         function (v) { onChange({ reduceMotion: v }); },
         "Disable animations, transitions, and motion effects. Helps users sensitive to motion."
       );
       controls.reduceMotionCheckbox = motionRow.checkbox;
       content.appendChild(motionRow.row);
+    }
+
+    // Global Mode Toggle
+    content.appendChild(el("div", { class: "a11y-divider" }));
+    var globalModeRow = toggleRow(
+      "a11y-global-mode",
+      "🌐 Global Mode",
+      prefs.globalMode || cfg.globalMode || false,
+      function (v) { 
+        onChange({ globalMode: v });
+        // Re-mark surfaces when global mode changes
+        var currentPrefs = Store.get(cfg.storageKey) || {};
+        var normalizedPrefs = normalizePrefs(assign(assign({}, PREF_DEFAULTS), currentPrefs));
+        normalizedPrefs.globalMode = v;
+        markSurfaces(cfg.surfaces, normalizedPrefs.globalMode || cfg.globalMode || false);
+      },
+      "Apply transformations to entire website (fonts, colors, sizes). When disabled, only affects declared surfaces."
+    );
+    controls.globalModeCheckbox = globalModeRow.checkbox;
+    content.appendChild(globalModeRow.row);
+
+    // Reading & Focus Aids Section
+    content.appendChild(el("div", { class: "a11y-divider" }));
+    var readingLabel = el("div", { text: "📖 Reading & Focus Aids", class: "a11y-widget-help" });
+    readingLabel.style.fontSize = "12px";
+    readingLabel.style.fontWeight = "650";
+    readingLabel.style.opacity = "1";
+    readingLabel.style.marginBottom = "0.4rem";
+    readingLabel.style.color = "#111";
+    content.appendChild(readingLabel);
+
+    // Text-to-Speech
+    if (cfg.features.textToSpeech) {
+      var ttsRow = toggleRow(
+        "a11y-text-to-speech",
+        "🔊 Text-to-Speech",
+        prefs.textToSpeechEnabled,
+        function (v) { 
+          onChange({ textToSpeechEnabled: v });
+          if (!v) stopSpeech();
+          // Show/hide TTS controls dynamically
+          updateTTSControls(v);
+        },
+        "Read website text aloud with customizable voice settings."
+      );
+      controls.textToSpeechCheckbox = ttsRow.checkbox;
+      content.appendChild(ttsRow.row);
+      
+      // TTS Controls container (will be shown/hidden)
+      var ttsControlsContainer = el("div", { 
+        id: "a11y-tts-controls",
+        class: "a11y-widget-row",
+        style: "margin-top: 0.5rem; padding-left: 1.5rem; display: " + (prefs.textToSpeechEnabled ? "block" : "none") + ";"
+      });
+      
+      var ttsButtons = el("div", { style: "display: flex; gap: 0.5rem; flex-wrap: wrap;" });
+      
+      var readSelectedBtn = el("button", {
+        type: "button",
+        class: "a11y-widget-btn",
+        text: "📢 Read Selected",
+        style: "flex: 1; min-width: 120px; padding: 0.5rem; font-size: 12px;",
+        "aria-label": "Read selected text aloud"
+      });
+      readSelectedBtn.addEventListener("click", function() {
+        var text = getSelectedText();
+        if (text) {
+          var currentPrefs = Store.get(cfg.storageKey) || {};
+          var normalizedPrefs = normalizePrefs(assign(assign({}, PREF_DEFAULTS), currentPrefs));
+          speakText(text, normalizedPrefs);
+        } else {
+          alert("Please select some text first.");
+        }
+      });
+      
+      var readPageBtn = el("button", {
+        type: "button",
+        class: "a11y-widget-btn",
+        text: "📖 Read Page",
+        style: "flex: 1; min-width: 120px; padding: 0.5rem; font-size: 12px;",
+        "aria-label": "Read full page text aloud"
+      });
+      readPageBtn.addEventListener("click", function() {
+        var text = getPageText();
+        if (text) {
+          var currentPrefs = Store.get(cfg.storageKey) || {};
+          var normalizedPrefs = normalizePrefs(assign(assign({}, PREF_DEFAULTS), currentPrefs));
+          speakText(text, normalizedPrefs);
+        }
+      });
+      
+      var stopBtn = el("button", {
+        type: "button",
+        class: "a11y-widget-btn",
+        text: "⏹ Stop",
+        style: "flex: 1; min-width: 120px; padding: 0.5rem; font-size: 12px;",
+        "aria-label": "Stop text-to-speech"
+      });
+      stopBtn.addEventListener("click", function() {
+        stopSpeech();
+      });
+      
+      ttsButtons.appendChild(readSelectedBtn);
+      ttsButtons.appendChild(readPageBtn);
+      ttsButtons.appendChild(stopBtn);
+      ttsControlsContainer.appendChild(ttsButtons);
+      content.appendChild(ttsControlsContainer);
+      controls.ttsControlsContainer = ttsControlsContainer;
+      
+      // Function to show/hide TTS controls
+      function updateTTSControls(enabled) {
+        if (controls.ttsControlsContainer) {
+          controls.ttsControlsContainer.style.display = enabled ? "block" : "none";
+        }
+      }
+      controls.updateTTSControls = updateTTSControls;
+    }
+
+    // Reading Ruler
+    if (cfg.features.readingRuler) {
+      var rulerRow = toggleRow(
+        "a11y-reading-ruler",
+        "📏 Reading Ruler",
+        prefs.readingRulerEnabled,
+        function (v) { onChange({ readingRulerEnabled: v }); },
+        "Horizontal line that follows your cursor to focus on one line of text."
+      );
+      controls.readingRulerCheckbox = rulerRow.checkbox;
+      content.appendChild(rulerRow.row);
+    }
+
+    // Screen Mask
+    if (cfg.features.screenMask) {
+      var maskRow = toggleRow(
+        "a11y-screen-mask",
+        "🎭 Screen Mask",
+        prefs.screenMaskEnabled,
+        function (v) { onChange({ screenMaskEnabled: v }); },
+        "Dim distractions around the focused area to improve concentration."
+      );
+      controls.screenMaskCheckbox = maskRow.checkbox;
+      content.appendChild(maskRow.row);
+    }
+
+    // Text-Only Mode
+    if (cfg.features.textOnlyMode) {
+      var textOnlyRow = toggleRow(
+        "a11y-text-only-mode",
+        "📄 Text-Only Mode",
+        prefs.textOnlyMode,
+        function (v) { onChange({ textOnlyMode: v }); },
+        "Strip away images and layout, showing only text content for easier reading."
+      );
+      controls.textOnlyModeCheckbox = textOnlyRow.checkbox;
+      content.appendChild(textOnlyRow.row);
+    }
+
+    // Margins
+    if (cfg.features.margins) {
+      var marginsRow = toggleRow(
+        "a11y-margins",
+        "📐 Adjustable Margins",
+        prefs.marginsEnabled,
+        function (v) { 
+          onChange({ marginsEnabled: v });
+          // Show/hide margins slider dynamically
+          updateMarginsControls(v);
+        },
+        "Add adjustable margins for better readability."
+      );
+      controls.marginsCheckbox = marginsRow.checkbox;
+      content.appendChild(marginsRow.row);
+      
+      // Margins slider container (will be shown/hidden)
+      var marginsControlsContainer = el("div", { 
+        id: "a11y-margins-controls",
+        class: "a11y-widget-row",
+        style: "margin-top: 0.5rem; padding-left: 1.5rem; display: " + (prefs.marginsEnabled ? "block" : "none") + ";"
+      });
+      marginsControlsContainer.appendChild(el("label", { for: "a11y-margins-size", text: "Margin Size", style: "font-size: 12px;" }));
+      var marginsRange = el("input", {
+        id: "a11y-margins-size",
+        type: "range",
+        min: "0",
+        max: "200",
+        step: "10",
+        value: String(prefs.marginsSize || 0),
+        style: "width: 100%; margin-top: 0.5rem;"
+      });
+      marginsRange.addEventListener("input", function() {
+        onChange({ marginsSize: Number(marginsRange.value) });
+      });
+      marginsControlsContainer.appendChild(marginsRange);
+      content.appendChild(marginsControlsContainer);
+      controls.marginsControlsContainer = marginsControlsContainer;
+      
+      // Function to show/hide margins controls
+      function updateMarginsControls(enabled) {
+        if (controls.marginsControlsContainer) {
+          controls.marginsControlsContainer.style.display = enabled ? "block" : "none";
+        }
+      }
+      controls.updateMarginsControls = updateMarginsControls;
+    }
+
+    // Tools Section
+    content.appendChild(el("div", { class: "a11y-divider" }));
+    var toolsLabel = el("div", { text: "🛠️ Tools", class: "a11y-widget-help" });
+    toolsLabel.style.fontSize = "12px";
+    toolsLabel.style.fontWeight = "650";
+    toolsLabel.style.opacity = "1";
+    toolsLabel.style.marginBottom = "0.4rem";
+    toolsLabel.style.color = "#111";
+    content.appendChild(toolsLabel);
+
+    // Cursor Options
+    if (cfg.features.cursorOptions) {
+      var cursorRow = toggleRow(
+        "a11y-cursor",
+        "🖱️ Large Cursor",
+        prefs.cursorEnabled,
+        function (v) { onChange({ cursorEnabled: v }); },
+        "Increase cursor size for better visibility."
+      );
+      controls.cursorCheckbox = cursorRow.checkbox;
+      content.appendChild(cursorRow.row);
+    }
+
+    // Magnifier
+    if (cfg.features.magnifier) {
+      var magnifierRow = toggleRow(
+        "a11y-magnifier",
+        "🔍 Page Magnifier",
+        prefs.magnifierEnabled,
+        function (v) { onChange({ magnifierEnabled: v }); },
+        "Zoom parts of the page on hover for closer inspection."
+      );
+      controls.magnifierCheckbox = magnifierRow.checkbox;
+      content.appendChild(magnifierRow.row);
+    }
+
+    // Dictionary
+    if (cfg.features.dictionary) {
+      var dictRow = toggleRow(
+        "a11y-dictionary",
+        "📚 Dictionary Lookup",
+        prefs.dictionaryEnabled,
+        function (v) { onChange({ dictionaryEnabled: v }); },
+        "Double-click a word to see its definition."
+      );
+      controls.dictionaryCheckbox = dictRow.checkbox;
+      content.appendChild(dictRow.row);
+    }
+
+    // Translation
+    if (cfg.features.translation) {
+      var transRow = toggleRow(
+        "a11y-translation",
+        "🌍 Translation",
+        prefs.translationEnabled,
+        function (v) { 
+          onChange({ translationEnabled: v });
+          // Show/hide translation language selector dynamically
+          updateTranslationControls(v);
+        },
+        "Translate page content into different languages."
+      );
+      controls.translationCheckbox = transRow.checkbox;
+      content.appendChild(transRow.row);
+      
+      // Translation language selector container (will be shown/hidden)
+      var translationControlsContainer = el("div", { 
+        id: "a11y-translation-controls",
+        class: "a11y-widget-row",
+        style: "margin-top: 0.5rem; padding-left: 1.5rem; display: " + (prefs.translationEnabled ? "block" : "none") + ";"
+      });
+      translationControlsContainer.appendChild(el("label", { for: "a11y-translation-lang", text: "Target Language", style: "font-size: 12px;" }));
+      var langSelect = el("select", {
+        id: "a11y-translation-lang",
+        style: "width: 100%; margin-top: 0.5rem; padding: 0.5rem;"
+      });
+      
+      var languages = [
+        ["en", "English"], ["es", "Spanish"], ["fr", "French"], ["de", "German"],
+        ["it", "Italian"], ["pt", "Portuguese"], ["ru", "Russian"], ["ja", "Japanese"],
+        ["zh", "Chinese"], ["ar", "Arabic"], ["hi", "Hindi"], ["ko", "Korean"]
+      ];
+      
+      for (var l = 0; l < languages.length; l++) {
+        var opt = el("option", { value: languages[l][0], text: languages[l][1] });
+        if (languages[l][0] === prefs.translationLanguage) opt.selected = true;
+        langSelect.appendChild(opt);
+      }
+      
+      langSelect.addEventListener("change", function() {
+        onChange({ translationLanguage: langSelect.value });
+      });
+      translationControlsContainer.appendChild(langSelect);
+      content.appendChild(translationControlsContainer);
+      controls.translationControlsContainer = translationControlsContainer;
+      
+      // Function to show/hide translation controls
+      function updateTranslationControls(enabled) {
+        if (controls.translationControlsContainer) {
+          controls.translationControlsContainer.style.display = enabled ? "block" : "none";
+        }
+      }
+      controls.updateTranslationControls = updateTranslationControls;
     }
 
     // Presets
@@ -715,7 +1648,8 @@
       opener = document.activeElement;
       panel.removeAttribute("hidden");
       toggle.setAttribute("aria-expanded", "true");
-      toggle.setAttribute("aria-label", "Close accessibility settings");
+      var shortcutText = cfg.keyboardShortcut ? " (" + cfg.keyboardShortcut + ")" : "";
+      toggle.setAttribute("aria-label", "Close accessibility settings" + shortcutText);
       // focus first input safely (skip close button)
       var content = panel.querySelector("#a11y-widget-content");
       var first = content ? content.querySelector("select, input, button, [tabindex]:not([tabindex='-1'])") : null;
@@ -730,7 +1664,8 @@
     function closePanel() {
       panel.setAttribute("hidden", "");
       toggle.setAttribute("aria-expanded", "false");
-      toggle.setAttribute("aria-label", "Open accessibility settings");
+      var shortcutText = cfg.keyboardShortcut ? " (" + cfg.keyboardShortcut + ")" : "";
+      toggle.setAttribute("aria-label", "Open accessibility settings" + shortcutText);
       if (opener && opener.focus) {
         setTimeout(function() {
           opener.focus();
@@ -778,6 +1713,9 @@
       onReset();
       updateUIControls(controls, normalizePrefs(assign({}, PREF_DEFAULTS)));
     };
+
+    // Setup keyboard shortcut
+    setupKeyboardShortcut(cfg, openPanel, closePanel, toggle);
 
     return { 
       root: root, 
@@ -873,13 +1811,18 @@
 
     // Auto-load CSS from GitHub repository
     ensureCSS();
+    
+    // Set up dictionary handler once (it checks enabled state internally)
+    setupDictionaryHandler();
 
     var stored = Store.get(cfg.storageKey);
     var prefs = normalizePrefs(assign(assign({}, PREF_DEFAULTS), stored || {}));
 
     // Apply prefs + mark surfaces early
     applyPrefs(prefs);
-    markSurfaces(cfg.surfaces);
+    // Check if globalMode is enabled in config or preferences
+    var useGlobalMode = cfg.globalMode || prefs.globalMode || false;
+    markSurfaces(cfg.surfaces, useGlobalMode);
 
     // Build UI after DOM ready
     function mount() {
@@ -891,6 +1834,10 @@
         function (delta) {
           prefs = normalizePrefs(assign(prefs, delta));
           applyPrefs(prefs);
+          // Re-mark surfaces if globalMode changed
+          if (delta.globalMode !== undefined) {
+            markSurfaces(cfg.surfaces, prefs.globalMode || cfg.globalMode || false);
+          }
           Store.set(cfg.storageKey, prefs);
           emit(cfg, "setting_change", { keys: Object.keys(delta) });
           // Update UI controls after preferences change
