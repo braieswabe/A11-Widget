@@ -335,10 +335,16 @@ html[data-a11y][data-a11y-contrast="light"] [data-a11y-surface="true"]{
 }
 
 .a11y-widget-presets{
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: 0.4rem;
   margin-top: 0.4rem;
+}
+
+@media (max-width: 480px) {
+  .a11y-widget-presets {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Make preset section label more prominent */

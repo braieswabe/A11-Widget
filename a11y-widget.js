@@ -411,37 +411,93 @@
       presetRow.appendChild(presetLabel);
       var presets = el("div", { class: "a11y-widget-presets" });
 
+      // Low Vision Preset - Based on WCAG and accessibility best practices
+      // Recommended: High contrast, 150% text size, comfortable spacing, readable font
       var lowVision = el("button", { 
         type: "button", 
         class: "a11y-widget-btn", 
-        text: "🔍 Low vision",
-        "aria-label": "Apply low vision preset: high contrast, larger text (140%), comfortable spacing"
+        text: "🔍 Low Vision",
+        "aria-label": "Apply low vision preset: high contrast mode, 150% text size, comfortable spacing, readable font, reduced motion"
       });
       lowVision.addEventListener("click", function () {
-        onChange({ contrast: "high", fontScale: 1.4, spacing: "comfortable" });
+        onChange({ 
+          contrast: "high", 
+          fontScale: 1.5,  // 150% - WCAG recommended for low vision
+          spacing: "comfortable", 
+          readableFont: true,
+          reduceMotion: true
+        });
       });
+      
+      // Dyslexia-Friendly Preset - Based on dyslexia research and best practices
+      // Recommended: Readable font, max spacing, slightly larger text (120%), reduced motion
+      // Note: High contrast can worsen dyslexia, so we use default contrast
       var dyslexia = el("button", { 
         type: "button", 
         class: "a11y-widget-btn", 
-        text: "📖 Dyslexia-friendly",
-        "aria-label": "Apply dyslexia-friendly preset: readable font, comfortable spacing, reduced motion"
+        text: "📖 Dyslexia-Friendly",
+        "aria-label": "Apply dyslexia-friendly preset: readable sans-serif font, maximum spacing, 120% text size, reduced motion"
       });
       dyslexia.addEventListener("click", function () {
-        onChange({ readableFont: true, spacing: "comfortable", reduceMotion: true });
+        onChange({ 
+          readableFont: true, 
+          spacing: "max",  // Maximum spacing helps with letter/word recognition
+          fontScale: 1.2,  // 120% - slightly larger helps without being too large
+          reduceMotion: true,
+          contrast: "default"  // High contrast can worsen dyslexia
+        });
       });
+      
+      // Reduced Motion Preset - WCAG 2.1 SC 2.3.3 (Animation from Interactions)
+      // Recommended: Disable all motion, comfortable spacing for reading flow
       var motion = el("button", { 
         type: "button", 
         class: "a11y-widget-btn", 
-        text: "⏸️ Reduced motion",
-        "aria-label": "Apply reduced motion preset: disable animations and transitions"
+        text: "⏸️ Reduced Motion",
+        "aria-label": "Apply reduced motion preset: disable animations and transitions, comfortable spacing"
       });
       motion.addEventListener("click", function () {
-        onChange({ reduceMotion: true });
+        onChange({ 
+          reduceMotion: true,
+          spacing: "comfortable"  // Helps maintain reading flow
+        });
+      });
+      
+      // High Contrast Preset - WCAG 2.1 SC 1.4.3 (Contrast Minimum)
+      // Recommended: High contrast mode for better visibility
+      var highContrast = el("button", { 
+        type: "button", 
+        class: "a11y-widget-btn", 
+        text: "🎨 High Contrast",
+        "aria-label": "Apply high contrast preset: enhanced color contrast for better visibility"
+      });
+      highContrast.addEventListener("click", function () {
+        onChange({ 
+          contrast: "high"
+        });
+      });
+      
+      // Large Text Preset - WCAG 2.1 SC 1.4.4 (Resize Text)
+      // Recommended: 150% text size with comfortable spacing
+      var largeText = el("button", { 
+        type: "button", 
+        class: "a11y-widget-btn", 
+        text: "🔤 Large Text",
+        "aria-label": "Apply large text preset: 150% text size with comfortable spacing"
+      });
+      largeText.addEventListener("click", function () {
+        onChange({ 
+          fontScale: 1.5,  // 150% - WCAG recommended
+          spacing: "comfortable",
+          readableFont: true
+        });
       });
 
       presets.appendChild(lowVision);
       presets.appendChild(dyslexia);
       presets.appendChild(motion);
+      presets.appendChild(highContrast);
+      presets.appendChild(largeText);
       presetRow.appendChild(presets);
       content.appendChild(presetRow);
     }
