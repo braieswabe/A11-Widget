@@ -16,6 +16,30 @@
   var GITHUB_RAW_BASE = "https://raw.githubusercontent.com/" + GITHUB_REPO + "/" + GITHUB_BRANCH + "/";
   var LOADER_VERSION = "1.3"; // Increment this when loader logic changes
   var LOADER_VERSION_KEY = "__a11y_loader_version";
+  var WIDGET_VERSION_KEY = "__a11y_widget_version";
+  var LAST_UPDATE_CHECK_KEY = "__a11y_widget_last_check";
+  
+  // Debug logging helper (works in production) - defined early so it's available everywhere
+  function debugLog(location, message, data, hypothesisId) {
+    try {
+      var logs = JSON.parse(localStorage.getItem('__a11y_debug_logs') || '[]');
+      logs.push({location: location, message: message, data: data, timestamp: Date.now(), hypothesisId: hypothesisId});
+      // Keep only last 100 logs
+      if (logs.length > 100) logs = logs.slice(-100);
+      localStorage.setItem('__a11y_debug_logs', JSON.stringify(logs));
+      console.log('[A11Y Debug]', location, message, data);
+    } catch(e) {
+      // Fallback to console only if localStorage fails
+      console.log('[A11Y Debug]', location, message, data, '(localStorage failed:', e.message + ')');
+    }
+  }
+  
+  // Log immediately that loader script is executing
+  try {
+    debugLog('a11y-widget-loader.js:start', 'Loader script file loaded and executing', {LOADER_VERSION: LOADER_VERSION, timestamp: Date.now()}, 'C');
+  } catch(e) {
+    console.log('[A11Y] Loader script executing, version:', LOADER_VERSION);
+  }
   
   // IMMEDIATE: Check if this loader script is outdated and force reload
   // This runs BEFORE any other code to catch cached loader scripts
@@ -79,30 +103,6 @@
   // Exit if loader needs to be reloaded
   if (shouldExit) {
     return;
-  }
-  var WIDGET_VERSION_KEY = "__a11y_widget_version";
-  var LAST_UPDATE_CHECK_KEY = "__a11y_widget_last_check";
-  
-  // Debug logging helper (works in production) - defined early
-  function debugLog(location, message, data, hypothesisId) {
-    try {
-      var logs = JSON.parse(localStorage.getItem('__a11y_debug_logs') || '[]');
-      logs.push({location: location, message: message, data: data, timestamp: Date.now(), hypothesisId: hypothesisId});
-      // Keep only last 100 logs
-      if (logs.length > 100) logs = logs.slice(-100);
-      localStorage.setItem('__a11y_debug_logs', JSON.stringify(logs));
-      console.log('[A11Y Debug]', location, message, data);
-    } catch(e) {
-      // Fallback to console only if localStorage fails
-      console.log('[A11Y Debug]', location, message, data, '(localStorage failed:', e.message + ')');
-    }
-  }
-  
-  // Log immediately that loader script is executing
-  try {
-    debugLog('a11y-widget-loader.js:start', 'Loader script file loaded and executing', {LOADER_VERSION: LOADER_VERSION, timestamp: Date.now()}, 'C');
-  } catch(e) {
-    console.log('[A11Y] Loader script executing, version:', LOADER_VERSION);
   }
   
   // Check for widget version updates by fetching version from GitHub
