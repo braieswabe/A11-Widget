@@ -58,16 +58,33 @@ export default function Layout({ children }: LayoutProps) {
       loaderScript.onload = () => {
         // Wait for widget to initialize (loader loads CSS/JS, then widget initializes)
         let attempts = 0
-        const maxAttempts = 50 // 5 seconds max
+        const maxAttempts = 60 // 6 seconds max (widget needs time to load CSS/JS and initialize)
         
         const checkWidget = setInterval(() => {
           attempts++
+          
+          // Check if widget is loaded
           if (window.__a11yWidget?.__loaded) {
             setWidgetLoaded(true)
             clearInterval(checkWidget)
-          } else if (attempts >= maxAttempts) {
+            return
+          }
+          
+          // Also check if widget button exists in DOM (widget might be loaded but __loaded flag not set yet)
+          if (document.getElementById('a11y-widget-toggle') || document.getElementById('a11y-widget-root')) {
+            setWidgetLoaded(true)
             clearInterval(checkWidget)
-            setWidgetError('Widget failed to initialize after loading script')
+            return
+          }
+          
+          // Timeout check
+          if (attempts >= maxAttempts) {
+            clearInterval(checkWidget)
+            // Check one more time before showing error
+            if (!window.__a11yWidget?.__loaded && !document.getElementById('a11y-widget-toggle')) {
+              setWidgetError('Widget failed to initialize. Check browser console for errors.')
+              console.error('Widget initialization timeout. Check if CSS/JS loaded correctly.')
+            }
           }
         }, 100)
       }
