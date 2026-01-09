@@ -1,0 +1,25 @@
+{
+  "name": "a11y-widget-v1",
+  "version": "1.0.0",
+  "description": "Accessibility Widget v1 - WCAG 2.1 AA-aligned support layer",
+  "type": "module",
+  "main": "a11y-widget.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^0.9.0"
+  },
+  "engines": {
+    "node": ">=18.x"
+  },
+  "keywords": [
+    "accessibility",
+    "a11y",
+    "wcag",
+    "widget"
+  ],
+  "author": "",
+  "license": "MIT"
+}
+

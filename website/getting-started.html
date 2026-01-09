@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Get started with Accessibility Widget v1 - Installation guide and quick start instructions.">
+  <title>Getting Started — Accessibility Widget v1</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="../a11y-widget.css">
+  <script>
+    window.__A11Y_WIDGET__ = {
+      siteId: "docs-site",
+      position: "right",
+      surfaces: ["body", "main"],
+      enableTelemetry: false
+    };
+  </script>
+  <script src="../a11y-widget.js" defer></script>
+</head>
+<body>
+  <header class="header">
+    <nav class="nav">
+      <a href="index.html" class="nav-logo">Accessibility Widget v1</a>
+      <button class="mobile-menu-toggle" aria-label="Toggle menu" aria-expanded="false">☰</button>
+      <ul class="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="getting-started.html">Getting Started</a></li>
+        <li><a href="tutorials.html">Tutorials</a></li>
+        <li><a href="examples.html">Examples</a></li>
+        <li><a href="download.html">Download</a></li>
+        <li><a href="docs.html">Documentation</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <section class="section">
+      <div class="container container-narrow">
+        <h1>Getting Started</h1>
+        <p>Install the Accessibility Widget v1 on your website in minutes. Choose the installation method that works best for your setup.</p>
+
+        <h2>Installation Methods</h2>
+
+        <div class="card" style="margin-bottom: 2rem;">
+          <h3>Method 1: Canonical Installation (Recommended)</h3>
+          <p>Add the widget code to your HTML <code>&lt;head&gt;</code> or before <code>&lt;/body&gt;</code>:</p>
+          <div class="code-block">
+            <button class="code-block-copy" aria-label="Copy code">Copy</button>
+            <pre><code>&lt;link rel="stylesheet" href="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.css" /&gt;
+&lt;script&gt;
+  window.__A11Y_WIDGET__ = {
+    siteId: "YOUR_SITE_ID",
+    position: "right",
+    surfaces: ["body"],
+    enableTelemetry: false
+  };
+&lt;/script&gt;
+&lt;script src="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.js" defer&gt;&lt;/script&gt;</code></pre>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom: 2rem;">
+          <h3>Method 2: CSP-Friendly Installation</h3>
+          <p>If your Content Security Policy blocks inline scripts, use data attributes:</p>
+          <div class="code-block">
+            <button class="code-block-copy" aria-label="Copy code">Copy</button>
+            <pre><code>&lt;link rel="stylesheet" href="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.css" /&gt;
+&lt;script
+  src="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.js"
+  data-site-id="YOUR_SITE_ID"
+  data-position="right"
+  data-surfaces="body"
+  defer
+&gt;&lt;/script&gt;</code></pre>
+          </div>
+        </div>
+
+        <h2>Configuration</h2>
+
+        <div class="card">
+          <h3>Basic Configuration</h3>
+          <p>The widget accepts these configuration options:</p>
+          <div class="code-block">
+            <button class="code-block-copy" aria-label="Copy code">Copy</button>
+            <pre><code>window.__A11Y_WIDGET__ = {
+  siteId: "your-site-id",        // Required: Site identifier
+  position: "right",              // Widget position: "left" or "right"
+  surfaces: ["body"],            // CSS selectors for surfaces to transform
+  enableTelemetry: false,        // Enable telemetry events
+  zIndex: 2147483000,            // Widget z-index
+  initialOpen: false,            // Open widget on page load
+  features: {                    // Feature flags
+    contrast: true,
+    fontScale: true,
+    spacing: true,
+    reduceMotion: true,
+    readableFont: true,
+    presets: true,
+    reset: true,
+    skipLink: true
+  }
+};</code></pre>
+          </div>
+        </div>
+
+        <h2>Surface Scoping</h2>
+        <p>The widget only applies transforms to elements you declare in the <code>surfaces</code> array. Those elements will receive the <code>data-a11y-surface="true"</code> attribute.</p>
+
+        <div class="card">
+          <h3>Example: Multiple Surfaces</h3>
+          <div class="code-block">
+            <button class="code-block-copy" aria-label="Copy code">Copy</button>
+            <pre><code>surfaces: [
+  "body",                              // All body content
+  "main",                              // Main content area
+  ".content",                          // Content wrapper class
+  "[data-canonical-surface='true']"    // Custom attribute
+]</code></pre>
+          </div>
+        </div>
+
+        <h2>Quick Test</h2>
+        <p>Test the widget locally with this simple HTML:</p>
+        <div class="code-block">
+          <button class="code-block-copy" aria-label="Copy code">Copy</button>
+          <pre><code>&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+  &lt;meta charset="UTF-8"&gt;
+  &lt;title>Test Page&lt;/title&gt;
+  &lt;link rel="stylesheet" href="a11y-widget.css" /&gt;
+  &lt;script&gt;
+    window.__A11Y_WIDGET__ = {
+      siteId: "test",
+      surfaces: ["body"]
+    };
+  &lt;/script&gt;
+  &lt;script src="a11y-widget.js" defer&gt;&lt;/script&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;h1&gt;Test Page&lt;/h1&gt;
+  &lt;p&gt;Try the accessibility widget!&lt;/p&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+        </div>
+
+        <div class="download-box">
+          <h3>Ready-to-Use Example</h3>
+          <p>Download a complete HTML file with the widget pre-installed and sample content.</p>
+          <a href="download.html" class="btn btn-primary download-button">Download Example HTML</a>
+        </div>
+
+        <h2>Next Steps</h2>
+        <div class="card-grid">
+          <div class="card">
+            <h3>Platform-Specific Guides</h3>
+            <p>Installation instructions for WordPress, Next.js, React, Shopify, and more.</p>
+            <a href="tutorials.html" class="btn btn-secondary">View Tutorials</a>
+          </div>
+          <div class="card">
+            <h3>Examples & Demos</h3>
+            <p>See the widget in action with live examples and use cases.</p>
+            <a href="examples.html" class="btn btn-secondary">View Examples</a>
+          </div>
+          <div class="card">
+            <h3>Full Documentation</h3>
+            <p>Complete API reference, configuration options, and developer guide.</p>
+            <a href="docs.html" class="btn btn-secondary">View Docs</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-links">
+        <a href="getting-started.html">Getting Started</a>
+        <a href="tutorials.html">Tutorials</a>
+        <a href="examples.html">Examples</a>
+        <a href="download.html">Download</a>
+        <a href="docs.html">Documentation</a>
+      </div>
+      <p>Accessibility Widget v1 — WCAG 2.1 AA-aligned enhancements for supported surfaces only.</p>
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>
+

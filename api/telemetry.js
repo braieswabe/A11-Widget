@@ -1,0 +1,37 @@
+import { neon } from '@neondatabase/serverless';
+
+export default async function handler(req, res) {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  const { siteId, event, payload, url, userAgent } = req.body;
+
+  // Validate (no PII)
+  if (!siteId || !event) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  const validEvents = ['widget_open', 'setting_change', 'reset', 'widget_close'];
+  if (!validEvents.includes(event)) {
+    return res.status(400).json({ error: 'Invalid event type' });
+  }
+
+  try {
+    const sql = neon(process.env.NEON_DATABASE_URL);
+    await sql`
+      INSERT INTO telemetry_events (site_id, event_type, event_data, url, user_agent)
+      VALUES (${siteId}, ${event}, ${JSON.stringify(payload || {})}, ${url || null}, ${userAgent || null})
+    `;
+    return res.status(201).json({ success: true });
+  } catch (error) {
+    console.error('Telemetry error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+}
+

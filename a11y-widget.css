@@ -1,0 +1,266 @@
+/* a11y-widget.css — Accessibility Widget v1
+   Scoped styles: only under #a11y-widget-root, plus optional surface selectors you configure.
+   No host DOM rewriting. No global resets.
+*/
+
+/* 1) Preference variables live on html[data-a11y] (preferred) */
+html[data-a11y]{
+  --a11y-font-scale: 1;
+  --a11y-line-height: 1.4;
+  --a11y-letter-spacing: 0;
+  --a11y-word-spacing: 0;
+  --a11y-paragraph-spacing: 0.75em;
+  --a11y-contrast-mode: default; /* default|high|dark|light */
+  --a11y-readable-font: 0; /* 0|1 */
+  --a11y-reduce-motion: 0; /* 0|1 */
+}
+
+/* 2) Apply transforms ONLY to configured surfaces (JS adds data-a11y-surface="true") */
+[data-a11y-surface="true"]{
+  font-size: calc(1rem * var(--a11y-font-scale));
+  line-height: var(--a11y-line-height);
+}
+
+/* Target common reading/content elements only (avoid changing container sizing/layout) */
+[data-a11y-surface="true"] p,
+[data-a11y-surface="true"] li,
+[data-a11y-surface="true"] a,
+[data-a11y-surface="true"] button,
+[data-a11y-surface="true"] input,
+[data-a11y-surface="true"] select,
+[data-a11y-surface="true"] textarea,
+[data-a11y-surface="true"] label,
+[data-a11y-surface="true"] h1,
+[data-a11y-surface="true"] h2,
+[data-a11y-surface="true"] h3,
+[data-a11y-surface="true"] h4,
+[data-a11y-surface="true"] h5,
+[data-a11y-surface="true"] h6{
+  font-size: inherit;
+  line-height: inherit;
+}
+
+/* Spacing presets: JS sets data-a11y-spacing */
+html[data-a11y][data-a11y-spacing="normal"]{
+  --a11y-line-height: 1.4;
+  --a11y-letter-spacing: 0;
+  --a11y-word-spacing: 0;
+  --a11y-paragraph-spacing: 0.75em;
+}
+html[data-a11y][data-a11y-spacing="comfortable"]{
+  --a11y-line-height: 1.7;
+  --a11y-letter-spacing: 0.02em;
+  --a11y-word-spacing: 0.06em;
+  --a11y-paragraph-spacing: 1em;
+}
+html[data-a11y][data-a11y-spacing="max"]{
+  --a11y-line-height: 2.0;
+  --a11y-letter-spacing: 0.05em;
+  --a11y-word-spacing: 0.12em;
+  --a11y-paragraph-spacing: 1.25em;
+}
+
+[data-a11y-surface="true"] p{
+  margin-bottom: var(--a11y-paragraph-spacing);
+  letter-spacing: var(--a11y-letter-spacing);
+  word-spacing: var(--a11y-word-spacing);
+}
+
+/* Readable font toggle — keep it system-safe */
+html[data-a11y][data-a11y-readable-font="1"] [data-a11y-surface="true"]{
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Noto Sans", "Liberation Sans", sans-serif;
+}
+
+/* Reduce motion: only touches our surfaces + widget */
+html[data-a11y][data-a11y-reduce-motion="1"] *{
+  scroll-behavior: auto !important;
+}
+html[data-a11y][data-a11y-reduce-motion="1"] [data-a11y-surface="true"] *,
+html[data-a11y][data-a11y-reduce-motion="1"] #a11y-widget-root *{
+  transition: none !important;
+  animation: none !important;
+}
+
+/* Contrast modes: applied ONLY to our surfaces by setting data-a11y-contrast on html */
+html[data-a11y][data-a11y-contrast="default"]{}
+html[data-a11y][data-a11y-contrast="high"] [data-a11y-surface="true"],
+html[data-a11y][data-a11y-contrast="high"] #a11y-widget-root{
+  filter: contrast(1.25);
+}
+html[data-a11y][data-a11y-contrast="dark"] [data-a11y-surface="true"]{
+  background: #0b0b0b;
+  color: #f3f3f3;
+}
+html[data-a11y][data-a11y-contrast="dark"] [data-a11y-surface="true"] a{
+  color: #9ad1ff;
+}
+html[data-a11y][data-a11y-contrast="light"] [data-a11y-surface="true"]{
+  background: #ffffff;
+  color: #111111;
+}
+
+/* 3) Widget UI (scoped) */
+#a11y-widget-root{
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 2147483000;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Noto Sans", "Liberation Sans", sans-serif;
+  color: #111;
+}
+
+/* Respect left position */
+#a11y-widget-root[data-position="left"]{
+  left: 1rem;
+  right: auto;
+}
+
+#a11y-widget-toggle{
+  border: 0;
+  border-radius: 999px;
+  padding: 0.7rem 0.9rem;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  background: #111;
+  color: #fff;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.20);
+}
+#a11y-widget-toggle:focus-visible{
+  outline: 3px solid #fff;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px #111, 0 8px 24px rgba(0,0,0,0.20);
+}
+
+/* Panel */
+#a11y-widget-panel{
+  margin-top: 0.75rem;
+  width: min(340px, calc(100vw - 2rem));
+  border-radius: 16px;
+  background: #fff;
+  border: 1px solid rgba(0,0,0,0.12);
+  box-shadow: 0 14px 40px rgba(0,0,0,0.25);
+  padding: 0.9rem;
+}
+
+/* Mobile responsiveness: ensure no horizontal scroll at 320px */
+@media (max-width: 320px) {
+  #a11y-widget-panel{
+    width: calc(100vw - 1rem);
+    padding: 0.7rem;
+  }
+  #a11y-widget-toggle{
+    padding: 0.6rem 0.8rem;
+    font-size: 13px;
+  }
+}
+
+#a11y-widget-panel[hidden]{
+  display: none !important;
+}
+
+#a11y-widget-header{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+#a11y-widget-title{
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
+}
+#a11y-widget-close{
+  border: 1px solid rgba(0,0,0,0.18);
+  border-radius: 10px;
+  padding: 0.35rem 0.5rem;
+  background: #fff;
+  cursor: pointer;
+}
+#a11y-widget-close:focus-visible{
+  outline: 3px solid #111;
+  outline-offset: 2px;
+}
+
+.a11y-widget-row{
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.35rem;
+  margin-bottom: 0.85rem;
+}
+
+.a11y-widget-row label,
+.a11y-widget-row legend{
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.a11y-widget-help{
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+.a11y-widget-field{
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+#a11y-widget-panel input[type="range"]{
+  width: 100%;
+}
+
+.a11y-widget-btn{
+  border: 1px solid rgba(0,0,0,0.18);
+  border-radius: 12px;
+  padding: 0.55rem 0.7rem;
+  background: #fff;
+  cursor: pointer;
+}
+.a11y-widget-btn:focus-visible{
+  outline: 3px solid #111;
+  outline-offset: 2px;
+}
+
+.a11y-widget-presets{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.a11y-divider{
+  height: 1px;
+  background: rgba(0,0,0,0.12);
+  margin: 0.7rem 0;
+}
+
+/* Skip link (only visible on focus) */
+#a11y-skip-link{
+  position: absolute;
+  left: -9999px;
+  top: -9999px;
+  padding: 0.6rem 0.8rem;
+  background: #111;
+  color: #fff;
+  border-radius: 10px;
+  text-decoration: none;
+}
+#a11y-skip-link:focus{
+  left: 0;
+  top: -3.2rem; /* above toggle */
+}
+
+/* Dark contrast mode for widget itself */
+html[data-a11y][data-a11y-contrast="dark"] #a11y-widget-panel{
+  background: #151515;
+  color: #f3f3f3;
+  border-color: rgba(255,255,255,0.15);
+}
+html[data-a11y][data-a11y-contrast="dark"] #a11y-widget-close,
+html[data-a11y][data-a11y-contrast="dark"] .a11y-widget-btn{
+  background: #151515;
+  color: #f3f3f3;
+  border-color: rgba(255,255,255,0.20);
+}
