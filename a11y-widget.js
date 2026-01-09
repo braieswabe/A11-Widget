@@ -669,13 +669,16 @@
     var link = document.createElement("link");
     link.id = "a11y-widget-stylesheet";
     link.rel = "stylesheet";
+    // Use raw GitHub URL for immediate updates (no CDN caching delay)
     // Add cache-busting to ensure fresh loads when GitHub updates
-    link.href = CDN_BASE + "a11y-widget.css?v=" + new Date().getTime();
+    var timestamp = Math.floor(Date.now() / 1000); // Use seconds for better cache busting
+    var rawUrl = "https://raw.githubusercontent.com/" + GITHUB_REPO + "/" + GITHUB_BRANCH + "/a11y-widget.css?t=" + timestamp;
+    link.href = rawUrl;
     link.crossOrigin = "anonymous";
     
-    // Fallback to GitHub raw if jsDelivr fails
+    // Fallback to jsDelivr CDN if raw GitHub fails
     link.onerror = function() {
-      link.href = "https://raw.githubusercontent.com/" + GITHUB_REPO + "/" + GITHUB_BRANCH + "/a11y-widget.css?v=" + new Date().getTime();
+      link.href = CDN_BASE + "a11y-widget.css?t=" + timestamp;
     };
     
     document.head.appendChild(link);
