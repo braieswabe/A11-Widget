@@ -9,9 +9,20 @@
 */
 // Immediate console log to verify script is loading
 // This runs BEFORE the IIFE, so it executes even if there's an error later
+// CRITICAL: If you don't see this message, the loader script is cached/old
 try {
-  console.log('[A11Y Loader] Script file loaded - v1.3 -', new Date().toISOString());
-  console.log('[A11Y Loader] Script source:', (document.currentScript && document.currentScript.src) || 'unknown');
+  console.log('[A11Y Loader] ✅ Script file loaded - v1.3 -', new Date().toISOString());
+  var scriptSrc = 'unknown';
+  try {
+    if (document.currentScript && document.currentScript.src) {
+      scriptSrc = document.currentScript.src;
+    } else {
+      var scripts = document.querySelectorAll('script[src*="a11y-widget-loader.js"]');
+      if (scripts.length > 0) scriptSrc = scripts[scripts.length - 1].src;
+    }
+  } catch(e) {}
+  console.log('[A11Y Loader] Script source:', scriptSrc);
+  console.log('[A11Y Loader] If you see this, the loader script v1.3 is executing');
 } catch(e) {
   console.log('[A11Y Loader] Script file parsed but error logging:', e);
 }
