@@ -66,7 +66,10 @@ out
 
 # Gatsby
 .cache
-public
+# public (but allow website/public/downloads)
+website/public/*
+!website/public/downloads/
+!website/public/downloads/**
 
 # Storybook build outputs
 .out

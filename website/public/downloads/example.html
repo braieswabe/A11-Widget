@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Accessibility Widget v1 — Example Page</title>
+  
+  <!-- 
+    Accessibility Widget v1 — Example Page
+    This file demonstrates the widget installed and working.
+    
+    To use this example:
+    1. Ensure a11y-widget.js and a11y-widget.css are in the same directory
+    2. Or update the paths below to point to your CDN
+    3. Open this file in a web browser
+  -->
+  
+  <!-- Widget CSS -->
+  <link rel="stylesheet" href="../a11y-widget.css" />
+  <!-- For CDN: <link rel="stylesheet" href="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.css" /> -->
+  
+  <!-- Widget Configuration -->
+  <script>
+    window.__A11Y_WIDGET__ = {
+      siteId: "example-site",
+      position: "right",              // Widget position: "left" or "right"
+      surfaces: ["body", "main"],     // CSS selectors for surfaces to transform
+      enableTelemetry: false,         // Set to true if you have telemetry endpoint
+      // telemetryEndpoint: "/api/telemetry",  // Uncomment if using telemetry
+      zIndex: 2147483000,             // Widget z-index (default is very high)
+      initialOpen: false,             // Set to true to open widget on page load
+      features: {                    // Feature flags (all enabled by default)
+        contrast: true,
+        fontScale: true,
+        spacing: true,
+        reduceMotion: true,
+        readableFont: true,
+        presets: true,
+        reset: true,
+        skipLink: true
+      }
+    };
+  </script>
+  
+  <!-- Widget Script -->
+  <script src="../a11y-widget.js" defer></script>
+  <!-- For CDN: <script src="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.js" defer></script> -->
+  
+  <style>
+    /* Basic page styles */
+    body {
+      font-family: Georgia, serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 2rem;
+      line-height: 1.6;
+      color: #333;
+      background: #f9f9f9;
+    }
+    
+    main {
+      background: white;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    h1 {
+      color: #222;
+      border-bottom: 3px solid #007bff;
+      padding-bottom: 0.5rem;
+    }
+    
+    h2 {
+      color: #444;
+      margin-top: 2rem;
+    }
+    
+    .intro {
+      background: #e7f3ff;
+      padding: 1rem;
+      border-left: 4px solid #007bff;
+      border-radius: 4px;
+      margin: 2rem 0;
+    }
+    
+    .feature-list {
+      background: #f5f5f5;
+      padding: 1.5rem;
+      border-radius: 8px;
+      margin: 1.5rem 0;
+    }
+    
+    .feature-list ul {
+      margin: 0.5rem 0;
+    }
+    
+    form {
+      background: #fafafa;
+      padding: 1.5rem;
+      border-radius: 8px;
+      margin: 1.5rem 0;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+    }
+    
+    input, textarea {
+      width: 100%;
+      padding: 0.75rem;
+      margin-bottom: 1rem;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: inherit;
+    }
+    
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 4px;
+      font-size: 1rem;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    
+    button:hover {
+      background: #0056b3;
+    }
+    
+    button:focus-visible {
+      outline: 3px solid #007bff;
+      outline-offset: 2px;
+    }
+    
+    code {
+      background: #f4f4f4;
+      padding: 0.2em 0.4em;
+      border-radius: 3px;
+      font-family: "Courier New", monospace;
+      font-size: 0.9em;
+    }
+    
+    pre {
+      background: #f4f4f4;
+      padding: 1rem;
+      border-radius: 4px;
+      overflow-x: auto;
+    }
+    
+    .note {
+      background: #fff3cd;
+      border-left: 4px solid #ffc107;
+      padding: 1rem;
+      border-radius: 4px;
+      margin: 1.5rem 0;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Accessibility Widget v1 — Example Page</h1>
+    
+    <div class="intro">
+      <p><strong>Welcome!</strong> This page demonstrates the Accessibility Widget v1 in action.</p>
+      <p>Look for the accessibility widget button in the top-right corner. Click it to adjust:</p>
+      <ul>
+        <li>Contrast modes (Default, High contrast, Dark, Light)</li>
+        <li>Text size (100% to 160%)</li>
+        <li>Text spacing (Normal, Comfortable, Max)</li>
+        <li>Readable font toggle</li>
+        <li>Reduce motion toggle</li>
+      </ul>
+      <p>All settings persist across page reloads!</p>
+    </div>
+    
+    <h2>Sample Content</h2>
+    <p>This is a paragraph of text that will receive accessibility transforms when you adjust the widget settings. The text size, spacing, and contrast can all be customized to improve readability.</p>
+    
+    <p>Here's another paragraph with more content to demonstrate how the widget affects longer blocks of text. Notice how the spacing and font size adjustments make the content easier to read.</p>
+    
+    <h2>Lists</h2>
+    <p>Here are some example lists:</p>
+    
+    <h3>Unordered List</h3>
+    <ul>
+      <li>First item in the list</li>
+      <li>Second item with more text to show how spacing affects readability</li>
+      <li>Third item</li>
+      <li>Fourth item with even more content to demonstrate the widget's text spacing features</li>
+    </ul>
+    
+    <h3>Ordered List</h3>
+    <ol>
+      <li>Step one in a process</li>
+      <li>Step two with additional details</li>
+      <li>Step three</li>
+    </ol>
+    
+    <h2>Form Elements</h2>
+    <p>Form elements also receive accessibility transforms:</p>
+    
+    <form>
+      <label for="name">Name:</label>
+      <input type="text" id="name" name="name" placeholder="Enter your name" />
+      
+      <label for="email">Email:</label>
+      <input type="email" id="email" name="email" placeholder="Enter your email" />
+      
+      <label for="message">Message:</label>
+      <textarea id="message" name="message" rows="4" placeholder="Enter your message"></textarea>
+      
+      <button type="submit">Submit Form</button>
+    </form>
+    
+    <h2>Links</h2>
+    <p>Here are some example links: <a href="#top">Link to top</a>, <a href="#content">Link to content</a>, and <a href="https://example.com">External link</a>.</p>
+    
+    <h2>Code Examples</h2>
+    <p>Code blocks demonstrate how the widget affects technical content:</p>
+    
+    <pre><code>function example() {
+  console.log("This is a code example");
+  return true;
+}</code></pre>
+    
+    <div class="feature-list">
+      <h3>Widget Features</h3>
+      <ul>
+        <li><strong>Contrast Modes:</strong> Choose from Default, High contrast, Dark, or Light themes</li>
+        <li><strong>Text Scaling:</strong> Adjust text size from 100% to 160%</li>
+        <li><strong>Text Spacing:</strong> Normal, Comfortable, or Max spacing options</li>
+        <li><strong>Readable Font:</strong> Toggle system-friendly sans-serif font</li>
+        <li><strong>Reduce Motion:</strong> Disable animations and transitions</li>
+        <li><strong>Presets:</strong> Quick access to Low vision, Dyslexia-friendly, and Reduced motion presets</li>
+        <li><strong>Reset:</strong> Return all settings to defaults</li>
+      </ul>
+    </div>
+    
+    <div class="note">
+      <p><strong>Note:</strong> This example uses local file paths. For production use, update the paths to point to your CDN:</p>
+      <pre><code>&lt;link rel="stylesheet" href="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.css" /&gt;
+&lt;script src="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.js" defer&gt;&lt;/script&gt;</code></pre>
+    </div>
+    
+    <h2>Testing the Widget</h2>
+    <p>Try these actions to test the widget:</p>
+    <ol>
+      <li>Click the widget button in the top-right corner</li>
+      <li>Change the contrast mode and observe the color changes</li>
+      <li>Adjust the text size slider and see how content scales</li>
+      <li>Try different spacing presets (Normal, Comfortable, Max)</li>
+      <li>Enable "Readable font" to see the font change</li>
+      <li>Try the preset buttons (Low vision, Dyslexia-friendly, Reduced motion)</li>
+      <li>Reload the page — your settings should persist!</li>
+      <li>Click "Reset settings" to return to defaults</li>
+    </ol>
+    
+    <p style="margin-top: 3rem; padding-top: 2rem; border-top: 1px solid #ddd; text-align: center; color: #666;">
+      This is an example page for Accessibility Widget v1.<br>
+      For more information, visit the <a href="../index.html">documentation website</a>.
+    </p>
+  </main>
+</body>
+</html>
+

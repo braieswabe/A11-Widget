@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# Keep public/downloads for downloadable files
+!public/downloads/
+!public/downloads/**
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
