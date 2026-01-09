@@ -262,7 +262,10 @@
       el("button", { id: "a11y-widget-close", type: "button", "aria-label": "Close accessibility settings", text: "✕" })
     ]);
 
+    var content = el("div", { id: "a11y-widget-content" });
+
     panel.appendChild(header);
+    panel.appendChild(content);
 
     // Contrast
     if (cfg.features.contrast) {
@@ -286,7 +289,7 @@
       });
       contrastRow.appendChild(select);
       contrastRow.appendChild(el("div", { class: "a11y-widget-help", text: "Adjust color contrast for better visibility. Applies to widget and declared surfaces." }));
-      panel.appendChild(contrastRow);
+      content.appendChild(contrastRow);
     }
 
     // Text size range 100–160
@@ -317,7 +320,7 @@
       sizeRow.appendChild(range);
       sizeRow.appendChild(val);
       sizeRow.appendChild(el("div", { class: "a11y-widget-help", text: "Scale text from 100% (normal) to 160% (large) for better readability." }));
-      panel.appendChild(sizeRow);
+      content.appendChild(sizeRow);
     }
 
     // Spacing preset radios
@@ -346,7 +349,7 @@
       fs.appendChild(group);
       spacingRow.appendChild(fs);
       spacingRow.appendChild(el("div", { class: "a11y-widget-help", text: "Adjust line height, letter spacing, word spacing, and paragraph spacing for easier reading." }));
-      panel.appendChild(spacingRow);
+      content.appendChild(spacingRow);
     }
 
     // Toggles (native checkbox)
@@ -372,7 +375,7 @@
         "Switch to a system-friendly sans-serif font that's easier to read. Applies to declared surfaces."
       );
       controls.readableFontCheckbox = readableRow.checkbox;
-      panel.appendChild(readableRow.row);
+      content.appendChild(readableRow.row);
     }
 
     if (cfg.features.reduceMotion) {
@@ -384,18 +387,18 @@
         "Disable animations, transitions, and motion effects. Helps users sensitive to motion."
       );
       controls.reduceMotionCheckbox = motionRow.checkbox;
-      panel.appendChild(motionRow.row);
+      content.appendChild(motionRow.row);
     }
 
     // Presets
     if (cfg.features.presets) {
-      panel.appendChild(el("div", { class: "a11y-divider" }));
+      content.appendChild(el("div", { class: "a11y-divider" }));
       var presetRow = el("div", { class: "a11y-widget-row" });
       var presetLabel = el("div", { text: "Quick Presets", class: "a11y-widget-help" });
-      presetLabel.style.fontSize = "13px";
+      presetLabel.style.fontSize = "12px";
       presetLabel.style.fontWeight = "650";
       presetLabel.style.opacity = "1";
-      presetLabel.style.marginBottom = "0.5rem";
+      presetLabel.style.marginBottom = "0.4rem";
       presetLabel.style.color = "#111";
       presetRow.appendChild(presetLabel);
       var presets = el("div", { class: "a11y-widget-presets" });
@@ -432,12 +435,12 @@
       presets.appendChild(dyslexia);
       presets.appendChild(motion);
       presetRow.appendChild(presets);
-      panel.appendChild(presetRow);
+      content.appendChild(presetRow);
     }
 
     // Reset
     if (cfg.features.reset) {
-      panel.appendChild(el("div", { class: "a11y-divider" }));
+      content.appendChild(el("div", { class: "a11y-divider" }));
       var resetRow = el("div", { class: "a11y-widget-row" });
       var resetBtn = el("button", { 
         type: "button", 
@@ -446,11 +449,12 @@
         "aria-label": "Reset all accessibility settings to default values"
       });
       resetBtn.style.width = "100%";
-      resetBtn.style.marginTop = "0.5rem";
+      resetBtn.style.marginTop = "0.3rem";
+      resetBtn.style.padding = "0.6rem 0.75rem";
       resetBtn.addEventListener("click", function () { onReset(); });
       resetRow.appendChild(resetBtn);
       resetRow.appendChild(el("div", { class: "a11y-widget-help", text: "Restore all settings to their default values." }));
-      panel.appendChild(resetRow);
+      content.appendChild(resetRow);
     }
 
     // Open/close behaviour
@@ -459,8 +463,9 @@
       opener = document.activeElement;
       panel.removeAttribute("hidden");
       toggle.setAttribute("aria-expanded", "true");
-      // focus first input safely
-      var first = panel.querySelector("select, input, button, [tabindex]:not([tabindex='-1'])");
+      // focus first input safely (skip close button)
+      var content = panel.querySelector("#a11y-widget-content");
+      var first = content ? content.querySelector("select, input, button, [tabindex]:not([tabindex='-1'])") : null;
       if (first) first.focus();
       emit(cfg, "widget_open", {});
     }
