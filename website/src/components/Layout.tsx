@@ -13,8 +13,8 @@ export default function Layout({ children }: LayoutProps) {
   const [widgetError, setWidgetError] = useState<string | null>(null)
 
   useEffect(() => {
-    // Load widget from GitHub with cache-busting for immediate updates
-    // Uses raw GitHub URL to bypass CDN caching and ensure fresh loads
+    // Load widget from GitHub CDN with cache-busting for updates
+    // Uses jsDelivr CDN as primary (more reliable than raw GitHub)
     const loadWidget = () => {
       // Check if widget is already loaded
       if (window.__a11yWidget?.__loaded) {
@@ -23,29 +23,9 @@ export default function Layout({ children }: LayoutProps) {
       }
 
       // Check if loader script already exists
-      if (document.getElementById('a11y-widget-loader')) {
-        // Wait a bit for widget to initialize
-        setTimeout(() => {
-          if (window.__a11yWidget?.__loaded) {
-            setWidgetLoaded(true)
-          }
-        }, 500)
-        return
-      }
-
-      // Create loader script with cache-busting
-      const loaderScript = document.createElement('script')
-      loaderScript.id = 'a11y-widget-loader'
-      
-      // Use raw GitHub URL with cache-busting for immediate updates
-      const timestamp = Math.floor(Date.now() / 1000)
-      const loaderUrl = `https://raw.githubusercontent.com/braieswabe/A11-Widget/main/a11y-widget-loader.js?v=${timestamp}`
-      loaderScript.src = loaderUrl
-      loaderScript.defer = true
-      
-      // Track loading state
-      loaderScript.onload = () => {
-        // Wait for widget to initialize
+      const existingLoader = document.getElementById('a11y-widget-loader')
+      if (existingLoader) {
+        // Script already loading, wait for widget to initialize
         const checkWidget = setInterval(() => {
           if (window.__a11yWidget?.__loaded) {
             setWidgetLoaded(true)
@@ -53,27 +33,65 @@ export default function Layout({ children }: LayoutProps) {
           }
         }, 100)
         
-        // Timeout after 3 seconds
+        // Timeout after 5 seconds
         setTimeout(() => {
           clearInterval(checkWidget)
           if (!window.__a11yWidget?.__loaded) {
-            setWidgetError('Widget failed to initialize')
+            setWidgetError('Widget initialization timeout')
           }
-        }, 3000)
+        }, 5000)
+        return
+      }
+
+      // Create loader script with cache-busting
+      const loaderScript = document.createElement('script')
+      loaderScript.id = 'a11y-widget-loader'
+      
+      // Use jsDelivr CDN with cache-busting (more reliable than raw GitHub)
+      const timestamp = Math.floor(Date.now() / 1000)
+      const loaderUrl = `https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js?v=${timestamp}`
+      loaderScript.src = loaderUrl
+      loaderScript.defer = true
+      loaderScript.async = false // Ensure proper loading order
+      
+      // Track loading state
+      loaderScript.onload = () => {
+        // Wait for widget to initialize (loader loads CSS/JS, then widget initializes)
+        let attempts = 0
+        const maxAttempts = 50 // 5 seconds max
+        
+        const checkWidget = setInterval(() => {
+          attempts++
+          if (window.__a11yWidget?.__loaded) {
+            setWidgetLoaded(true)
+            clearInterval(checkWidget)
+          } else if (attempts >= maxAttempts) {
+            clearInterval(checkWidget)
+            setWidgetError('Widget failed to initialize after loading script')
+          }
+        }, 100)
       }
       
       loaderScript.onerror = () => {
-        // Fallback to jsDelivr CDN if raw GitHub fails
-        loaderScript.src = `https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js?v=${timestamp}`
-        loaderScript.onerror = () => {
-          setWidgetError('Failed to load accessibility widget')
-        }
+        setWidgetError('Failed to load widget loader script')
+        console.error('Failed to load accessibility widget loader from:', loaderUrl)
       }
       
-      document.head.appendChild(loaderScript)
+      // Insert script before first script or append to head
+      const firstScript = document.getElementsByTagName('script')[0]
+      if (firstScript?.parentNode) {
+        firstScript.parentNode.insertBefore(loaderScript, firstScript)
+      } else {
+        document.head.appendChild(loaderScript)
+      }
     }
 
-    loadWidget()
+    // Load widget after a small delay to ensure DOM is ready
+    const timer = setTimeout(() => {
+      loadWidget()
+    }, 100)
+
+    return () => clearTimeout(timer)
   }, [])
 
   const toggleMobileMenu = () => {
@@ -109,8 +127,8 @@ export default function Layout({ children }: LayoutProps) {
         {children}
       </main>
 
-      {/* Widget Loading Status (Development/Debug) - Only show in development */}
-      {import.meta.env.DEV && (
+      {/* Widget Loading Status - Show in development, or if there's an error in production */}
+      {(import.meta.env.DEV || widgetError) && (
         <div className="widget-status" style={{
           position: 'fixed',
           bottom: '1rem',
@@ -122,7 +140,8 @@ export default function Layout({ children }: LayoutProps) {
           fontSize: '12px',
           zIndex: 9999,
           fontFamily: 'system-ui, -apple-system, sans-serif',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+          maxWidth: '300px'
         }}>
           {widgetError ? (
             <>⚠️ Widget Error: {widgetError}</>
