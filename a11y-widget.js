@@ -263,14 +263,25 @@
     var panel = el("div", {
       id: "a11y-widget-panel",
       role: "dialog",
-      "aria-modal": "false",
+      "aria-modal": "true",
       "aria-labelledby": "a11y-widget-title",
+      "aria-describedby": "a11y-widget-description",
       hidden: ""
     });
 
     var header = el("div", { id: "a11y-widget-header" }, [
-      el("h2", { id: "a11y-widget-title", text: "Accessibility settings" }),
-      el("button", { id: "a11y-widget-close", type: "button", "aria-label": "Close accessibility settings", text: "✕" })
+      el("div", { style: "flex: 1;" }, [
+        el("h2", { id: "a11y-widget-title", text: "Accessibility Settings" }),
+        el("p", { id: "a11y-widget-description", style: "font-size: 12px; margin: 0.25rem 0 0 0; opacity: 0.7;", text: "Customize your viewing experience" })
+      ]),
+      el("button", { 
+        id: "a11y-widget-close", 
+        type: "button", 
+        "aria-label": "Close accessibility settings dialog",
+        "aria-keyshortcuts": "Escape",
+        title: "Close (Esc)",
+        text: "✕" 
+      })
     ]);
 
     var content = el("div", { id: "a11y-widget-content" });
@@ -306,10 +317,13 @@
     // Text size range 100–160
     if (cfg.features.fontScale) {
       var sizeRow = el("div", { class: "a11y-widget-row" });
-      sizeRow.appendChild(el("label", { for: "a11y-font", text: "Text Size" }));
+      var sizeLabel = el("label", { for: "a11y-font", class: "a11y-widget-label", text: "Text Size" });
+      sizeRow.appendChild(sizeLabel);
+      var rangeWrapper = el("div", { class: "a11y-widget-range-wrapper" });
       var range = el("input", {
         id: "a11y-font",
         type: "range",
+        class: "a11y-widget-range",
         min: "1",
         max: "1.6",
         step: "0.1",
@@ -317,10 +331,16 @@
         "aria-valuemin": "100",
         "aria-valuemax": "160",
         "aria-valuenow": String(Math.round(prefs.fontScale * 100)),
-        "aria-label": "Text size slider: adjust from 100% to 160%"
+        "aria-describedby": "a11y-font-help a11y-font-val"
       });
       controls.fontRange = range;
-      var val = el("div", { class: "a11y-widget-help", id: "a11y-font-val", text: Math.round(prefs.fontScale * 100) + "%", style: "font-weight: 600; color: #111;" });
+      var val = el("div", { 
+        class: "a11y-widget-font-value", 
+        id: "a11y-font-val", 
+        text: Math.round(prefs.fontScale * 100) + "%",
+        "aria-live": "polite",
+        "aria-atomic": "true"
+      });
       controls.fontValue = val;
       range.addEventListener("input", function () {
         var v = clamp(Number(range.value), 1.0, 1.6);
@@ -328,18 +348,23 @@
         val.textContent = Math.round(v * 100) + "%";
         onChange({ fontScale: v });
       });
-      sizeRow.appendChild(range);
-      sizeRow.appendChild(val);
-      sizeRow.appendChild(el("div", { class: "a11y-widget-help", text: "Scale text from 100% (normal) to 160% (large) for better readability." }));
+      rangeWrapper.appendChild(range);
+      rangeWrapper.appendChild(val);
+      sizeRow.appendChild(rangeWrapper);
+      sizeRow.appendChild(el("div", { 
+        id: "a11y-font-help",
+        class: "a11y-widget-help", 
+        text: "Scale text from 100% (normal) to 160% (large) for better readability." 
+      }));
       content.appendChild(sizeRow);
     }
 
     // Spacing preset radios
     if (cfg.features.spacing) {
       var spacingRow = el("div", { class: "a11y-widget-row" });
-      var fs = el("fieldset", {});
-      fs.appendChild(el("legend", { text: "Text spacing" }));
-      var group = el("div", { class: "a11y-widget-field" });
+      var fs = el("fieldset", { class: "a11y-widget-fieldset" });
+      fs.appendChild(el("legend", { class: "a11y-widget-label", text: "Text Spacing" }));
+      var group = el("div", { class: "a11y-widget-radio-group" });
       var spacingOpts = [
         ["normal", "Normal"],
         ["comfortable", "Comfortable"],
@@ -347,33 +372,60 @@
       ];
       for (var s = 0; s < spacingOpts.length; s++) {
         var id = "a11y-spacing-" + spacingOpts[s][0];
-        var r = el("input", { id: id, type: "radio", name: "a11y-spacing", value: spacingOpts[s][0] });
+        var radioWrapper = el("div", { class: "a11y-widget-radio-wrapper" });
+        var r = el("input", { 
+          id: id, 
+          type: "radio", 
+          name: "a11y-spacing", 
+          value: spacingOpts[s][0],
+          class: "a11y-widget-radio"
+        });
         if (prefs.spacing === spacingOpts[s][0]) r.checked = true;
         controls.spacingRadios.push(r);
         r.addEventListener("change", function (ev) {
           if (ev.target && ev.target.checked) onChange({ spacing: ev.target.value });
         });
-        var l = el("label", { for: id, text: spacingOpts[s][1] });
-        group.appendChild(r);
-        group.appendChild(l);
+        var l = el("label", { for: id, class: "a11y-widget-radio-label", text: spacingOpts[s][1] });
+        radioWrapper.appendChild(r);
+        radioWrapper.appendChild(l);
+        group.appendChild(radioWrapper);
       }
       fs.appendChild(group);
       spacingRow.appendChild(fs);
-      spacingRow.appendChild(el("div", { class: "a11y-widget-help", text: "Adjust line height, letter spacing, word spacing, and paragraph spacing for easier reading." }));
+      spacingRow.appendChild(el("div", { 
+        class: "a11y-widget-help", 
+        text: "Adjust line height, letter spacing, word spacing, and paragraph spacing for easier reading." 
+      }));
       content.appendChild(spacingRow);
     }
 
     // Toggles (native checkbox)
     function toggleRow(id, labelText, checked, onToggle, help) {
       var row = el("div", { class: "a11y-widget-row" });
-      var wrap = el("div", { class: "a11y-widget-field" });
-      var cb = el("input", { id: id, type: "checkbox" });
+      var wrap = el("div", { class: "a11y-widget-checkbox-wrapper" });
+      var cb = el("input", { 
+        id: id, 
+        type: "checkbox", 
+        class: "a11y-widget-checkbox",
+        "aria-describedby": help ? id + "-help" : undefined
+      });
       cb.checked = checked;
       cb.addEventListener("change", function () { onToggle(cb.checked); });
+      var label = el("label", { 
+        for: id, 
+        class: "a11y-widget-checkbox-label",
+        text: labelText 
+      });
       wrap.appendChild(cb);
-      wrap.appendChild(el("label", { for: id, text: labelText }));
+      wrap.appendChild(label);
       row.appendChild(wrap);
-      if (help) row.appendChild(el("div", { class: "a11y-widget-help", text: help }));
+      if (help) {
+        row.appendChild(el("div", { 
+          id: id + "-help",
+          class: "a11y-widget-help", 
+          text: help 
+        }));
+      }
       return { row: row, checkbox: cb };
     }
 
@@ -418,7 +470,7 @@
       // Recommended: High contrast, 150% text size, comfortable spacing, readable font
       var lowVision = el("button", { 
         type: "button", 
-        class: "a11y-widget-btn", 
+        class: "a11y-widget-preset-btn", 
         text: "🔍 Low Vision",
         "aria-label": "Apply low vision preset: high contrast mode, 150% text size, comfortable spacing, readable font, reduced motion"
       });
@@ -437,7 +489,7 @@
       // Note: High contrast can worsen dyslexia, so we use default contrast
       var dyslexia = el("button", { 
         type: "button", 
-        class: "a11y-widget-btn", 
+        class: "a11y-widget-preset-btn", 
         text: "📖 Dyslexia-Friendly",
         "aria-label": "Apply dyslexia-friendly preset: readable sans-serif font, maximum spacing, 120% text size, reduced motion"
       });
@@ -455,7 +507,7 @@
       // Recommended: Disable all motion, comfortable spacing for reading flow
       var motion = el("button", { 
         type: "button", 
-        class: "a11y-widget-btn", 
+        class: "a11y-widget-preset-btn", 
         text: "⏸️ Reduced Motion",
         "aria-label": "Apply reduced motion preset: disable animations and transitions, comfortable spacing"
       });
@@ -470,7 +522,7 @@
       // Recommended: High contrast mode for better visibility
       var highContrast = el("button", { 
         type: "button", 
-        class: "a11y-widget-btn", 
+        class: "a11y-widget-preset-btn", 
         text: "🎨 High Contrast",
         "aria-label": "Apply high contrast preset: enhanced color contrast for better visibility"
       });
@@ -484,7 +536,7 @@
       // Recommended: 150% text size with comfortable spacing
       var largeText = el("button", { 
         type: "button", 
-        class: "a11y-widget-btn", 
+        class: "a11y-widget-preset-btn", 
         text: "🔤 Large Text",
         "aria-label": "Apply large text preset: 150% text size with comfortable spacing"
       });
@@ -500,7 +552,7 @@
       // Recommended: 160% text size for severe vision impairments
       var extraLargeText = el("button", { 
         type: "button", 
-        class: "a11y-widget-btn", 
+        class: "a11y-widget-preset-btn", 
         text: "🔠 Extra Large",
         "aria-label": "Apply extra large text preset: 160% text size with maximum spacing for severe vision impairments"
       });
@@ -517,7 +569,7 @@
       // Recommended: Dark contrast mode with comfortable settings
       var darkTheme = el("button", { 
         type: "button", 
-        class: "a11y-widget-btn", 
+        class: "a11y-widget-preset-btn", 
         text: "🌙 Dark Theme",
         "aria-label": "Apply dark theme preset: dark contrast mode with comfortable spacing and readable font"
       });
@@ -534,7 +586,7 @@
       // Recommended: Comfortable spacing, readable font, reduced motion
       var readingMode = el("button", { 
         type: "button", 
-        class: "a11y-widget-btn", 
+        class: "a11y-widget-preset-btn", 
         text: "📚 Reading Mode",
         "aria-label": "Apply reading mode preset: optimized spacing, readable font, reduced motion for better reading comprehension"
       });
@@ -551,7 +603,7 @@
       // Recommended: Reduced motion, comfortable spacing, readable font
       var focusMode = el("button", { 
         type: "button", 
-        class: "a11y-widget-btn", 
+        class: "a11y-widget-preset-btn", 
         text: "🎯 Focus Mode",
         "aria-label": "Apply focus mode preset: reduced motion and comfortable spacing to minimize distractions"
       });
@@ -567,7 +619,7 @@
       // Recommended: High contrast mode with readable font
       var colorBlindFriendly = el("button", { 
         type: "button", 
-        class: "a11y-widget-btn", 
+        class: "a11y-widget-preset-btn", 
         text: "🎨 Color Blind",
         "aria-label": "Apply color blind friendly preset: high contrast mode with readable font for better color distinction"
       });
@@ -583,7 +635,7 @@
       // Recommended: Just readable font and comfortable spacing
       var minimal = el("button", { 
         type: "button", 
-        class: "a11y-widget-btn", 
+        class: "a11y-widget-preset-btn", 
         text: "✨ Minimal",
         "aria-label": "Apply minimal preset: readable font and comfortable spacing with default settings"
       });
