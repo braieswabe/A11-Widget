@@ -27,8 +27,11 @@ This widget is a **support layer** + **render-time accessibility controls** — 
 Just add this single line to your HTML:
 
 ```html
-<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js" defer></script>
+<!-- Use versioned filename to ensure you get the latest version -->
+<script src="https://raw.githubusercontent.com/braieswabe/A11-Widget/main/a11y-widget-loader-v1.3.js" defer></script>
 ```
+
+**Note:** We use versioned filenames (`a11y-widget-loader-v1.3.js`) instead of query parameters because CDNs cache based on the URL path, not query parameters. This ensures you always get the latest version.
 
 That's it! The widget loads automatically from GitHub. No configuration needed.
 
