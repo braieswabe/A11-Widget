@@ -611,8 +611,12 @@
     }
     if (magnifierHandler) {
       document.removeEventListener("mousemove", magnifierHandler);
-      document.removeEventListener("mouseenter", magnifierHandler);
-      document.removeEventListener("mouseleave", magnifierHandler);
+    }
+    if (magnifierMouseEnterHandler) {
+      document.removeEventListener("mouseenter", magnifierMouseEnterHandler);
+    }
+    if (magnifierMouseLeaveHandler) {
+      document.removeEventListener("mouseleave", magnifierMouseLeaveHandler);
     }
     
     var size = 200;
