@@ -918,29 +918,64 @@ html[data-a11y][data-a11y-contrast="dark"] #a11y-widget-panel select{
   background: #0d1117 !important;
   color: #e6edf3 !important;
   border-color: rgba(255,255,255,0.25) !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23e6edf3' d='M6 9L1 4h10z'/%3E%3C/svg%3E") !important;
 }
+
+html[data-a11y][data-a11y-contrast="dark"] #a11y-widget-panel select:hover{
+  background-color: #161b22 !important;
+  border-color: rgba(255,255,255,0.3) !important;
+}
+
 html[data-a11y][data-a11y-contrast="dark"] #a11y-widget-panel select:focus{
   border-color: #58a6ff !important;
   outline-color: #58a6ff !important;
+  background-color: #0d1117 !important;
 }
+
 html[data-a11y][data-a11y-contrast="dark"] #a11y-widget-panel input[type="range"]{
-  accent-color: #58a6ff;
+  background: #161b22 !important;
 }
+
+html[data-a11y][data-a11y-contrast="dark"] #a11y-widget-panel input[type="range"]::-webkit-slider-thumb{
+  background: #58a6ff !important;
+  border-color: #0d1117 !important;
+}
+
+html[data-a11y][data-a11y-contrast="dark"] #a11y-widget-panel input[type="range"]::-moz-range-thumb{
+  background: #58a6ff !important;
+  border-color: #0d1117 !important;
+}
+
+html[data-a11y][data-a11y-contrast="dark"] #a11y-widget-panel input[type="checkbox"],
+html[data-a11y][data-a11y-contrast="dark"] #a11y-widget-panel input[type="radio"]{
+  accent-color: #58a6ff !important;
+}
+
 html[data-a11y][data-a11y-contrast="dark"] .a11y-widget-row label,
 html[data-a11y][data-a11y-contrast="dark"] .a11y-widget-row legend{
   color: #ffffff !important;
 }
+
 html[data-a11y][data-a11y-contrast="dark"] .a11y-widget-help{
   color: rgba(230, 237, 243, 0.8) !important;
 }
+
+html[data-a11y][data-a11y-contrast="dark"] .a11y-widget-font-value{
+  color: #ffffff !important;
+}
+
 html[data-a11y][data-a11y-contrast="dark"] .a11y-divider{
   background: rgba(255,255,255,0.2) !important;
 }
+
 html[data-a11y][data-a11y-contrast="dark"] #a11y-widget-content::-webkit-scrollbar-thumb {
   background: rgba(255,255,255,0.25);
+  background-clip: padding-box;
 }
+
 html[data-a11y][data-a11y-contrast="dark"] #a11y-widget-content::-webkit-scrollbar-thumb:hover {
   background: rgba(255,255,255,0.4);
+  background-clip: padding-box;
 }
 
 /* Toggle button in dark contrast mode - Maintain visibility */
