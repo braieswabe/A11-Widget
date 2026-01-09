@@ -96,17 +96,18 @@ try {
             currentScript.parentNode.removeChild(currentScript);
           }
           
-          // Load fresh loader script with aggressive cache-busting
+          // Load fresh loader script using versioned filename with jsDelivr (bypasses CDN cache)
+          // Use jsDelivr first because GitHub raw serves files as text/plain, which browsers won't execute
           var newLoader = document.createElement("script");
-          var cacheBuster = Date.now() + "_" + Math.random().toString(36).substring(7);
-          newLoader.src = GITHUB_RAW_BASE + "a11y-widget-loader.js?v=" + cacheBuster + "&_=" + cacheBuster + "&force=" + cacheBuster;
+          newLoader.src = CDN_BASE + "a11y-widget-loader-v" + LOADER_VERSION + ".js";
           newLoader.setAttribute("data-version", LOADER_VERSION);
           newLoader.defer = true;
           
-          // Fallback to jsDelivr if raw GitHub fails
+          // Fallback to raw GitHub if jsDelivr fails (though it may not execute due to content-type)
           newLoader.onerror = function() {
+            console.warn('[A11Y] jsDelivr failed, trying raw GitHub (may not execute due to content-type)');
             var fallbackLoader = document.createElement("script");
-            fallbackLoader.src = CDN_BASE + "a11y-widget-loader.js?v=" + cacheBuster + "&_=" + cacheBuster + "&force=" + cacheBuster;
+            fallbackLoader.src = GITHUB_RAW_BASE + "a11y-widget-loader-v" + LOADER_VERSION + ".js";
             fallbackLoader.setAttribute("data-version", LOADER_VERSION);
             fallbackLoader.defer = true;
             document.head.appendChild(fallbackLoader);
@@ -282,15 +283,16 @@ try {
       window.__a11yWidget.__loaded = false;
     }
   
-    // Always load fresh CSS from GitHub with aggressive cache-busting
+    // Always load fresh CSS from jsDelivr CDN (serves with correct content-type)
     // Use milliseconds timestamp for maximum cache-busting effectiveness
     var timestamp = Date.now(); // Use milliseconds for better cache busting
     var random = Math.random().toString(36).substring(7);
     var cssLink = document.createElement("link");
     cssLink.id = "a11y-widget-stylesheet";
     cssLink.rel = "stylesheet";
-    // Use raw GitHub URL for immediate updates (bypasses CDN caching)
-    var cssUrl = GITHUB_RAW_BASE + "a11y-widget.css?v=" + timestamp + "&_=" + random + "&nocache=" + timestamp;
+    // Use jsDelivr CDN first (serves CSS with correct text/css content-type)
+    // GitHub raw serves files as text/plain, which browsers reject
+    var cssUrl = CDN_BASE + "a11y-widget.css?v=" + timestamp + "&_=" + random + "&nocache=" + timestamp;
     cssLink.href = cssUrl;
     cssLink.crossOrigin = "anonymous";
     
@@ -298,22 +300,23 @@ try {
     debugLog('a11y-widget-loader.js:loadWidget', 'Loading CSS', {cssUrl: cssUrl}, 'E');
     // #endregion
     
-    // Fallback to jsDelivr if raw GitHub fails
+    // Fallback to raw GitHub if jsDelivr fails (though it may not work due to content-type)
     cssLink.onerror = function() {
       // #region agent log
-      debugLog('a11y-widget-loader.js:cssLink.onerror', 'CSS raw GitHub failed - using jsDelivr', {fallbackUrl: CDN_BASE + "a11y-widget.css?v=" + timestamp + "&_=" + random + "&nocache=" + timestamp}, 'A,E');
+      debugLog('a11y-widget-loader.js:cssLink.onerror', 'CSS jsDelivr failed - trying raw GitHub (may fail)', {fallbackUrl: GITHUB_RAW_BASE + "a11y-widget.css?v=" + timestamp + "&_=" + random + "&nocache=" + timestamp}, 'A,E');
       // #endregion
-      cssLink.href = CDN_BASE + "a11y-widget.css?v=" + timestamp + "&_=" + random + "&nocache=" + timestamp;
+      cssLink.href = GITHUB_RAW_BASE + "a11y-widget.css?v=" + timestamp + "&_=" + random + "&nocache=" + timestamp;
     };
     
     document.head.appendChild(cssLink);
     
-    // Always load fresh widget script from GitHub
+    // Always load fresh widget script from jsDelivr CDN (serves with correct content-type)
     var script = document.createElement("script");
     script.id = "a11y-widget-script";
-    // Use raw GitHub URL for immediate updates (bypasses CDN caching)
+    // Use jsDelivr CDN first (serves JavaScript with correct application/javascript content-type)
+    // GitHub raw serves files as text/plain, which browsers reject
     // Aggressive cache-busting with timestamp + random to ensure fresh loads
-    var scriptUrl = GITHUB_RAW_BASE + "a11y-widget.js?v=" + timestamp + "&_=" + random + "&nocache=" + timestamp;
+    var scriptUrl = CDN_BASE + "a11y-widget.js?v=" + timestamp + "&_=" + random + "&nocache=" + timestamp;
     script.src = scriptUrl;
     script.defer = true;
     script.crossOrigin = "anonymous";
@@ -322,12 +325,12 @@ try {
     debugLog('a11y-widget-loader.js:loadWidget', 'Loading JS', {scriptUrl: scriptUrl}, 'E');
     // #endregion
     
-    // Fallback to jsDelivr if raw GitHub fails
+    // Fallback to raw GitHub if jsDelivr fails (though it may not work due to content-type)
     script.onerror = function() {
       // #region agent log
-      debugLog('a11y-widget-loader.js:script.onerror', 'JS raw GitHub failed - using jsDelivr', {fallbackUrl: CDN_BASE + "a11y-widget.js?v=" + timestamp + "&_=" + random + "&nocache=" + timestamp}, 'A,E');
+      debugLog('a11y-widget-loader.js:script.onerror', 'JS jsDelivr failed - trying raw GitHub (may fail)', {fallbackUrl: GITHUB_RAW_BASE + "a11y-widget.js?v=" + timestamp + "&_=" + random + "&nocache=" + timestamp}, 'A,E');
       // #endregion
-      script.src = CDN_BASE + "a11y-widget.js?v=" + timestamp + "&_=" + random + "&nocache=" + timestamp;
+      script.src = GITHUB_RAW_BASE + "a11y-widget.js?v=" + timestamp + "&_=" + random + "&nocache=" + timestamp;
     };
     
     // Insert before first script or append to head
@@ -354,11 +357,13 @@ try {
     // #endregion
     localStorage.setItem('__a11y_loader_version', LOADER_VERSION);
     
-    // If current script version also doesn't match, reload it
+    // If current script version also doesn't match, reload it using versioned filename with jsDelivr
+    // Use jsDelivr because GitHub raw serves files as text/plain, which browsers won't execute
     if (currentLoaderVersion && currentLoaderVersion !== LOADER_VERSION) {
       var newLoader = document.createElement("script");
-      newLoader.src = GITHUB_RAW_BASE + "a11y-widget-loader.js?v=" + Date.now() + "&_=" + Math.random() + "&force=" + Date.now();
+      newLoader.src = CDN_BASE + "a11y-widget-loader-v" + LOADER_VERSION + ".js";
       newLoader.setAttribute("data-version", LOADER_VERSION);
+      newLoader.defer = true;
       document.head.appendChild(newLoader);
       return; // Exit, let new loader handle the rest
     }
