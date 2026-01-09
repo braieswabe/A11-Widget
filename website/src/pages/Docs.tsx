@@ -4,15 +4,15 @@ import './Pages.css'
 
 export default function Docs() {
   const configCode = `window.__A11Y_WIDGET__ = {
-  siteId: "string",              // Required: Site identifier
-  position: "left" | "right",     // Widget position (default: "right")
-  surfaces: ["string"],           // CSS selectors for surfaces (default: ["body"])
-  enableTelemetry: boolean,       // Enable telemetry (default: false)
-  telemetryEndpoint: "string",    // Backend endpoint (default: null)
-  zIndex: number,                 // Widget z-index (default: 2147483000)
-  initialOpen: boolean,           // Open on load (default: false)
-  locale: "string",               // Locale (default: "en")
-  features: {                     // Feature flags
+  siteId: "string",              // Optional: Auto-detected from domain if not provided
+  position: "left" | "right",     // Optional: Widget position (default: "right")
+  surfaces: ["string"],           // Optional: CSS selectors (default: ["body"])
+  enableTelemetry: boolean,       // Optional: Enable telemetry (default: false)
+  telemetryEndpoint: "string",    // Optional: Backend endpoint (default: null)
+  zIndex: number,                 // Optional: Widget z-index (default: 2147483000)
+  initialOpen: boolean,           // Optional: Open on load (default: false)
+  locale: "string",               // Optional: Locale (default: "en")
+  features: {                     // Optional: Feature flags (all enabled by default)
     contrast: boolean,
     fontScale: boolean,
     spacing: boolean,

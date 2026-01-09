@@ -1,9 +1,17 @@
 /*! a11y-widget.js — Accessibility Widget v1 (IIFE, no deps)
     Scope: widget UI + configured surfaces only.
     No claims of full-site ADA compliance.
+    
+    GitHub Repository: https://github.com/braieswabe/A11-Widget
+    CDN: https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/
 */
 (function () {
   "use strict";
+
+  // GitHub repository configuration
+  var GITHUB_REPO = "braieswabe/A11-Widget";
+  var GITHUB_BRANCH = "main";
+  var CDN_BASE = "https://cdn.jsdelivr.net/gh/" + GITHUB_REPO + "@" + GITHUB_BRANCH + "/";
 
   var DEFAULTS = {
     siteId: null,                    // Auto-detected from window.location.hostname if not provided
@@ -572,11 +580,32 @@
     return cfg;
   }
 
+  // Auto-load CSS from GitHub if not already loaded
+  function ensureCSS() {
+    if (document.getElementById("a11y-widget-stylesheet")) return;
+    
+    var link = document.createElement("link");
+    link.id = "a11y-widget-stylesheet";
+    link.rel = "stylesheet";
+    link.href = CDN_BASE + "a11y-widget.css";
+    link.crossOrigin = "anonymous";
+    
+    // Fallback to GitHub raw if jsDelivr fails
+    link.onerror = function() {
+      link.href = "https://raw.githubusercontent.com/" + GITHUB_REPO + "/" + GITHUB_BRANCH + "/a11y-widget.css";
+    };
+    
+    document.head.appendChild(link);
+  }
+
   function init() {
     var cfg = getConfig();
 
     // Namespace guard
     if (window.__a11yWidget && window.__a11yWidget.__loaded) return;
+
+    // Auto-load CSS from GitHub repository
+    ensureCSS();
 
     var stored = Store.get(cfg.storageKey);
     var prefs = normalizePrefs(assign(assign({}, PREF_DEFAULTS), stored || {}));

@@ -3,31 +3,22 @@ import CodeBlock from '../components/CodeBlock'
 import './Pages.css'
 
 export default function Examples() {
-  const basicCode = `<link rel="stylesheet" href="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.css" />
-<script src="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.js" defer></script>`
+  const basicCode = `<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js" defer></script>`
 
-  const advancedCode = `window.__A11Y_WIDGET__ = {
-  siteId: "my-site",
-  position: "left",
-  surfaces: [
-    "body",
-    "main",
-    ".content-area",
-    "[data-canonical-surface='true']"
-  ],
-  enableTelemetry: true,
-  telemetryEndpoint: "/api/telemetry",
-  features: {
-    contrast: true,
-    fontScale: true,
-    spacing: true,
-    reduceMotion: true,
-    readableFont: true,
-    presets: true,
-    reset: true,
-    skipLink: true
-  }
-};`
+  const advancedCode = `<script>
+  window.__A11Y_WIDGET__ = {
+    position: "left",              // Optional: auto-detects siteId from domain
+    surfaces: [
+      "body",
+      "main",
+      ".content-area",
+      "[data-canonical-surface='true']"
+    ],
+    enableTelemetry: true,
+    telemetryEndpoint: "/api/telemetry"
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js" defer></script>`
 
   const blogSurfaces = `surfaces: [
   "body",

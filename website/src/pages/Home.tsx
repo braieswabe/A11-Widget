@@ -3,8 +3,7 @@ import CodeBlock from '../components/CodeBlock'
 import './Pages.css'
 
 export default function Home() {
-  const quickStartCode = `<link rel="stylesheet" href="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.css" />
-<script src="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.js" defer></script>`
+  const quickStartCode = `<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js" defer></script>`
 
   return (
     <>

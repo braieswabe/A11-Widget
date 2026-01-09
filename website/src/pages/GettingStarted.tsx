@@ -3,12 +3,10 @@ import CodeBlock from '../components/CodeBlock'
 import './Pages.css'
 
 export default function GettingStarted() {
-  const canonicalCode = `<link rel="stylesheet" href="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.css" />
-<script src="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.js" defer></script>`
+  const canonicalCode = `<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js" defer></script>`
 
-  const cspCode = `<link rel="stylesheet" href="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.css" />
-<script
-  src="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.js"
+  const cspCode = `<script
+  src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js"
   defer
 ></script>`
 
@@ -43,12 +41,12 @@ export default function GettingStarted() {
 <head>
   <meta charset="UTF-8">
   <title>Test Page</title>
-  <link rel="stylesheet" href="a11y-widget.css" />
-  <script src="a11y-widget.js" defer></script>
+  <!-- Just one line - loads everything from GitHub automatically! -->
+  <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js" defer></script>
 </head>
 <body>
   <h1>Test Page</h1>
-  <p>Try the accessibility widget! It works automatically - no configuration needed!</p>
+  <p>Try the accessibility widget! It loads automatically from GitHub - no files to download!</p>
 </body>
 </html>`
 
@@ -73,15 +71,14 @@ export default function GettingStarted() {
 
         <div className="card" style={{ marginBottom: '2rem' }}>
           <h3>Optional: Customize Settings</h3>
-          <p>If you want to customize the widget, add optional configuration:</p>
-          <CodeBlock code={`<link rel="stylesheet" href="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.css" />
-<script>
+          <p>If you want to customize the widget, add optional configuration before the loader script:</p>
+          <CodeBlock code={`<script>
   window.__A11Y_WIDGET__ = {
     position: "left",              // Optional: "left" or "right"
     surfaces: ["body", "main"]     // Optional: CSS selectors
   };
 </script>
-<script src="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.js" defer></script>`} />
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js" defer></script>`} />
         </div>
 
         <div className="card" style={{ marginBottom: '2rem' }}>

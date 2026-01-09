@@ -15,21 +15,11 @@
     3. Open this file in a web browser
   -->
   
-  <!-- Widget CSS - CDN with local fallback -->
-  <!-- Option 1: Use CDN (recommended for quick testing) -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget.css" />
+  <!-- Widget Loader - Automatically loads CSS and JS from GitHub repository -->
+  <!-- Just one line - everything loads automatically! -->
+  <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js" defer></script>
   
-  <!-- Option 2: Use local files (download a11y-widget.css and place in same folder, then uncomment below) -->
-  <!-- <link rel="stylesheet" href="a11y-widget.css" /> -->
-  
-  <!-- Option 3: Use your own CDN -->
-  <!-- <link rel="stylesheet" href="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.css" /> -->
-  
-  <!-- Widget Configuration (Optional - widget works without any configuration!) -->
-  <!-- 
-    The widget auto-detects your site from the domain name.
-    Only add this if you want to customize settings:
-  -->
+  <!-- Optional: Customize widget settings (only if needed) -->
   <!--
   <script>
     window.__A11Y_WIDGET__ = {
@@ -39,16 +29,6 @@
     };
   </script>
   -->
-  
-  <!-- Widget Script - CDN with local fallback -->
-  <!-- Option 1: Use CDN (recommended for quick testing) -->
-  <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget.js" defer></script>
-  
-  <!-- Option 2: Use local files (download a11y-widget.js and place in same folder, then uncomment below) -->
-  <!-- <script src="a11y-widget.js" defer></script> -->
-  
-  <!-- Option 3: Use your own CDN -->
-  <!-- <script src="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.js" defer></script> -->
   
   <style>
     /* Basic page styles */
@@ -247,17 +227,17 @@
     </div>
     
     <div class="note">
-      <p><strong>Note:</strong> This example uses CDN paths by default. The widget should work immediately when you open this file.</p>
-      <p><strong>To use local files:</strong></p>
-      <ol>
-        <li>Download <code>a11y-widget.css</code> and <code>a11y-widget.js</code> from the repository</li>
-        <li>Place them in the same folder as this HTML file</li>
-        <li>Uncomment the local file paths in the &lt;head&gt; section</li>
-        <li>Comment out the CDN paths</li>
-      </ol>
-      <p><strong>For production:</strong> Update the paths to point to your own CDN:</p>
-      <pre><code>&lt;link rel="stylesheet" href="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.css" /&gt;
-&lt;script src="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.js" defer&gt;&lt;/script&gt;</code></pre>
+      <p><strong>✨ Zero Setup Required!</strong></p>
+      <p>The widget automatically loads from GitHub using jsDelivr CDN. No files to download, no hosting needed!</p>
+      <p><strong>How it works:</strong></p>
+      <ul>
+        <li>The loader script automatically fetches CSS and JS from the GitHub repository</li>
+        <li>Uses jsDelivr CDN for fast, reliable delivery</li>
+        <li>Falls back to GitHub raw URLs if CDN is unavailable</li>
+        <li>Site ID is auto-detected from your domain name</li>
+      </ul>
+      <p><strong>For production:</strong> Just use the same loader script - it works everywhere!</p>
+      <pre><code>&lt;script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js" defer&gt;&lt;/script&gt;</code></pre>
     </div>
     
     <h2>Testing the Widget</h2>
