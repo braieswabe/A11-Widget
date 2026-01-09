@@ -62,39 +62,45 @@
       console.log('[A11Y Debug] Loader version check:', {storedVersion: storedVersion, LOADER_VERSION: LOADER_VERSION, scriptVersion: scriptVersion, scriptSrc: currentScript ? currentScript.src : 'not found'});
       // #endregion
       
-      // If stored version doesn't match, or script version doesn't match, reload
-      if (storedVersion !== LOADER_VERSION || (scriptVersion && scriptVersion !== LOADER_VERSION)) {
-        console.log('[A11Y] Loader outdated. Stored:', storedVersion, 'Current:', LOADER_VERSION, 'Script:', scriptVersion);
-        localStorage.setItem(LOADER_VERSION_KEY, LOADER_VERSION);
+      // ALWAYS check: If stored version doesn't match, or script version doesn't match, reload
+      // Also reload if storedVersion is null (first time or old loader without version tracking)
+      if (storedVersion !== LOADER_VERSION || (scriptVersion && scriptVersion !== LOADER_VERSION) || storedVersion === null) {
+        console.log('[A11Y] Loader version check:', {storedVersion: storedVersion, LOADER_VERSION: LOADER_VERSION, scriptVersion: scriptVersion, action: 'reloading'});
         
-        // Remove old script
-        if (currentScript && currentScript.parentNode) {
-          currentScript.parentNode.removeChild(currentScript);
+        // Only reload if this is actually an old version (not first load of new version)
+        if (storedVersion !== null && storedVersion !== LOADER_VERSION) {
+          localStorage.setItem(LOADER_VERSION_KEY, LOADER_VERSION);
+          
+          // Remove old script
+          if (currentScript && currentScript.parentNode) {
+            currentScript.parentNode.removeChild(currentScript);
+          }
+          
+          // Load fresh loader script with aggressive cache-busting
+          var newLoader = document.createElement("script");
+          var cacheBuster = Date.now() + "_" + Math.random().toString(36).substring(7);
+          newLoader.src = GITHUB_RAW_BASE + "a11y-widget-loader.js?v=" + cacheBuster + "&_=" + cacheBuster + "&force=" + cacheBuster;
+          newLoader.setAttribute("data-version", LOADER_VERSION);
+          newLoader.defer = true;
+          
+          // Fallback to jsDelivr if raw GitHub fails
+          newLoader.onerror = function() {
+            var fallbackLoader = document.createElement("script");
+            fallbackLoader.src = CDN_BASE + "a11y-widget-loader.js?v=" + cacheBuster + "&_=" + cacheBuster + "&force=" + cacheBuster;
+            fallbackLoader.setAttribute("data-version", LOADER_VERSION);
+            fallbackLoader.defer = true;
+            document.head.appendChild(fallbackLoader);
+          };
+          
+          document.head.appendChild(newLoader);
+          shouldExit = true; // Mark to exit outer function
+          return;
         }
-        
-        // Load fresh loader script with aggressive cache-busting
-        var newLoader = document.createElement("script");
-        var cacheBuster = Date.now() + "_" + Math.random().toString(36).substring(7);
-        newLoader.src = GITHUB_RAW_BASE + "a11y-widget-loader.js?v=" + cacheBuster + "&_=" + cacheBuster + "&force=" + cacheBuster;
-        newLoader.setAttribute("data-version", LOADER_VERSION);
-        newLoader.defer = true;
-        
-        // Fallback to jsDelivr if raw GitHub fails
-        newLoader.onerror = function() {
-          var fallbackLoader = document.createElement("script");
-          fallbackLoader.src = CDN_BASE + "a11y-widget-loader.js?v=" + cacheBuster + "&_=" + cacheBuster + "&force=" + cacheBuster;
-          fallbackLoader.setAttribute("data-version", LOADER_VERSION);
-          fallbackLoader.defer = true;
-          document.head.appendChild(fallbackLoader);
-        };
-        
-        document.head.appendChild(newLoader);
-        shouldExit = true; // Mark to exit outer function
-        return;
       }
       
-      // Mark this version as loaded
+      // Mark this version as loaded (even if it was null before)
       localStorage.setItem(LOADER_VERSION_KEY, LOADER_VERSION);
+      console.log('[A11Y] Loader version confirmed:', LOADER_VERSION);
     } catch(e) {
       console.error('[A11Y] Error checking loader version:', e);
     }
