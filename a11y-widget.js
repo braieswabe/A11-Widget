@@ -542,17 +542,27 @@
       opener = document.activeElement;
       panel.removeAttribute("hidden");
       toggle.setAttribute("aria-expanded", "true");
+      toggle.setAttribute("aria-label", "Close accessibility settings");
       // focus first input safely (skip close button)
       var content = panel.querySelector("#a11y-widget-content");
       var first = content ? content.querySelector("select, input, button, [tabindex]:not([tabindex='-1'])") : null;
-      if (first) first.focus();
+      if (first) {
+        setTimeout(function() {
+          first.focus();
+        }, 100);
+      }
       emit(cfg, "widget_open", {});
     }
 
     function closePanel() {
       panel.setAttribute("hidden", "");
       toggle.setAttribute("aria-expanded", "false");
-      if (opener && opener.focus) opener.focus();
+      toggle.setAttribute("aria-label", "Open accessibility settings");
+      if (opener && opener.focus) {
+        setTimeout(function() {
+          opener.focus();
+        }, 100);
+      }
       emit(cfg, "widget_close", {});
     }
 
