@@ -295,8 +295,8 @@ try {
     cssLink.rel = "stylesheet";
     // Use jsDelivr CDN first (serves CSS with correct text/css content-type)
     // GitHub raw serves files as text/plain, which browsers reject
-    // Multiple cache-busting parameters to force fresh load
-    var cssUrl = CDN_BASE + "a11y-widget.css?v=" + timestamp + "&_=" + random1 + "&nocache=" + timestamp + "&t=" + Date.now() + "&r=" + random2 + "&cb=" + random3;
+    // Use widget files version in URL path to bypass jsDelivr cache (creates new URL)
+    var cssUrl = CDN_BASE + "a11y-widget.css?v=" + WIDGET_FILES_VERSION + "&_=" + timestamp + "&nocache=" + timestamp;
     cssLink.href = cssUrl;
     cssLink.crossOrigin = "anonymous";
     
@@ -327,8 +327,8 @@ try {
     script.id = "a11y-widget-script";
     // Use jsDelivr CDN first (serves JavaScript with correct application/javascript content-type)
     // GitHub raw serves files as text/plain, which browsers reject
-    // Multiple cache-busting parameters to force fresh load (jsDelivr may cache aggressively)
-    var scriptUrl = CDN_BASE + "a11y-widget.js?v=" + timestamp + "&_=" + random1 + "&nocache=" + timestamp + "&t=" + Date.now() + "&r=" + random2 + "&cb=" + random3;
+    // Use widget files version in URL path to bypass jsDelivr cache (creates new URL)
+    var scriptUrl = CDN_BASE + "a11y-widget.js?v=" + WIDGET_FILES_VERSION + "&_=" + timestamp + "&nocache=" + timestamp;
     script.src = scriptUrl;
     script.defer = true;
     script.crossOrigin = "anonymous";
