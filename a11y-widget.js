@@ -601,6 +601,8 @@
   var magnifierElement = null;
   var magnifierContent = null;
   var magnifierHandler = null;
+  var magnifierMouseEnterHandler = null;
+  var magnifierMouseLeaveHandler = null;
   var magnifierCanvas = null;
 
   function createMagnifier(prefs) {
@@ -874,6 +876,14 @@
     if (magnifierHandler) {
       document.removeEventListener("mousemove", magnifierHandler);
       magnifierHandler = null;
+    }
+    if (magnifierMouseEnterHandler) {
+      document.removeEventListener("mouseenter", magnifierMouseEnterHandler);
+      magnifierMouseEnterHandler = null;
+    }
+    if (magnifierMouseLeaveHandler) {
+      document.removeEventListener("mouseleave", magnifierMouseLeaveHandler);
+      magnifierMouseLeaveHandler = null;
     }
   }
 
