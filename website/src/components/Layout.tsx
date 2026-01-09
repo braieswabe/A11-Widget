@@ -69,9 +69,11 @@ export default function Layout({ children }: LayoutProps) {
         fallbackUrl = loaderUrl // No fallback needed in dev
       } else {
         // Production: Try raw GitHub first, fallback to jsDelivr CDN
+        // Use commit hash or timestamp for maximum cache-busting
         // Add multiple cache-busting parameters to ensure fresh load
-        loaderUrl = `https://raw.githubusercontent.com/braieswabe/A11-Widget/main/a11y-widget-loader.js?v=${timestamp}&_=${random}&nocache=${timestamp}&t=${Date.now()}`
-        fallbackUrl = `https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js?v=${timestamp}&_=${random}&nocache=${timestamp}&t=${Date.now()}`
+        var cacheBuster = timestamp + '_' + random + '_' + Date.now();
+        loaderUrl = `https://raw.githubusercontent.com/braieswabe/A11-Widget/main/a11y-widget-loader.js?v=${cacheBuster}&_=${Math.random()}&nocache=${Date.now()}&t=${Date.now()}&cb=${cacheBuster}`
+        fallbackUrl = `https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js?v=${cacheBuster}&_=${Math.random()}&nocache=${Date.now()}&t=${Date.now()}&cb=${cacheBuster}`
       }
       
       loaderScript.src = loaderUrl

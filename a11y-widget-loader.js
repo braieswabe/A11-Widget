@@ -8,7 +8,13 @@
     <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget.js" defer></script>
 */
 // Immediate console log to verify script is loading
-console.log('[A11Y Loader] Script file loaded - v1.3 -', new Date().toISOString());
+// This runs BEFORE the IIFE, so it executes even if there's an error later
+try {
+  console.log('[A11Y Loader] Script file loaded - v1.3 -', new Date().toISOString());
+  console.log('[A11Y Loader] Script source:', (document.currentScript && document.currentScript.src) || 'unknown');
+} catch(e) {
+  console.log('[A11Y Loader] Script file parsed but error logging:', e);
+}
 
 (function() {
   "use strict";
