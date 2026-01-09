@@ -609,10 +609,15 @@
     }
     if (magnifierHandler) {
       document.removeEventListener("mousemove", magnifierHandler);
+      document.removeEventListener("mouseenter", magnifierHandler);
+      document.removeEventListener("mouseleave", magnifierHandler);
     }
     
     var size = 200;
     var zoom = parseFloat(prefs.magnifierZoom || 2.0);
+    var isMouseOver = false;
+    var lastUpdateTime = 0;
+    var throttleDelay = 16; // ~60fps
     
     magnifierElement = document.createElement("div");
     magnifierElement.id = "a11y-magnifier";
@@ -630,14 +635,17 @@
       "background: white; " +
       "transform: translate(-50%, -50%);";
     
-    // Create canvas for magnified content
+    // Create canvas for magnified content with higher resolution for better quality
     magnifierCanvas = document.createElement("canvas");
-    magnifierCanvas.width = size;
-    magnifierCanvas.height = size;
+    var canvasScale = 2; // Higher resolution for better quality
+    magnifierCanvas.width = size * canvasScale;
+    magnifierCanvas.height = size * canvasScale;
     magnifierCanvas.style.cssText = 
       "width: 100%; " +
       "height: 100%; " +
-      "display: block;";
+      "display: block; " +
+      "image-rendering: -webkit-optimize-contrast; " +
+      "image-rendering: crisp-edges;";
     
     magnifierContent = document.createElement("div");
     magnifierContent.style.cssText = 
@@ -653,43 +661,71 @@
     magnifierHandler = function(e) {
       var html = document.documentElement;
       var enabled = html.getAttribute("data-a11y-magnifier") === "1";
-      if (enabled && magnifierElement && magnifierCanvas) {
-        var currentZoom = parseFloat(html.style.getPropertyValue("--a11y-magnifier-zoom") || "2.0");
-        zoom = currentZoom;
-        
+      
+      if (!enabled || !magnifierElement || !magnifierCanvas) {
+        if (magnifierElement) {
+          magnifierElement.style.display = "none";
+        }
+        return;
+      }
+      
+      // Throttle updates for better performance
+      var now = Date.now();
+      if (now - lastUpdateTime < throttleDelay && e.type === "mousemove") {
+        return;
+      }
+      lastUpdateTime = now;
+      
+      var currentZoom = parseFloat(html.style.getPropertyValue("--a11y-magnifier-zoom") || "2.0");
+      zoom = currentZoom;
+      
+      magnifierElement.style.display = "block";
+      
+      // Position magnifier to follow cursor with offset
+      var offsetX = 120;
+      var offsetY = 120;
+      var x = e.clientX + offsetX;
+      var y = e.clientY - offsetY;
+      
+      // Keep within viewport bounds
+      if (x + size / 2 > window.innerWidth) {
+        x = e.clientX - offsetX - size;
+      }
+      if (y - size / 2 < 0) {
+        y = e.clientY + offsetY;
+      }
+      if (x - size / 2 < 0) {
+        x = size / 2;
+      }
+      if (y + size / 2 > window.innerHeight) {
+        y = window.innerHeight - size / 2;
+      }
+      
+      magnifierElement.style.left = x + "px";
+      magnifierElement.style.top = y + "px";
+      
+      // Draw magnified content immediately
+      drawMagnifiedContent(e.clientX, e.clientY, zoom, magnifierCanvas, size);
+    };
+    
+    // Handle mouse enter/leave for better performance
+    var mouseEnterHandler = function(e) {
+      isMouseOver = true;
+      if (magnifierElement) {
         magnifierElement.style.display = "block";
-        
-        // Position magnifier near cursor (offset to avoid covering content)
-        var offsetX = 120;
-        var offsetY = 120;
-        var x = e.clientX + offsetX;
-        var y = e.clientY - offsetY;
-        
-        // Keep within viewport
-        if (x + size / 2 > window.innerWidth) {
-          x = e.clientX - offsetX - size;
-        }
-        if (y - size / 2 < 0) {
-          y = e.clientY + offsetY;
-        }
-        if (x - size / 2 < 0) {
-          x = size / 2;
-        }
-        if (y + size / 2 > window.innerHeight) {
-          y = window.innerHeight - size / 2;
-        }
-        
-        magnifierElement.style.left = x + "px";
-        magnifierElement.style.top = y + "px";
-        
-        // Draw magnified content on canvas
-        drawMagnifiedContent(e.clientX, e.clientY, zoom, magnifierCanvas, size);
-      } else if (magnifierElement) {
+      }
+    };
+    
+    var mouseLeaveHandler = function(e) {
+      isMouseOver = false;
+      if (magnifierElement) {
         magnifierElement.style.display = "none";
       }
     };
     
-    document.addEventListener("mousemove", magnifierHandler);
+    document.addEventListener("mousemove", magnifierHandler, { passive: true });
+    document.addEventListener("mouseenter", mouseEnterHandler, { passive: true });
+    document.addEventListener("mouseleave", mouseLeaveHandler, { passive: true });
   }
   
   function drawMagnifiedContent(mouseX, mouseY, zoomLevel, canvas, size) {
@@ -698,55 +734,85 @@
     var ctx = canvas.getContext("2d");
     if (!ctx) return;
     
+    var canvasScale = 2; // Match the scale used in createMagnifier
+    var scaledSize = size * canvasScale;
+    
     // Clear canvas
-    ctx.clearRect(0, 0, size, size);
+    ctx.clearRect(0, 0, scaledSize, scaledSize);
     
     // Calculate source area (what part of the page to magnify)
     var sourceSize = size / zoomLevel;
     var sourceX = mouseX - sourceSize / 2;
     var sourceY = mouseY - sourceSize / 2;
     
-    // Try to use html2canvas if available, otherwise use CSS transform approach
+    // Use a more efficient approach: capture viewport and crop
+    // First try html2canvas if available
     if (typeof html2canvas !== "undefined") {
-      // Use html2canvas to capture the page
+      // Capture a larger area around the cursor for better quality
+      var captureSize = Math.max(sourceSize * 1.5, 300);
+      var captureX = Math.max(0, mouseX - captureSize / 2);
+      var captureY = Math.max(0, mouseY - captureSize / 2);
+      
       html2canvas(document.body, {
-        x: sourceX,
-        y: sourceY,
-        width: sourceSize,
-        height: sourceSize,
+        x: captureX,
+        y: captureY,
+        width: Math.min(captureSize, window.innerWidth - captureX),
+        height: Math.min(captureSize, window.innerHeight - captureY),
         scale: 1,
         useCORS: true,
-        logging: false
+        logging: false,
+        allowTaint: true,
+        backgroundColor: null
       }).then(function(canvasImg) {
         if (canvasImg && ctx) {
-          // Draw the captured content scaled up
+          // Calculate the offset within the captured image
+          var offsetX = mouseX - captureX;
+          var offsetY = mouseY - captureY;
+          
+          // Draw the captured content scaled up with circular clipping
           ctx.save();
           ctx.beginPath();
-          ctx.arc(size / 2, size / 2, size / 2 - 2, 0, Math.PI * 2);
+          ctx.arc(scaledSize / 2, scaledSize / 2, scaledSize / 2 - 4, 0, Math.PI * 2);
           ctx.clip();
-          ctx.drawImage(canvasImg, 0, 0, sourceSize, sourceSize, 0, 0, size, size);
+          
+          // Draw the magnified area
+          var drawSize = sourceSize;
+          var drawX = (scaledSize / 2) - (drawSize * canvasScale / 2);
+          var drawY = (scaledSize / 2) - (drawSize * canvasScale / 2);
+          
+          ctx.drawImage(
+            canvasImg,
+            offsetX - drawSize / 2, offsetY - drawSize / 2, // Source position
+            drawSize, drawSize, // Source size
+            drawX, drawY, // Destination position
+            drawSize * canvasScale, drawSize * canvasScale // Destination size (magnified)
+          );
+          
           ctx.restore();
         }
-      }).catch(function() {
-        drawFallbackMagnifier(ctx, size, zoomLevel);
+      }).catch(function(err) {
+        // Fallback if html2canvas fails
+        drawFallbackMagnifier(ctx, scaledSize, zoomLevel);
       });
     } else {
-      // Fallback: Load html2canvas dynamically or show visual indicator
-      if (!window.html2canvasLoading) {
+      // Load html2canvas dynamically
+      if (!window.html2canvasLoading && !window.html2canvasFailed) {
         window.html2canvasLoading = true;
         var script = document.createElement("script");
         script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
         script.onload = function() {
           window.html2canvasLoading = false;
+          window.html2canvas = true;
           drawMagnifiedContent(mouseX, mouseY, zoomLevel, canvas, size);
         };
         script.onerror = function() {
           window.html2canvasLoading = false;
-          drawFallbackMagnifier(ctx, size, zoomLevel);
+          window.html2canvasFailed = true;
+          drawFallbackMagnifier(ctx, scaledSize, zoomLevel);
         };
         document.head.appendChild(script);
-      } else {
-        drawFallbackMagnifier(ctx, size, zoomLevel);
+      } else if (window.html2canvasFailed) {
+        drawFallbackMagnifier(ctx, scaledSize, zoomLevel);
       }
     }
   }
@@ -755,7 +821,7 @@
     // Draw a white background
     ctx.fillStyle = "#ffffff";
     ctx.beginPath();
-    ctx.arc(size / 2, size / 2, size / 2 - 2, 0, Math.PI * 2);
+    ctx.arc(size / 2, size / 2, size / 2 - 4, 0, Math.PI * 2);
     ctx.fill();
     
     // Draw a subtle pattern
@@ -768,6 +834,13 @@
         }
       }
     }
+    
+    // Draw zoom level text
+    ctx.fillStyle = "#0066cc";
+    ctx.font = "bold 24px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(zoomLevel + "x", size / 2, size / 2);
     
     // Draw a crosshair at center
     ctx.strokeStyle = "#0066cc";
