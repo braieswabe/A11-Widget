@@ -133,48 +133,49 @@ html.a11y-widget-hidden .accessibility-widget {
 
 #a11y-widget-toggle{
   border: 0;
-  border-radius: 999px;
-  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  padding: 0.75rem 1.25rem;
   font-size: 14px;
   line-height: 1.2;
   cursor: pointer;
-  background: #111;
+  background: #0066cc;
   color: #fff;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15), 0 2px 4px rgba(0,0,0,0.1);
-  min-width: 44px;
-  min-height: 44px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15), 0 1px 3px rgba(0,0,0,0.1);
+  min-width: 48px;
+  min-height: 48px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
   transition: all 0.2s ease;
   font-weight: 500;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Noto Sans", "Liberation Sans", sans-serif;
 }
 
 #a11y-widget-toggle:hover{
-  background: #333;
-  box-shadow: 0 6px 16px rgba(0,0,0,0.2), 0 3px 6px rgba(0,0,0,0.12);
+  background: #0052a3;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2), 0 2px 6px rgba(0,0,0,0.15);
   transform: translateY(-1px);
 }
 
 #a11y-widget-toggle:active{
-  background: #222;
+  background: #004080;
   transform: translateY(0);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
 }
 
 #a11y-widget-toggle:focus-visible{
-  outline: 3px solid #fff;
-  outline-offset: 3px;
-  box-shadow: 0 0 0 4px rgba(255,255,255,0.3), 0 4px 12px rgba(0,0,0,0.15);
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px rgba(0,102,204,0.3), 0 2px 8px rgba(0,0,0,0.15);
 }
 
 #a11y-widget-toggle[aria-expanded="true"]{
-  background: #0066cc;
+  background: #004080;
 }
 
 #a11y-widget-toggle[aria-expanded="true"]:hover{
-  background: #0052a3;
+  background: #003366;
 }
 
 .a11y-widget-toggle-icon{
@@ -198,8 +199,9 @@ html.a11y-widget-hidden .accessibility-widget {
   }
   #a11y-widget-toggle{
     padding: 0.75rem;
-    min-width: 44px;
-    min-height: 44px;
+    min-width: 48px;
+    min-height: 48px;
+    border-radius: 6px;
   }
   .a11y-widget-toggle-icon{
     font-size: 20px;
@@ -209,12 +211,21 @@ html.a11y-widget-hidden .accessibility-widget {
 /* Ensure sufficient contrast for dark mode */
 @media (prefers-color-scheme: dark) {
   #a11y-widget-toggle{
-    background: #1a1a1a;
+    background: #0066cc;
     color: #fff;
-    border: 1px solid rgba(255,255,255,0.1);
+    border: none;
   }
   #a11y-widget-toggle:hover{
-    background: #2a2a2a;
+    background: #0052a3;
+  }
+  #a11y-widget-toggle:active{
+    background: #004080;
+  }
+  #a11y-widget-toggle[aria-expanded="true"]{
+    background: #004080;
+  }
+  #a11y-widget-toggle[aria-expanded="true"]:hover{
+    background: #003366;
   }
   #a11y-widget-toggle:focus-visible{
     outline-color: #fff;
@@ -508,4 +519,23 @@ html[data-a11y][data-a11y-contrast="dark"] #a11y-widget-content::-webkit-scrollb
 }
 html[data-a11y][data-a11y-contrast="dark"] #a11y-widget-content::-webkit-scrollbar-thumb:hover {
   background: rgba(255,255,255,0.3);
+}
+
+/* Toggle button in dark contrast mode */
+html[data-a11y][data-a11y-contrast="dark"] #a11y-widget-toggle{
+  background: #0066cc;
+  color: #fff;
+  border: none;
+}
+html[data-a11y][data-a11y-contrast="dark"] #a11y-widget-toggle:hover{
+  background: #0052a3;
+}
+html[data-a11y][data-a11y-contrast="dark"] #a11y-widget-toggle:active{
+  background: #004080;
+}
+html[data-a11y][data-a11y-contrast="dark"] #a11y-widget-toggle[aria-expanded="true"]{
+  background: #004080;
+}
+html[data-a11y][data-a11y-contrast="dark"] #a11y-widget-toggle[aria-expanded="true"]:hover{
+  background: #003366;
 }
