@@ -1232,6 +1232,16 @@
     }
     if (controls.magnifierCheckbox !== undefined) {
       controls.magnifierCheckbox.checked = !!prefs.magnifierEnabled;
+      if (controls.updateMagnifierControls) {
+        controls.updateMagnifierControls(!!prefs.magnifierEnabled);
+      }
+    }
+    if (controls.magnifierZoomSlider !== undefined) {
+      controls.magnifierZoomSlider.value = String(prefs.magnifierZoom || 2.0);
+      var magnifierLabel = document.querySelector("#a11y-magnifier-controls label");
+      if (magnifierLabel) {
+        magnifierLabel.textContent = "Zoom Level: " + (prefs.magnifierZoom || 2.0) + "x";
+      }
     }
     if (controls.dictionaryCheckbox !== undefined) {
       controls.dictionaryCheckbox.checked = !!prefs.dictionaryEnabled;
