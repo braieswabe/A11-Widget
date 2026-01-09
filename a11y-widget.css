@@ -1248,21 +1248,27 @@ html[data-a11y][data-a11y-contrast="dark"] .a11y-widget-btn:hover{
   background: #30363d !important;
 }
 html[data-a11y][data-a11y-contrast="dark"] #a11y-widget-panel select{
-  background: #0d1117 !important;
-  color: #e6edf3 !important;
-  border-color: rgba(255,255,255,0.25) !important;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23e6edf3' d='M6 9L1 4h10z'/%3E%3C/svg%3E") !important;
+  background: #ffffff !important;
+  color: #111111 !important;
+  border-color: rgba(0,0,0,0.2) !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23333' d='M6 9L1 4h10z'/%3E%3C/svg%3E") !important;
 }
 
 html[data-a11y][data-a11y-contrast="dark"] #a11y-widget-panel select:hover{
-  background-color: #161b22 !important;
-  border-color: rgba(255,255,255,0.3) !important;
+  background-color: #f5f5f5 !important;
+  border-color: rgba(0,0,0,0.3) !important;
 }
 
 html[data-a11y][data-a11y-contrast="dark"] #a11y-widget-panel select:focus{
-  border-color: #58a6ff !important;
-  outline-color: #58a6ff !important;
-  background-color: #0d1117 !important;
+  border-color: #0066cc !important;
+  outline-color: #0066cc !important;
+  background-color: #ffffff !important;
+}
+
+/* Ensure select dropdown options are visible in dark theme */
+html[data-a11y][data-a11y-contrast="dark"] #a11y-widget-panel select option{
+  background: #ffffff !important;
+  color: #111111 !important;
 }
 
 html[data-a11y][data-a11y-contrast="dark"] #a11y-widget-panel input[type="range"]{
