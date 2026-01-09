@@ -475,7 +475,8 @@ html[data-a11y][data-a11y-contrast="dark"] .a11y-widget-btn{
   color: #f3f3f3;
   border-color: rgba(255,255,255,0.20);
 }
-html[data-a11y][data-a11y-contrast="dark"] #a11y-widget-close:hover{
+html[data-a11y][data-a11y-contrast="dark"] #a11y-widget-close:hover,
+html[data-a11y][data-a11y-contrast="dark"] .a11y-widget-btn:hover{
   background: #252525;
 }
 html[data-a11y][data-a11y-contrast="dark"] .a11y-widget-btn:hover{
