@@ -96,16 +96,18 @@ try {
             currentScript.parentNode.removeChild(currentScript);
           }
           
-          // Load fresh loader script using versioned filename (bypasses CDN cache)
+          // Load fresh loader script using versioned filename with jsDelivr (bypasses CDN cache)
+          // Use jsDelivr first because GitHub raw serves files as text/plain, which browsers won't execute
           var newLoader = document.createElement("script");
-          newLoader.src = GITHUB_RAW_BASE + "a11y-widget-loader-v" + LOADER_VERSION + ".js";
+          newLoader.src = CDN_BASE + "a11y-widget-loader-v" + LOADER_VERSION + ".js";
           newLoader.setAttribute("data-version", LOADER_VERSION);
           newLoader.defer = true;
           
-          // Fallback to jsDelivr if raw GitHub fails
+          // Fallback to raw GitHub if jsDelivr fails (though it may not execute due to content-type)
           newLoader.onerror = function() {
+            console.warn('[A11Y] jsDelivr failed, trying raw GitHub (may not execute due to content-type)');
             var fallbackLoader = document.createElement("script");
-            fallbackLoader.src = CDN_BASE + "a11y-widget-loader-v" + LOADER_VERSION + ".js";
+            fallbackLoader.src = GITHUB_RAW_BASE + "a11y-widget-loader-v" + LOADER_VERSION + ".js";
             fallbackLoader.setAttribute("data-version", LOADER_VERSION);
             fallbackLoader.defer = true;
             document.head.appendChild(fallbackLoader);

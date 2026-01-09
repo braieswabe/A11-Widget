@@ -68,12 +68,13 @@ export default function Layout({ children }: LayoutProps) {
         loaderUrl = '/a11y-widget.js?v=' + timestamp
         fallbackUrl = loaderUrl // No fallback needed in dev
       } else {
-        // Production: Use versioned filename to bypass CDN caching
-        // CDNs ignore query parameters, so we use versioned filenames instead
-        // This ensures we always get the latest version
+        // Production: Use versioned filename with jsDelivr CDN
+        // GitHub raw serves files as text/plain, which browsers won't execute as JavaScript
+        // jsDelivr serves JavaScript files with correct content-type
+        // Versioned filenames bypass CDN caching (CDNs ignore query parameters)
         const LOADER_VERSION = '1.3'
-        loaderUrl = `https://raw.githubusercontent.com/braieswabe/A11-Widget/main/a11y-widget-loader-v${LOADER_VERSION}.js`
-        fallbackUrl = `https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader-v${LOADER_VERSION}.js`
+        loaderUrl = `https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader-v${LOADER_VERSION}.js`
+        fallbackUrl = `https://raw.githubusercontent.com/braieswabe/A11-Widget/main/a11y-widget-loader-v${LOADER_VERSION}.js`
       }
       
       loaderScript.src = loaderUrl
