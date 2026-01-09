@@ -151,6 +151,7 @@ export default function Layout({ children }: LayoutProps) {
           </button>
           <ul className={`nav-links ${mobileMenuOpen ? 'active' : ''}`}>
             <li><Link to="/" className={isActive('/') ? 'active' : ''}>Home</Link></li>
+            <li><Link to="/features" className={isActive('/features') ? 'active' : ''}>Features</Link></li>
             <li><Link to="/getting-started" className={isActive('/getting-started') ? 'active' : ''}>Installation</Link></li>
             <li><Link to="/download" className={isActive('/download') ? 'active' : ''}>Download</Link></li>
           </ul>
@@ -190,6 +191,7 @@ export default function Layout({ children }: LayoutProps) {
       <footer className="footer">
         <div className="container">
           <div className="footer-links">
+            <Link to="/features">Features</Link>
             <Link to="/getting-started">Installation</Link>
             <Link to="/download">Download</Link>
           </div>
