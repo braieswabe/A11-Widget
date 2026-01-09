@@ -661,6 +661,35 @@
       content.appendChild(presetRow);
     }
 
+    // Check for Updates button
+    content.appendChild(el("div", { class: "a11y-divider" }));
+    var updateRow = el("div", { class: "a11y-widget-row" });
+    var updateBtn = el("button", { 
+      type: "button", 
+      class: "a11y-widget-btn", 
+      id: "a11y-check-updates",
+      text: "🔄 Check for Updates",
+      "aria-label": "Check for widget updates and reload if available"
+    });
+    updateBtn.style.width = "100%";
+    updateBtn.style.marginTop = "0.3rem";
+    updateBtn.style.padding = "0.6rem 0.75rem";
+    
+    var updateStatus = el("div", { 
+      class: "a11y-widget-help", 
+      id: "a11y-update-status",
+      style: "margin-top: 0.5rem; font-weight: 500;",
+      text: "Check for the latest widget design updates."
+    });
+    
+    updateBtn.addEventListener("click", function () {
+      checkForUpdates(cfg, updateBtn, updateStatus);
+    });
+    
+    updateRow.appendChild(updateBtn);
+    updateRow.appendChild(updateStatus);
+    content.appendChild(updateRow);
+
     // Reset
     if (cfg.features.reset) {
       content.appendChild(el("div", { class: "a11y-divider" }));
