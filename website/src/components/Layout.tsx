@@ -68,13 +68,10 @@ export default function Layout({ children }: LayoutProps) {
         loaderUrl = '/a11y-widget.js?v=' + timestamp
         fallbackUrl = loaderUrl // No fallback needed in dev
       } else {
-        // Production: Use versioned filename with jsDelivr CDN
-        // GitHub raw serves files as text/plain, which browsers won't execute as JavaScript
-        // jsDelivr serves JavaScript files with correct content-type
-        // Versioned filenames bypass CDN caching (CDNs ignore query parameters)
-        const LOADER_VERSION = '1.4'
-        loaderUrl = `https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader-v${LOADER_VERSION}.js`
-        fallbackUrl = `https://raw.githubusercontent.com/braieswabe/A11-Widget/main/a11y-widget-loader-v${LOADER_VERSION}.js`
+        // Production: Try raw GitHub first, fallback to jsDelivr CDN
+        // Add multiple cache-busting parameters to ensure fresh load
+        loaderUrl = `https://raw.githubusercontent.com/braieswabe/A11-Widget/main/a11y-widget-loader.js?v=${timestamp}&_=${random}&nocache=${timestamp}&t=${Date.now()}`
+        fallbackUrl = `https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js?v=${timestamp}&_=${random}&nocache=${timestamp}&t=${Date.now()}`
       }
       
       loaderScript.src = loaderUrl
@@ -88,31 +85,13 @@ export default function Layout({ children }: LayoutProps) {
           loaderScript.parentNode.removeChild(loaderScript)
         }
         
-        // Try fallback URL (jsDelivr CDN) with versioned filename
+        // Try fallback URL (jsDelivr CDN)
         const fallbackScript = document.createElement('script')
         fallbackScript.id = 'a11y-widget-loader'
-        const LOADER_VERSION_FALLBACK = '1.4'
-        fallbackScript.src = `https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader-v${LOADER_VERSION_FALLBACK}.js`
-        fallbackScript.setAttribute('data-version', LOADER_VERSION_FALLBACK) // Set version attribute
+        fallbackScript.src = fallbackUrl
         fallbackScript.defer = true
         
         fallbackScript.onload = () => {
-          // Check if loader script actually executed (look for console log)
-          console.log('[A11Y] Fallback loader script loaded, checking if it executed...')
-          
-          // Wait a moment for script to execute, then check for version
-          setTimeout(() => {
-            const loaderVersion = localStorage.getItem('__a11y_loader_version')
-            console.log('[A11Y] Loader version after fallback load:', loaderVersion)
-            
-            // If version is still null or old, the script didn't execute properly
-            if (!loaderVersion || loaderVersion !== '1.3') {
-              console.warn('[A11Y] ⚠️ Loader script may be cached. Expected version 1.3, got:', loaderVersion)
-              console.warn('[A11Y] Please check Network tab for a11y-widget-loader.js and verify it loaded from GitHub')
-              setWidgetError('Widget loader may be cached. Please hard refresh (Cmd+Shift+R / Ctrl+Shift+R)')
-            }
-          }, 1000)
-          
           // Use the same loading logic as the main script
           let attempts = 0
           const maxAttempts = 60
