@@ -1,4 +1,4 @@
-/*! a11y-widget-loader.js — Zero-Config Loader v1.2
+/*! a11y-widget-loader.js — Zero-Config Loader v1.3
     Just include this single script tag and the widget loads automatically from GitHub!
     
     Usage:
@@ -14,7 +14,53 @@
   var GITHUB_BRANCH = "main";
   var CDN_BASE = "https://cdn.jsdelivr.net/gh/" + GITHUB_REPO + "@" + GITHUB_BRANCH + "/";
   var GITHUB_RAW_BASE = "https://raw.githubusercontent.com/" + GITHUB_REPO + "/" + GITHUB_BRANCH + "/";
-  var LOADER_VERSION = "1.2"; // Increment this when loader logic changes
+  var LOADER_VERSION = "1.3"; // Increment this when loader logic changes
+  var LOADER_VERSION_KEY = "__a11y_loader_version";
+  
+  // IMMEDIATE: Check if this loader script is outdated and force reload
+  // This runs BEFORE any other code to catch cached loader scripts
+  (function checkLoaderVersion() {
+    try {
+      var storedVersion = localStorage.getItem(LOADER_VERSION_KEY);
+      var currentScript = document.currentScript || document.querySelector('script[src*="a11y-widget-loader.js"]');
+      var scriptVersion = currentScript ? currentScript.getAttribute("data-version") : null;
+      
+      // If stored version doesn't match, or script version doesn't match, reload
+      if (storedVersion !== LOADER_VERSION || (scriptVersion && scriptVersion !== LOADER_VERSION)) {
+        console.log('[A11Y] Loader outdated. Stored:', storedVersion, 'Current:', LOADER_VERSION, 'Script:', scriptVersion);
+        localStorage.setItem(LOADER_VERSION_KEY, LOADER_VERSION);
+        
+        // Remove old script
+        if (currentScript && currentScript.parentNode) {
+          currentScript.parentNode.removeChild(currentScript);
+        }
+        
+        // Load fresh loader script with aggressive cache-busting
+        var newLoader = document.createElement("script");
+        var cacheBuster = Date.now() + "_" + Math.random().toString(36).substring(7);
+        newLoader.src = GITHUB_RAW_BASE + "a11y-widget-loader.js?v=" + cacheBuster + "&_=" + cacheBuster + "&force=" + cacheBuster;
+        newLoader.setAttribute("data-version", LOADER_VERSION);
+        newLoader.defer = true;
+        
+        // Fallback to jsDelivr if raw GitHub fails
+        newLoader.onerror = function() {
+          var fallbackLoader = document.createElement("script");
+          fallbackLoader.src = CDN_BASE + "a11y-widget-loader.js?v=" + cacheBuster + "&_=" + cacheBuster + "&force=" + cacheBuster;
+          fallbackLoader.setAttribute("data-version", LOADER_VERSION);
+          fallbackLoader.defer = true;
+          document.head.appendChild(fallbackLoader);
+        };
+        
+        document.head.appendChild(newLoader);
+        return; // Exit - let new loader handle everything
+      }
+      
+      // Mark this version as loaded
+      localStorage.setItem(LOADER_VERSION_KEY, LOADER_VERSION);
+    } catch(e) {
+      console.error('[A11Y] Error checking loader version:', e);
+    }
+  })();
   var WIDGET_VERSION_KEY = "__a11y_widget_version";
   var LAST_UPDATE_CHECK_KEY = "__a11y_widget_last_check";
   
