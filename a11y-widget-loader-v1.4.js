@@ -284,15 +284,19 @@ try {
     }
   
     // Always load fresh CSS from jsDelivr CDN (serves with correct content-type)
-    // Use milliseconds timestamp for maximum cache-busting effectiveness
+    // Use milliseconds timestamp + multiple random values for maximum cache-busting effectiveness
+    // jsDelivr may cache aggressively, so we use multiple cache-busting parameters
     var timestamp = Date.now(); // Use milliseconds for better cache busting
-    var random = Math.random().toString(36).substring(7);
+    var random1 = Math.random().toString(36).substring(7);
+    var random2 = Math.random().toString(36).substring(7);
+    var random3 = Math.random().toString(36).substring(7);
     var cssLink = document.createElement("link");
     cssLink.id = "a11y-widget-stylesheet";
     cssLink.rel = "stylesheet";
     // Use jsDelivr CDN first (serves CSS with correct text/css content-type)
     // GitHub raw serves files as text/plain, which browsers reject
-    var cssUrl = CDN_BASE + "a11y-widget.css?v=" + timestamp + "&_=" + random + "&nocache=" + timestamp;
+    // Multiple cache-busting parameters to force fresh load
+    var cssUrl = CDN_BASE + "a11y-widget.css?v=" + timestamp + "&_=" + random1 + "&nocache=" + timestamp + "&t=" + Date.now() + "&r=" + random2 + "&cb=" + random3;
     cssLink.href = cssUrl;
     cssLink.crossOrigin = "anonymous";
     
@@ -323,8 +327,8 @@ try {
     script.id = "a11y-widget-script";
     // Use jsDelivr CDN first (serves JavaScript with correct application/javascript content-type)
     // GitHub raw serves files as text/plain, which browsers reject
-    // Aggressive cache-busting with timestamp + random to ensure fresh loads
-    var scriptUrl = CDN_BASE + "a11y-widget.js?v=" + timestamp + "&_=" + random + "&nocache=" + timestamp;
+    // Multiple cache-busting parameters to force fresh load (jsDelivr may cache aggressively)
+    var scriptUrl = CDN_BASE + "a11y-widget.js?v=" + timestamp + "&_=" + random1 + "&nocache=" + timestamp + "&t=" + Date.now() + "&r=" + random2 + "&cb=" + random3;
     script.src = scriptUrl;
     script.defer = true;
     script.crossOrigin = "anonymous";
