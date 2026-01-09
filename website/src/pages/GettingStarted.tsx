@@ -44,17 +44,11 @@ export default function GettingStarted() {
   <meta charset="UTF-8">
   <title>Test Page</title>
   <link rel="stylesheet" href="a11y-widget.css" />
-  <script>
-    window.__A11Y_WIDGET__ = {
-      siteId: "test",
-      surfaces: ["body"]
-    };
-  </script>
   <script src="a11y-widget.js" defer></script>
 </head>
 <body>
   <h1>Test Page</h1>
-  <p>Try the accessibility widget!</p>
+  <p>Try the accessibility widget! It works automatically - no configuration needed!</p>
 </body>
 </html>`
 
