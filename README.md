@@ -32,7 +32,12 @@ Just add this single line to your HTML:
 
 That's it! The widget loads automatically from GitHub. No configuration needed.
 
-**✨ Automatic Updates**: When you update the widget files in the GitHub repository, all existing integrations automatically receive the updates. The loader script includes cache-busting to ensure users always get the latest version.
+**✨ Automatic Updates**: When you update the widget files in the GitHub repository, all existing integrations automatically receive the updates on their next page load. The loader script includes aggressive cache-busting to ensure users always get the latest version.
+
+**Note**: If you need to force immediate updates, add cache-busting to the loader script URL:
+```html
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js?v=latest" defer></script>
+```
 
 **⌨️ Keyboard Shortcut**: Press **Alt+A** (Option+A on Mac) from anywhere on the page to quickly open/close the accessibility widget. The shortcut doesn't interfere with typing in input fields.
 
