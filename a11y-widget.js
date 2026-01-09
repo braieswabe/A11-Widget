@@ -711,14 +711,14 @@
     };
     
     // Handle mouse enter/leave for better performance
-    var mouseEnterHandler = function(e) {
+    magnifierMouseEnterHandler = function(e) {
       isMouseOver = true;
       if (magnifierElement) {
         magnifierElement.style.display = "block";
       }
     };
     
-    var mouseLeaveHandler = function(e) {
+    magnifierMouseLeaveHandler = function(e) {
       isMouseOver = false;
       if (magnifierElement) {
         magnifierElement.style.display = "none";
@@ -726,8 +726,8 @@
     };
     
     document.addEventListener("mousemove", magnifierHandler, { passive: true });
-    document.addEventListener("mouseenter", mouseEnterHandler, { passive: true });
-    document.addEventListener("mouseleave", mouseLeaveHandler, { passive: true });
+    document.addEventListener("mouseenter", magnifierMouseEnterHandler, { passive: true });
+    document.addEventListener("mouseleave", magnifierMouseLeaveHandler, { passive: true });
   }
   
   function drawMagnifiedContent(mouseX, mouseY, zoomLevel, canvas, size) {
