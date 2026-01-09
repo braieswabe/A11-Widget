@@ -1,7 +1,33 @@
 /* a11y-widget.css — Accessibility Widget v1
    Scoped styles: only under #a11y-widget-root, plus optional surface selectors you configure.
    No host DOM rewriting. No global resets.
+   
+   Design System: Matches Vercel deployment documentation site styling
 */
+
+/* Design System Variables (matching Vercel deployment) */
+#a11y-widget-root {
+  --a11y-color-primary: #111;
+  --a11y-color-primary-light: #333;
+  --a11y-color-secondary: #007bff;
+  --a11y-color-text: #111;
+  --a11y-color-text-light: #666;
+  --a11y-color-bg: #fff;
+  --a11y-color-bg-light: #f5f5f5;
+  --a11y-color-border: rgba(0,0,0,0.12);
+  --a11y-color-border-dark: rgba(0,0,0,0.18);
+  --a11y-font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Noto Sans", "Liberation Sans", sans-serif;
+  --a11y-spacing-xs: 0.5rem;
+  --a11y-spacing-sm: 1rem;
+  --a11y-spacing-md: 1.5rem;
+  --a11y-spacing-lg: 2rem;
+  --a11y-radius: 8px;
+  --a11y-radius-lg: 16px;
+  --a11y-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  --a11y-shadow-lg: 0 8px 24px rgba(0,0,0,0.15);
+  --a11y-shadow-button: 0 2px 8px rgba(0,0,0,0.15), 0 1px 3px rgba(0,0,0,0.1);
+  --a11y-shadow-button-hover: 0 4px 12px rgba(0,0,0,0.2), 0 2px 6px rgba(0,0,0,0.15);
+}
 
 /* 1) Preference variables live on html[data-a11y] (preferred) */
 html[data-a11y]{
@@ -102,11 +128,12 @@ html[data-a11y][data-a11y-contrast="light"] [data-a11y-surface="true"]{
 /* 3) Widget UI (scoped) */
 #a11y-widget-root{
   position: fixed;
-  top: 1rem;
-  right: 1rem;
+  top: var(--a11y-spacing-sm);
+  right: var(--a11y-spacing-sm);
   z-index: 2147483000;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Noto Sans", "Liberation Sans", sans-serif;
-  color: #111;
+  font-family: var(--a11y-font-family);
+  color: var(--a11y-color-text);
+  box-sizing: border-box;
 }
 
 /* Hide widget when a11y-widget-hidden class is on html */
@@ -127,20 +154,20 @@ html.a11y-widget-hidden .accessibility-widget {
 
 /* Respect left position */
 #a11y-widget-root[data-position="left"]{
-  left: 1rem;
+  left: var(--a11y-spacing-sm);
   right: auto;
 }
 
 #a11y-widget-toggle{
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--a11y-radius);
   padding: 0.75rem 1.25rem;
   font-size: 14px;
   line-height: 1.2;
   cursor: pointer;
-  background: #0066cc;
+  background: var(--a11y-color-secondary);
   color: #fff;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15), 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: var(--a11y-shadow-button);
   min-width: 48px;
   min-height: 48px;
   display: flex;
@@ -148,34 +175,34 @@ html.a11y-widget-hidden .accessibility-widget {
   justify-content: center;
   gap: 0.5rem;
   transition: all 0.2s ease;
-  font-weight: 500;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Noto Sans", "Liberation Sans", sans-serif;
+  font-weight: 600;
+  font-family: var(--a11y-font-family);
 }
 
 #a11y-widget-toggle:hover{
   background: #0052a3;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2), 0 2px 6px rgba(0,0,0,0.15);
+  box-shadow: var(--a11y-shadow-button-hover);
   transform: translateY(-1px);
 }
 
 #a11y-widget-toggle:active{
   background: #004080;
   transform: translateY(0);
-  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+  box-shadow: var(--a11y-shadow);
 }
 
 #a11y-widget-toggle:focus-visible{
-  outline: 2px solid #fff;
+  outline: 3px solid var(--a11y-color-secondary);
   outline-offset: 2px;
-  box-shadow: 0 0 0 3px rgba(0,102,204,0.3), 0 2px 8px rgba(0,0,0,0.15);
+  box-shadow: 0 0 0 3px rgba(0,123,255,0.3), var(--a11y-shadow-button);
 }
 
 #a11y-widget-toggle[aria-expanded="true"]{
-  background: #004080;
+  background: var(--a11y-color-primary);
 }
 
 #a11y-widget-toggle[aria-expanded="true"]:hover{
-  background: #003366;
+  background: var(--a11y-color-primary-light);
 }
 
 .a11y-widget-toggle-icon{
@@ -201,7 +228,7 @@ html.a11y-widget-hidden .accessibility-widget {
     padding: 0.75rem;
     min-width: 48px;
     min-height: 48px;
-    border-radius: 6px;
+    border-radius: var(--a11y-radius);
   }
   .a11y-widget-toggle-icon{
     font-size: 20px;
@@ -211,7 +238,7 @@ html.a11y-widget-hidden .accessibility-widget {
 /* Ensure sufficient contrast for dark mode */
 @media (prefers-color-scheme: dark) {
   #a11y-widget-toggle{
-    background: #0066cc;
+    background: var(--a11y-color-secondary);
     color: #fff;
     border: none;
   }
@@ -222,13 +249,13 @@ html.a11y-widget-hidden .accessibility-widget {
     background: #004080;
   }
   #a11y-widget-toggle[aria-expanded="true"]{
-    background: #004080;
+    background: var(--a11y-color-primary);
   }
   #a11y-widget-toggle[aria-expanded="true"]:hover{
-    background: #003366;
+    background: var(--a11y-color-primary-light);
   }
   #a11y-widget-toggle:focus-visible{
-    outline-color: #fff;
+    outline-color: var(--a11y-color-secondary);
   }
 }
 
@@ -237,10 +264,10 @@ html.a11y-widget-hidden .accessibility-widget {
   margin-top: 0.75rem;
   width: min(320px, calc(100vw - 2rem));
   max-height: min(85vh, 600px);
-  border-radius: 12px;
-  background: #fff;
-  border: 1px solid rgba(0,0,0,0.12);
-  box-shadow: 0 14px 40px rgba(0,0,0,0.25);
+  border-radius: var(--a11y-radius-lg);
+  background: var(--a11y-color-bg);
+  border: 1px solid var(--a11y-color-border);
+  box-shadow: var(--a11y-shadow-lg);
   padding: 0;
   display: flex;
   flex-direction: column;
@@ -258,9 +285,10 @@ html.a11y-widget-hidden .accessibility-widget {
     right: auto;
   }
   #a11y-widget-panel{
-    width: calc(100vw - 1rem);
+    width: calc(100vw - var(--a11y-spacing-sm));
     max-height: min(90vh, 500px);
     margin-top: 0.5rem;
+    border-radius: var(--a11y-radius);
   }
   #a11y-widget-header{
     padding: 0.6rem 0.75rem;
@@ -302,22 +330,23 @@ html.a11y-widget-hidden .accessibility-widget {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.5rem;
-  padding: 0.75rem 0.9rem;
-  border-bottom: 1px solid rgba(0,0,0,0.08);
+  gap: var(--a11y-spacing-xs);
+  padding: 0.75rem var(--a11y-spacing-sm);
+  border-bottom: 1px solid var(--a11y-color-border);
   flex-shrink: 0;
-  background: #fff;
+  background: var(--a11y-color-bg);
 }
 #a11y-widget-title{
   font-size: 15px;
   font-weight: 700;
   margin: 0;
+  color: var(--a11y-color-text);
 }
 #a11y-widget-close{
-  border: 1px solid rgba(0,0,0,0.18);
-  border-radius: 8px;
+  border: 1px solid var(--a11y-color-border-dark);
+  border-radius: var(--a11y-radius);
   padding: 0.3rem 0.5rem;
-  background: #fff;
+  background: var(--a11y-color-bg);
   cursor: pointer;
   font-size: 18px;
   line-height: 1;
@@ -326,22 +355,25 @@ html.a11y-widget-hidden .accessibility-widget {
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.2s;
 }
 #a11y-widget-close:hover{
-  background: #f5f5f5;
+  background: var(--a11y-color-bg-light);
+  border-color: var(--a11y-color-border-dark);
 }
 #a11y-widget-close:focus-visible{
-  outline: 3px solid #111;
+  outline: 3px solid var(--a11y-color-primary);
   outline-offset: 2px;
 }
 
 /* Scrollable content area */
 #a11y-widget-content{
-  padding: 0.75rem 0.9rem;
+  padding: 0.75rem var(--a11y-spacing-sm);
   overflow-y: auto;
   overflow-x: hidden;
   flex: 1;
   min-height: 0;
+  background: var(--a11y-color-bg);
 }
 
 /* Custom scrollbar for webkit browsers */
@@ -374,6 +406,7 @@ html.a11y-widget-hidden .accessibility-widget {
   font-size: 12px;
   font-weight: 650;
   margin-bottom: 0.25rem;
+  color: var(--a11y-color-text);
 }
 
 .a11y-widget-help{
@@ -381,6 +414,7 @@ html.a11y-widget-hidden .accessibility-widget {
   opacity: 0.75;
   line-height: 1.4;
   margin-top: 0.25rem;
+  color: var(--a11y-color-text-light);
 }
 
 .a11y-widget-field{
@@ -398,23 +432,31 @@ html.a11y-widget-hidden .accessibility-widget {
 #a11y-widget-panel select{
   width: 100%;
   padding: 0.5rem;
-  border: 1px solid rgba(0,0,0,0.18);
-  border-radius: 6px;
+  border: 1px solid var(--a11y-color-border-dark);
+  border-radius: var(--a11y-radius);
   font-size: 13px;
-  background: #fff;
+  background: var(--a11y-color-bg);
   cursor: pointer;
+  font-family: var(--a11y-font-family);
+  color: var(--a11y-color-text);
+  transition: border-color 0.2s;
+}
+
+#a11y-widget-panel select:hover{
+  border-color: var(--a11y-color-border-dark);
 }
 
 #a11y-widget-panel select:focus{
-  outline: 2px solid #111;
+  outline: 3px solid var(--a11y-color-secondary);
   outline-offset: 2px;
+  border-color: var(--a11y-color-secondary);
 }
 
 .a11y-widget-btn{
-  border: 1px solid rgba(0,0,0,0.18);
-  border-radius: 8px;
+  border: 1px solid var(--a11y-color-border-dark);
+  border-radius: var(--a11y-radius);
   padding: 0.5rem 0.75rem;
-  background: #fff;
+  background: var(--a11y-color-bg);
   cursor: pointer;
   font-size: 12px;
   font-weight: 600;
@@ -422,19 +464,21 @@ html.a11y-widget-hidden .accessibility-widget {
   min-width: 100px;
   text-align: center;
   white-space: nowrap;
+  color: var(--a11y-color-text);
+  font-family: var(--a11y-font-family);
 }
 .a11y-widget-btn:hover{
-  background: #f5f5f5;
-  border-color: rgba(0,0,0,0.25);
+  background: var(--a11y-color-bg-light);
+  border-color: var(--a11y-color-border-dark);
   transform: translateY(-1px);
-  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  box-shadow: var(--a11y-shadow);
 }
 .a11y-widget-btn:active{
   transform: translateY(0);
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 .a11y-widget-btn:focus-visible{
-  outline: 3px solid #111;
+  outline: 3px solid var(--a11y-color-primary);
   outline-offset: 2px;
 }
 
@@ -462,7 +506,7 @@ html.a11y-widget-hidden .accessibility-widget {
 
 .a11y-divider{
   height: 1px;
-  background: rgba(0,0,0,0.08);
+  background: var(--a11y-color-border);
   margin: 0.6rem 0;
   flex-shrink: 0;
 }
@@ -473,10 +517,13 @@ html.a11y-widget-hidden .accessibility-widget {
   left: -9999px;
   top: -9999px;
   padding: 0.6rem 0.8rem;
-  background: #111;
-  color: #fff;
-  border-radius: 10px;
+  background: var(--a11y-color-primary);
+  color: var(--a11y-color-bg);
+  border-radius: var(--a11y-radius);
   text-decoration: none;
+  font-family: var(--a11y-font-family);
+  font-weight: 600;
+  z-index: 2147483001;
 }
 #a11y-skip-link:focus{
   left: 0;
