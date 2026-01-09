@@ -68,12 +68,12 @@ export default function Layout({ children }: LayoutProps) {
         loaderUrl = '/a11y-widget.js?v=' + timestamp
         fallbackUrl = loaderUrl // No fallback needed in dev
       } else {
-        // Production: Try raw GitHub first, fallback to jsDelivr CDN
-        // Use commit hash or timestamp for maximum cache-busting
-        // Add multiple cache-busting parameters to ensure fresh load
-        var cacheBuster = timestamp + '_' + random + '_' + Date.now();
-        loaderUrl = `https://raw.githubusercontent.com/braieswabe/A11-Widget/main/a11y-widget-loader.js?v=${cacheBuster}&_=${Math.random()}&nocache=${Date.now()}&t=${Date.now()}&cb=${cacheBuster}`
-        fallbackUrl = `https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js?v=${cacheBuster}&_=${Math.random()}&nocache=${Date.now()}&t=${Date.now()}&cb=${cacheBuster}`
+        // Production: Use versioned filename to bypass CDN caching
+        // CDNs ignore query parameters, so we use versioned filenames instead
+        // This ensures we always get the latest version
+        const LOADER_VERSION = '1.3'
+        loaderUrl = `https://raw.githubusercontent.com/braieswabe/A11-Widget/main/a11y-widget-loader-v${LOADER_VERSION}.js`
+        fallbackUrl = `https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader-v${LOADER_VERSION}.js`
       }
       
       loaderScript.src = loaderUrl
@@ -87,13 +87,12 @@ export default function Layout({ children }: LayoutProps) {
           loaderScript.parentNode.removeChild(loaderScript)
         }
         
-        // Try fallback URL (jsDelivr CDN) with even more aggressive cache-busting
+        // Try fallback URL (jsDelivr CDN) with versioned filename
         const fallbackScript = document.createElement('script')
         fallbackScript.id = 'a11y-widget-loader'
-        // Add additional cache-busting for fallback
-        const fallbackCacheBuster = Date.now() + '_' + Math.random().toString(36).substring(7)
-        fallbackScript.src = `https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js?v=${fallbackCacheBuster}&_=${Math.random()}&nocache=${Date.now()}&t=${Date.now()}&cb=${fallbackCacheBuster}&force=${Date.now()}`
-        fallbackScript.setAttribute('data-version', '1.3') // Set version attribute
+        const LOADER_VERSION = '1.3'
+        fallbackScript.src = `https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader-v${LOADER_VERSION}.js`
+        fallbackScript.setAttribute('data-version', LOADER_VERSION) // Set version attribute
         fallbackScript.defer = true
         
         fallbackScript.onload = () => {

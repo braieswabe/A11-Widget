@@ -96,16 +96,17 @@ try {
             currentScript.parentNode.removeChild(currentScript);
           }
           
-          // Load fresh loader script using versioned filename (bypasses CDN cache)
+          // Load fresh loader script with aggressive cache-busting
           var newLoader = document.createElement("script");
-          newLoader.src = GITHUB_RAW_BASE + "a11y-widget-loader-v" + LOADER_VERSION + ".js";
+          var cacheBuster = Date.now() + "_" + Math.random().toString(36).substring(7);
+          newLoader.src = GITHUB_RAW_BASE + "a11y-widget-loader.js?v=" + cacheBuster + "&_=" + cacheBuster + "&force=" + cacheBuster;
           newLoader.setAttribute("data-version", LOADER_VERSION);
           newLoader.defer = true;
           
           // Fallback to jsDelivr if raw GitHub fails
           newLoader.onerror = function() {
             var fallbackLoader = document.createElement("script");
-            fallbackLoader.src = CDN_BASE + "a11y-widget-loader-v" + LOADER_VERSION + ".js";
+            fallbackLoader.src = CDN_BASE + "a11y-widget-loader.js?v=" + cacheBuster + "&_=" + cacheBuster + "&force=" + cacheBuster;
             fallbackLoader.setAttribute("data-version", LOADER_VERSION);
             fallbackLoader.defer = true;
             document.head.appendChild(fallbackLoader);
