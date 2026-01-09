@@ -38,8 +38,8 @@
     // #endregion
     var lastCheck = localStorage.getItem(LAST_UPDATE_CHECK_KEY);
     var now = Date.now();
-    // Check every 5 minutes for updates
-    if (lastCheck && (now - parseInt(lastCheck, 10)) < 300000) {
+    // Check every 1 minute for updates (reduced from 5 minutes for faster updates)
+    if (lastCheck && (now - parseInt(lastCheck, 10)) < 60000) {
       // #region agent log
       debugLog('a11y-widget-loader.js:checkForUpdates', 'Skipping check - too soon', {lastCheck: lastCheck, now: now, diff: now - parseInt(lastCheck, 10)}, 'B');
       // #endregion
@@ -240,26 +240,36 @@
   
   // Check if we need to reload the loader script itself (if cached version is old)
   var currentLoaderVersion = document.currentScript ? document.currentScript.getAttribute("data-version") : null;
+  var storedLoaderVersion = localStorage.getItem('__a11y_loader_version');
+  
   // #region agent log
-  debugLog('a11y-widget-loader.js:init', 'Loader script initialized', {currentLoaderVersion: currentLoaderVersion, LOADER_VERSION: LOADER_VERSION, scriptSrc: document.currentScript ? document.currentScript.src : 'unknown'}, 'C');
+  debugLog('a11y-widget-loader.js:init', 'Loader script initialized', {currentLoaderVersion: currentLoaderVersion, storedLoaderVersion: storedLoaderVersion, LOADER_VERSION: LOADER_VERSION, scriptSrc: document.currentScript ? document.currentScript.src : 'unknown'}, 'C');
   // #endregion
-  if (currentLoaderVersion && currentLoaderVersion !== LOADER_VERSION) {
+  
+  // Force reload if stored version doesn't match (handles cached loader scripts)
+  if (storedLoaderVersion !== LOADER_VERSION) {
     // #region agent log
-    debugLog('a11y-widget-loader.js:init', 'Loader version mismatch - reloading loader', {currentLoaderVersion: currentLoaderVersion, LOADER_VERSION: LOADER_VERSION}, 'C');
+    debugLog('a11y-widget-loader.js:init', 'Loader version mismatch - reloading loader', {storedLoaderVersion: storedLoaderVersion, LOADER_VERSION: LOADER_VERSION}, 'C');
     // #endregion
-    // Loader script is outdated, reload it
-    var newLoader = document.createElement("script");
-    newLoader.src = GITHUB_RAW_BASE + "a11y-widget-loader.js?v=" + Date.now() + "&_=" + Math.random();
-    newLoader.setAttribute("data-version", LOADER_VERSION);
-    document.head.appendChild(newLoader);
-    return; // Exit, let new loader handle the rest
+    localStorage.setItem('__a11y_loader_version', LOADER_VERSION);
+    
+    // If current script version also doesn't match, reload it
+    if (currentLoaderVersion && currentLoaderVersion !== LOADER_VERSION) {
+      var newLoader = document.createElement("script");
+      newLoader.src = GITHUB_RAW_BASE + "a11y-widget-loader.js?v=" + Date.now() + "&_=" + Math.random() + "&force=" + Date.now();
+      newLoader.setAttribute("data-version", LOADER_VERSION);
+      document.head.appendChild(newLoader);
+      return; // Exit, let new loader handle the rest
+    }
   }
   
   // Always load widget (don't check if already loaded - force fresh load)
   loadWidget();
   
-  // Check for updates periodically
+  // Check for updates immediately and periodically
+  // Reduce check interval to 1 minute for faster updates
   checkForUpdates();
+  setInterval(checkForUpdates, 60000); // Check every minute instead of 5
   
   // Also check on page visibility change (when user returns to tab)
   document.addEventListener("visibilitychange", function() {
