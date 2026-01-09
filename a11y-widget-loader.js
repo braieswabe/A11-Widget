@@ -297,8 +297,16 @@ try {
     cssLink.crossOrigin = "anonymous";
     
     // #region agent log
-    debugLog('a11y-widget-loader.js:loadWidget', 'Loading CSS', {cssUrl: cssUrl}, 'E');
+    debugLog('a11y-widget-loader.js:loadWidget', 'Loading CSS', {cssUrl: cssUrl, timestamp: timestamp}, 'E');
     // #endregion
+    
+    // Track CSS load success
+    cssLink.onload = function() {
+      // #region agent log
+      debugLog('a11y-widget-loader.js:cssLink.onload', 'CSS loaded successfully', {cssUrl: cssLink.href}, 'E');
+      // #endregion
+      console.log('[A11Y] CSS loaded from:', cssLink.href);
+    };
     
     // Fallback to raw GitHub if jsDelivr fails (though it may not work due to content-type)
     cssLink.onerror = function() {
@@ -322,8 +330,26 @@ try {
     script.crossOrigin = "anonymous";
     
     // #region agent log
-    debugLog('a11y-widget-loader.js:loadWidget', 'Loading JS', {scriptUrl: scriptUrl}, 'E');
+    debugLog('a11y-widget-loader.js:loadWidget', 'Loading JS', {scriptUrl: scriptUrl, timestamp: timestamp}, 'E');
     // #endregion
+    
+    // Track JS load success
+    script.onload = function() {
+      // #region agent log
+      debugLog('a11y-widget-loader.js:script.onload', 'JS loaded successfully', {scriptUrl: script.src}, 'E');
+      // #endregion
+      console.log('[A11Y] JS loaded from:', script.src);
+      // Check if widget initialized
+      setTimeout(function() {
+        if (window.__a11yWidget && window.__a11yWidget.__loaded) {
+          console.log('[A11Y] Widget initialized successfully');
+          debugLog('a11y-widget-loader.js:script.onload', 'Widget initialized', {widgetLoaded: true}, 'E');
+        } else {
+          console.warn('[A11Y] Widget JS loaded but widget not initialized yet');
+          debugLog('a11y-widget-loader.js:script.onload', 'Widget not initialized', {widgetLoaded: false, hasWidget: !!window.__a11yWidget}, 'E');
+        }
+      }, 1000);
+    };
     
     // Fallback to raw GitHub if jsDelivr fails (though it may not work due to content-type)
     script.onerror = function() {
