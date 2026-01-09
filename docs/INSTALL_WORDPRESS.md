@@ -19,16 +19,8 @@ This guide covers installing the Accessibility Widget v1 on WordPress sites.
 3. Paste this code in the **Scripts in Header** section:
 
 ```html
-<link rel="stylesheet" href="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.css" />
-<script>
-  window.__A11Y_WIDGET__ = {
-    siteId: "YOUR_SITE_ID",
-    position: "right",
-    surfaces: ["body"],
-    enableTelemetry: false
-  };
-</script>
-<script src="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.js" defer></script>
+<!-- Just one line - widget loads automatically! -->
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js" defer></script>
 ```
 
 4. Click **Save**
@@ -45,9 +37,8 @@ This guide covers installing the Accessibility Widget v1 on WordPress sites.
 5. Add the widget code **before** `</head>`:
 
 ```php
-<!-- Accessibility Widget -->
-<link rel="stylesheet" href="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.css" />
-<script>
+<!-- Accessibility Widget - Just one line! -->
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js" defer></script>
   window.__A11Y_WIDGET__ = {
     siteId: "<?php echo get_option('a11y_site_id', 'wordpress-site'); ?>",
     position: "right",

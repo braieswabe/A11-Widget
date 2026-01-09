@@ -6,29 +6,21 @@ This guide covers installing the Accessibility Widget v1 on React Single Page Ap
 
 - React project (CRA, Vite, or custom setup)
 - Access to `public/index.html` or root component
-- CDN domain where widget is hosted
 
 ## Installation Methods
 
-### Method 1: public/index.html (Recommended)
+### Method 1: Simple Installation (Recommended)
 
-Add to `public/index.html` before `</head>` or before `</body>`:
+Add the loader script to `public/index.html`:
 
 ```html
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <link rel="stylesheet" href="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.css" />
-    <script>
-      window.__A11Y_WIDGET__ = {
-        siteId: "YOUR_SITE_ID",
-        position: "right",
-        surfaces: ["body"],
-        enableTelemetry: false
-      };
-    </script>
-    <script src="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.js" defer></script>
+    <title>React App</title>
+    <!-- Accessibility Widget - Just one line! -->
+    <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js" defer></script>
   </head>
   <body>
     <div id="root"></div>
@@ -36,7 +28,39 @@ Add to `public/index.html` before `</head>` or before `</body>`:
 </html>
 ```
 
-### Method 2: Dynamic Load in Root Component
+That's it! The widget will appear automatically. No configuration needed.
+
+### Method 2: Custom Button Control (Advanced)
+
+If you want to hide the default button and control it with your own header button, see [Custom Button Control Guide](INSTALL_CUSTOM_BUTTON.md).
+
+### Method 3: public/index.html with Configuration (Legacy)
+
+If you need to customize settings, add configuration before the loader script:
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>React App</title>
+    <!-- Optional: Customize widget settings -->
+    <script>
+      window.__A11Y_WIDGET__ = {
+        position: "right",  // Optional: "left" or "right"
+        surfaces: ["body", "#root"]  // Optional: CSS selectors
+      };
+    </script>
+    <!-- Load widget from GitHub -->
+    <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js" defer></script>
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
+```
+
+### Method 4: Dynamic Load in Root Component
 
 If you need to load conditionally or use environment variables:
 
@@ -47,35 +71,24 @@ import { useEffect } from 'react'
 
 function App() {
   useEffect(() => {
-    // Load CSS
-    const link = document.createElement('link')
-    link.rel = 'stylesheet'
-    link.href = 'https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.css'
-    document.head.appendChild(link)
-
-    // Set config
-    window.__A11Y_WIDGET__ = {
-      siteId: process.env.REACT_APP_A11Y_SITE_ID || 'react-app',
-      position: 'right',
-      surfaces: ['body'],
-      enableTelemetry: false
+    // Prevent duplicate loads
+    if (document.getElementById('a11y-widget-loader')) {
+      return
     }
 
-    // Load script
+    // Load widget from GitHub
     const script = document.createElement('script')
-    script.src = 'https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.js'
+    script.id = 'a11y-widget-loader'
+    script.src = 'https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js'
     script.defer = true
     
-    // Prevent duplicate loads
-    if (!window.__a11yWidget || !window.__a11yWidget.__loaded) {
-      document.body.appendChild(script)
+    // Optional: Set config before loading
+    window.__A11Y_WIDGET__ = {
+      position: 'right',
+      surfaces: ['body', '#root']
     }
-
-    return () => {
-      // Cleanup (optional)
-      link.remove()
-      script.remove()
-    }
+    
+    document.body.appendChild(script)
   }, [])
 
   return (
@@ -88,7 +101,7 @@ function App() {
 export default App
 ```
 
-### Method 3: Custom Hook
+### Method 5: Custom Hook
 
 Create `src/hooks/useA11yWidget.js`:
 
@@ -98,35 +111,25 @@ import { useEffect } from 'react'
 export function useA11yWidget(config = {}) {
   useEffect(() => {
     // Prevent duplicate loads
-    if (window.__a11yWidget && window.__a11yWidget.__loaded) {
+    if (document.getElementById('a11y-widget-loader')) {
       return
     }
 
-    // Load CSS
-    const link = document.createElement('link')
-    link.rel = 'stylesheet'
-    link.href = 'https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.css'
-    document.head.appendChild(link)
-
-    // Set config
-    window.__A11Y_WIDGET__ = {
-      siteId: config.siteId || process.env.REACT_APP_A11Y_SITE_ID || 'react-app',
-      position: config.position || 'right',
-      surfaces: config.surfaces || ['body'],
-      enableTelemetry: config.enableTelemetry || false,
-      ...config
+    // Set config (optional)
+    if (Object.keys(config).length > 0) {
+      window.__A11Y_WIDGET__ = {
+        position: config.position || 'right',
+        surfaces: config.surfaces || ['body'],
+        ...config
+      }
     }
 
-    // Load script
+    // Load widget from GitHub
     const script = document.createElement('script')
-    script.src = 'https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.js'
+    script.id = 'a11y-widget-loader'
+    script.src = 'https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js'
     script.defer = true
     document.body.appendChild(script)
-
-    return () => {
-      link.remove()
-      script.remove()
-    }
   }, [])
 }
 ```
@@ -138,46 +141,49 @@ import { useA11yWidget } from './hooks/useA11yWidget'
 
 function App() {
   useA11yWidget({
-    siteId: 'my-react-app',
-    surfaces: ['body', 'main']
+    position: 'right',
+    surfaces: ['body', '#root', 'main']
   })
 
   return <div>Your app</div>
 }
 ```
 
-### Method 4: CSP-Friendly (Data Attributes)
+### Method 6: CSP-Friendly (Data Attributes)
 
-If CSP blocks inline scripts, use data attributes:
+If CSP blocks inline scripts, the loader script works without any configuration:
 
 ```html
 <!-- In public/index.html -->
-<link rel="stylesheet" href="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.css" />
 <script
-  src="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.js"
-  data-site-id="YOUR_SITE_ID"
-  data-position="right"
-  data-surfaces="body"
+  src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js"
   defer
 ></script>
 ```
 
+The widget auto-detects your site ID from the domain name.
+
 ## Environment Variables
+
+**Note**: Environment variables are optional. The widget auto-detects your site ID from the domain.
+
+If you want to customize settings via environment variables:
 
 ### Create React App
 
 Create `.env`:
 
 ```env
-REACT_APP_A11Y_SITE_ID=your-site-id
 REACT_APP_A11Y_POSITION=right
-REACT_APP_A11Y_TELEMETRY=false
 ```
 
 Use in code:
 
 ```javascript
-siteId: process.env.REACT_APP_A11Y_SITE_ID
+window.__A11Y_WIDGET__ = {
+  position: process.env.REACT_APP_A11Y_POSITION || 'right',
+  surfaces: ['body', '#root']
+}
 ```
 
 ### Vite
@@ -185,14 +191,16 @@ siteId: process.env.REACT_APP_A11Y_SITE_ID
 Create `.env`:
 
 ```env
-VITE_A11Y_SITE_ID=your-site-id
 VITE_A11Y_POSITION=right
 ```
 
 Use in code:
 
 ```javascript
-siteId: import.meta.env.VITE_A11Y_SITE_ID
+window.__A11Y_WIDGET__ = {
+  position: import.meta.env.VITE_A11Y_POSITION || 'right',
+  surfaces: ['body', '#root']
+}
 ```
 
 ## React-Specific Configuration
@@ -236,11 +244,11 @@ export {}
 
 ## Preventing Duplicate Loads
 
-The widget has built-in guards, but for extra safety:
+The loader script has built-in guards to prevent duplicate loads. If loading manually:
 
 ```jsx
 useEffect(() => {
-  if (window.__a11yWidget && window.__a11yWidget.__loaded) {
+  if (document.getElementById('a11y-widget-loader')) {
     return // Already loaded
   }
   
@@ -290,16 +298,8 @@ If build fails:
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>React App</title>
-    <link rel="stylesheet" href="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.css" />
-    <script>
-      window.__A11Y_WIDGET__ = {
-        siteId: "react-app",
-        position: "right",
-        surfaces: ["body", "#root"],
-        enableTelemetry: false
-      };
-    </script>
-    <script src="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.js" defer></script>
+    <!-- Just one line - widget loads automatically! -->
+    <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js" defer></script>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
@@ -317,16 +317,8 @@ If build fails:
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="stylesheet" href="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.css" />
-    <script>
-      window.__A11Y_WIDGET__ = {
-        siteId: "vite-app",
-        position: "right",
-        surfaces: ["body"],
-        enableTelemetry: false
-      };
-    </script>
-    <script src="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.js" defer></script>
+    <!-- Just one line - widget loads automatically! -->
+    <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js" defer></script>
   </head>
   <body>
     <div id="root"></div>
@@ -334,6 +326,10 @@ If build fails:
   </body>
 </html>
 ```
+
+## Example: Custom Button Control
+
+See [Custom Button Control Guide](INSTALL_CUSTOM_BUTTON.md) for hiding the default button and controlling it with your own header button.
 
 ## Next Steps
 

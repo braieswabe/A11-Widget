@@ -10,7 +10,7 @@ This guide covers installing the Accessibility Widget v1 on Next.js applications
 
 ## App Router (Next.js 13+)
 
-### Method 1: Using next/script (Recommended)
+### Method 1: Simple Installation (Recommended)
 
 In `app/layout.tsx`:
 
@@ -25,19 +25,43 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <link rel="stylesheet" href="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.css" />
+        {/* Just one line - widget loads automatically! */}
+        <Script 
+          src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js" 
+          strategy="afterInteractive"
+        />
+      </head>
+      <body>{children}</body>
+    </html>
+  )
+}
+```
+
+### Method 2: With Custom Configuration
+
+If you want to customize settings:
+
+```tsx
+import Script from 'next/script'
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <html lang="en">
+      <head>
         <Script id="a11y-config" strategy="beforeInteractive">
           {`
             window.__A11Y_WIDGET__ = {
-              siteId: "YOUR_SITE_ID",
               position: "right",
-              surfaces: ["body"],
-              enableTelemetry: false
+              surfaces: ["body", "main"]
             };
           `}
         </Script>
         <Script 
-          src="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.js" 
+          src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js" 
           strategy="afterInteractive"
         />
       </head>

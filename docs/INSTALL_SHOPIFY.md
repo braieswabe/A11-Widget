@@ -23,17 +23,8 @@ This guide covers installing the Accessibility Widget v1 on Shopify stores.
 3. Add the widget code **before** `</head>`:
 
 ```liquid
-<!-- Accessibility Widget -->
-<link rel="stylesheet" href="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.css" />
-<script>
-  window.__A11Y_WIDGET__ = {
-    siteId: "{{ shop.permanent_domain }}",
-    position: "right",
-    surfaces: ["body", "main", ".main-content"],
-    enableTelemetry: false
-  };
-</script>
-<script src="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.js" defer></script>
+<!-- Accessibility Widget - Just one line! -->
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js" defer></script>
 ```
 
 4. Click **Save**

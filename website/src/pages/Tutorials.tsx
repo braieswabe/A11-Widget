@@ -14,28 +14,32 @@ interface Tutorial {
 const tutorials: Tutorial[] = [
   {
     title: 'Static HTML',
-    time: '5 min',
+    time: '2 min',
     difficulty: 'Easy',
     description: 'Installation guide for static HTML sites and custom-built websites. Perfect for simple sites or when you have direct HTML access.',
     steps: [
       {
-        title: 'Add Widget Code',
-        content: 'Add the widget code before </head> or before </body>:',
-        code: `<link rel="stylesheet" href="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.css" />
-<script>
-  window.__A11Y_WIDGET__ = {
-    siteId: "YOUR_SITE_ID",
-    position: "right",
-    surfaces: ["body"],
-    enableTelemetry: false
-  };
-</script>
-<script src="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.js" defer></script>`
+        title: 'Add Widget Loader Script',
+        content: 'Add this single line before </head> or before </body>:',
+        code: `<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js" defer></script>`
       },
       {
-        title: 'Configure Surfaces',
-        content: 'Specify which elements should receive accessibility transforms:',
-        code: `surfaces: ["body", "main", ".content"]`
+        title: 'That\'s It!',
+        content: 'The widget loads automatically from GitHub. No configuration needed! The widget will appear in the top-right corner.'
+      },
+      {
+        title: 'Optional: Custom Button Control',
+        content: 'To hide the default button and control it with your own header button, see the Custom Button Control guide.',
+        code: `/* Add to your CSS */
+.a11y-widget-hidden #a11y-widget-root {
+  display: none !important;
+}
+
+/* Add to your HTML on page load */
+document.documentElement.classList.add('a11y-widget-hidden');
+
+/* Toggle in your button click handler */
+document.documentElement.classList.toggle('a11y-widget-hidden');`
       }
     ]
   },
@@ -70,32 +74,26 @@ add_action('wp_head', 'add_a11y_widget');`
   },
   {
     title: 'Next.js',
-    time: '10 min',
-    difficulty: 'Medium',
+    time: '5 min',
+    difficulty: 'Easy',
     description: 'Installation for Next.js App Router and Pages Router. Includes SSR considerations and TypeScript types.',
     steps: [
       {
-        title: 'App Router (_app.tsx or layout.tsx)',
+        title: 'App Router (layout.tsx)',
         content: 'Add to your root layout:',
         code: `import Script from 'next/script'
-import Head from 'next/head'
 
 export default function RootLayout({ children }) {
   return (
-    <html>
-      <Head>
-        <link rel="stylesheet" href="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.css" />
-      </Head>
-      <body>
-        {children}
-        <Script id="a11y-widget-config" strategy="beforeInteractive">
-          {window.__A11Y_WIDGET__ = {
-            siteId: "YOUR_SITE_ID",
-            surfaces: ["body"]
-          }}
-        </Script>
-        <Script src="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.js" strategy="lazyOnload" />
-      </body>
+    <html lang="en">
+      <head>
+        {/* Just one line - widget loads automatically! */}
+        <Script 
+          src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js" 
+          strategy="afterInteractive"
+        />
+      </head>
+      <body>{children}</body>
     </html>
   )
 }`
@@ -104,55 +102,55 @@ export default function RootLayout({ children }) {
   },
   {
     title: 'React SPA',
-    time: '10 min',
-    difficulty: 'Medium',
-    description: 'Installation for React Single Page Applications (Create React App, Vite, etc.). Includes hooks and dynamic loading.',
+    time: '5 min',
+    difficulty: 'Easy',
+    description: 'Installation for React Single Page Applications (Create React App, Vite, etc.). Includes custom button control option.',
     steps: [
       {
-        title: 'Add to index.html or useEffect',
-        content: 'Add widget script in public/index.html or load dynamically:',
-        code: `useEffect(() => {
-  const link = document.createElement('link')
-  link.rel = 'stylesheet'
-  link.href = 'https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.css'
-  document.head.appendChild(link)
-  
-  window.__A11Y_WIDGET__ = {
-    siteId: "YOUR_SITE_ID",
-    surfaces: ["body"]
-  }
-  
-  const script = document.createElement('script')
-  script.src = 'https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.js'
-  script.defer = true
-  document.body.appendChild(script)
-}, [])`
+        title: 'Add Loader Script',
+        content: 'Add to public/index.html (simplest method):',
+        code: `<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js" defer></script>`
+      },
+      {
+        title: 'Optional: Custom Button Control',
+        content: 'Hide default button and control with your own header button:',
+        code: `/* In src/index.css */
+.a11y-widget-hidden #a11y-widget-root {
+  display: none !important;
+}
+
+/* In src/index.js or src/main.jsx */
+document.documentElement.classList.add('a11y-widget-hidden');
+
+/* In your Header component */
+const toggleWidget = () => {
+  document.documentElement.classList.toggle('a11y-widget-hidden');
+};`
       }
     ]
   },
   {
     title: 'Shopify',
-    time: '15 min',
+    time: '5 min',
     difficulty: 'Easy',
     description: 'Installation via theme.liquid. Includes z-index considerations for cart drawers and theme update strategies.',
     steps: [
       {
         title: 'Edit theme.liquid',
         content: 'Add before </head> in theme.liquid:',
-        code: `<link rel="stylesheet" href="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.css" />
-<script>
+        code: `<!-- Just one line - widget loads automatically! -->
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js" defer></script>`
+      },
+      {
+        title: 'Optional: Customize Settings',
+        content: 'If needed, add configuration before the loader script:',
+        code: `<script>
   window.__A11Y_WIDGET__ = {
-    siteId: "{{ shop.permanent_domain }}",
     position: "right",
-    zIndex: 999999,
     surfaces: ["body", "main"]
   };
 </script>
-<script src="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.js" defer></script>`
-      },
-      {
-        title: 'Z-Index Note',
-        content: 'Ensure z-index is higher than cart drawers (typically 999999 or higher).'
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js" defer></script>`
       }
     ]
   },

@@ -10,12 +10,10 @@ export default function GettingStarted() {
   defer
 ></script>`
 
-  const configCode = `window.__A11Y_WIDGET__ = {
-  siteId: "your-site-id",        // Required: Site identifier
+  const configCode = `// Optional: Customize widget settings
+window.__A11Y_WIDGET__ = {
   position: "right",              // Widget position: "left" or "right"
-  surfaces: ["body"],            // CSS selectors for surfaces to transform
-  enableTelemetry: false,        // Enable telemetry events
-  zIndex: 2147483000,            // Widget z-index
+  surfaces: ["body", "main"],    // CSS selectors for surfaces to transform
   initialOpen: false,            // Open widget on page load
   features: {                    // Feature flags
     contrast: true,

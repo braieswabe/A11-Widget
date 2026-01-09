@@ -109,6 +109,22 @@ html[data-a11y][data-a11y-contrast="light"] [data-a11y-surface="true"]{
   color: #111;
 }
 
+/* Hide widget when a11y-widget-hidden class is on html */
+html.a11y-widget-hidden #a11y-widget-root,
+html.a11y-widget-hidden #a11y-widget-toggle,
+html.a11y-widget-hidden #a11y-widget-panel,
+html.a11y-widget-hidden #a11y-widget-header,
+html.a11y-widget-hidden #a11y-widget-title,
+html.a11y-widget-hidden #a11y-widget-close,
+html.a11y-widget-hidden .a11y-widget-help,
+html.a11y-widget-hidden .a11y-widget,
+html.a11y-widget-hidden .a11y-widget-trigger,
+html.a11y-widget-hidden .a11y-widget-button,
+html.a11y-widget-hidden .accessibility-widget {
+  display: none !important;
+  visibility: hidden !important;
+}
+
 /* Respect left position */
 #a11y-widget-root[data-position="left"]{
   left: 1rem;

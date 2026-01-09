@@ -31,6 +31,23 @@
   -->
   
   <style>
+    /* Hide widget by default - uncomment to use custom button control */
+    /*
+    .a11y-widget-hidden #a11y-widget-root,
+    .a11y-widget-hidden #a11y-widget-toggle,
+    .a11y-widget-hidden #a11y-widget-panel {
+      display: none !important;
+      visibility: hidden !important;
+    }
+    
+    To use custom button control:
+    1. Uncomment the CSS above
+    2. Add this to your HTML on page load:
+       document.documentElement.classList.add('a11y-widget-hidden');
+    3. Add a button in your header with this click handler:
+       document.documentElement.classList.toggle('a11y-widget-hidden');
+    */
+    
     /* Basic page styles */
     body {
       font-family: Georgia, serif;

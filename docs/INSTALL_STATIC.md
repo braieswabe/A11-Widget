@@ -10,53 +10,35 @@ This guide covers installing the Accessibility Widget v1 on static HTML sites or
 
 ## Installation Steps
 
-### Step 1: Add Widget Snippets
+### Step 1: Add Widget Loader Script
 
-Add the widget code to your HTML files. You have two options:
-
-#### Option A: Canonical Installation (Recommended)
-
-Add this code before `</head>` or before `</body>`:
+Add this single line to your HTML files before `</head>` or before `</body>`:
 
 ```html
-<link rel="stylesheet" href="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.css" />
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js" defer></script>
+```
+
+That's it! The widget loads automatically from GitHub. No configuration needed.
+
+### Step 2: Optional - Customize Settings
+
+If you want to customize the widget, add configuration before the loader script:
+
+```html
 <script>
   window.__A11Y_WIDGET__ = {
-    siteId: "YOUR_SITE_ID",
-    position: "right",
-    surfaces: ["body"],
-    enableTelemetry: false
+    position: "right",  // Optional: "left" or "right"
+    surfaces: ["body", "main"]  // Optional: CSS selectors
   };
 </script>
-<script src="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js" defer></script>
 ```
 
-#### Option B: CSP-Friendly Installation
+### Step 3: Optional - Custom Button Control
 
-If your Content Security Policy blocks inline scripts:
+If you want to hide the default button and control it with your own header button, see [Custom Button Control Guide](INSTALL_CUSTOM_BUTTON.md).
 
-```html
-<link rel="stylesheet" href="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.css" />
-<script
-  src="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.js"
-  data-site-id="YOUR_SITE_ID"
-  data-position="right"
-  data-surfaces="body"
-  defer
-></script>
-```
-
-### Step 2: Configure Surfaces
-
-If you have specific content areas to transform, update the `surfaces` array:
-
-```javascript
-surfaces: ["body", "[data-canonical-surface='true']", ".main-content"]
-```
-
-Elements matching these selectors will get `data-a11y-surface="true"` and receive accessibility transforms.
-
-### Step 3: Test
+### Step 4: Test
 
 1. Open your site in a browser
 2. Look for the accessibility widget toggle button (top-right by default)
@@ -66,29 +48,16 @@ Elements matching these selectors will get `data-a11y-surface="true"` and receiv
 
 ## CSP Considerations
 
-### If CSP Blocks Inline Scripts
+### If CSP Blocks External Scripts
 
-Use data attributes (Option B above) or serve config from your backend:
-
-```html
-<!-- Load config from your server -->
-<script src="/api/a11y-config.js"></script>
-<script src="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.js" defer></script>
-```
-
-Where `/api/a11y-config.js` returns:
-```javascript
-window.__A11Y_WIDGET__ = { siteId: "YOUR_SITE_ID", ... };
-```
-
-### CSP Headers Example
-
-If you control CSP headers, allow:
+The loader script loads from `cdn.jsdelivr.net`. If your CSP blocks this, update your CSP headers:
 
 ```
-script-src 'self' https://cdn.YOURDOMAIN.com;
-style-src 'self' https://cdn.YOURDOMAIN.com;
+script-src 'self' https://cdn.jsdelivr.net;
+style-src 'self' https://cdn.jsdelivr.net https://raw.githubusercontent.com;
 ```
+
+Or use a local copy of the widget files and serve them from your domain.
 
 ## Multiple Pages
 
@@ -102,28 +71,14 @@ If using a templating system (Jekyll, Hugo, etc.), add to your base template:
 
 **Jekyll** (`_includes/head.html` or `_layouts/default.html`):
 ```liquid
-<link rel="stylesheet" href="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.css" />
-<script>
-  window.__A11Y_WIDGET__ = {
-    siteId: "{{ site.a11y_site_id }}",
-    position: "right",
-    surfaces: ["body"]
-  };
-</script>
-<script src="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.js" defer></script>
+<!-- Just one line - widget loads automatically! -->
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js" defer></script>
 ```
 
 **Hugo** (`layouts/partials/head.html`):
 ```go
-<link rel="stylesheet" href="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.css" />
-<script>
-  window.__A11Y_WIDGET__ = {
-    siteId: "{{ .Site.Params.a11ySiteId }}",
-    position: "right",
-    surfaces: ["body"]
-  };
-</script>
-<script src="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.js" defer></script>
+<!-- Just one line - widget loads automatically! -->
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js" defer></script>
 ```
 
 ## Troubleshooting
@@ -131,9 +86,9 @@ If using a templating system (Jekyll, Hugo, etc.), add to your base template:
 ### Widget Not Appearing
 
 1. **Check browser console** for JavaScript errors
-2. **Verify script loads**: Open DevTools → Network tab, look for `a11y-widget.js`
+2. **Verify script loads**: Open DevTools → Network tab, look for `a11y-widget-loader.js`
 3. **Check CSP**: Look for CSP violation errors in console
-4. **Verify CDN URL**: Ensure `https://cdn.YOURDOMAIN.com` is correct
+4. **Verify CDN URL**: Ensure `https://cdn.jsdelivr.net` is accessible
 
 ### Settings Not Persisting
 
@@ -151,9 +106,9 @@ If using a templating system (Jekyll, Hugo, etc.), add to your base template:
 
 If you see CSP errors:
 
-1. Use data attributes instead of inline config
-2. Or serve config from your server
-3. Or update CSP headers to allow the CDN domain
+1. Update CSP headers to allow `cdn.jsdelivr.net` and `raw.githubusercontent.com`
+2. Or download widget files and serve from your domain
+3. Or use a proxy/CDN that you control
 
 ## Example: Complete HTML Page
 
@@ -165,17 +120,8 @@ If you see CSP errors:
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>My Site</title>
   
-  <!-- Accessibility Widget -->
-  <link rel="stylesheet" href="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.css" />
-  <script>
-    window.__A11Y_WIDGET__ = {
-      siteId: "my-site-123",
-      position: "right",
-      surfaces: ["body", "main"],
-      enableTelemetry: false
-    };
-  </script>
-  <script src="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.js" defer></script>
+  <!-- Accessibility Widget - Just one line! -->
+  <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js" defer></script>
 </head>
 <body>
   <main>
@@ -188,7 +134,7 @@ If you see CSP errors:
 
 ## Next Steps
 
-- Configure [telemetry](README.md#telemetry-optional) if needed
+- See [Custom Button Control Guide](INSTALL_CUSTOM_BUTTON.md) to hide default button and use your own
 - Customize [surfaces](README.md#surface-scoping) for your content
 - Review [support statement](../support-statement.md) for scope boundaries
 

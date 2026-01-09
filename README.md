@@ -16,35 +16,33 @@ This widget is a **support layer** + **render-time accessibility controls** — 
 
 ## Quick Start
 
-### Canonical Installation
+### Simple Installation (Recommended)
+
+Just add this single line to your HTML:
 
 ```html
-<link rel="stylesheet" href="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.css" />
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js" defer></script>
+```
+
+That's it! The widget loads automatically from GitHub. No configuration needed.
+
+### Optional: Customize Settings
+
+If you want to customize the widget, add configuration before the loader script:
+
+```html
 <script>
   window.__A11Y_WIDGET__ = {
-    siteId: "CLIENT_SITE_ID",
-    position: "right",
-    surfaces: ["body", "[data-canonical-surface='true']"],
-    enableTelemetry: false
+    position: "right",  // Optional: "left" or "right"
+    surfaces: ["body", "main"]  // Optional: CSS selectors
   };
 </script>
-<script src="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js" defer></script>
 ```
 
-### CSP-Friendly Installation (No Inline Config)
+### Custom Button Control
 
-If your Content Security Policy blocks inline scripts:
-
-```html
-<link rel="stylesheet" href="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.css" />
-<script
-  src="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.js"
-  data-site-id="CLIENT_SITE_ID"
-  data-position="right"
-  data-surfaces="body,[data-canonical-surface='true']"
-  defer
-></script>
-```
+To hide the default button and control it with your own header button, see [Custom Button Control Guide](docs/INSTALL_CUSTOM_BUTTON.md).
 
 ## Configuration Options
 
@@ -80,12 +78,13 @@ features: {
 ## Platform-Specific Installation Guides
 
 - **[Static HTML / Custom Sites](docs/INSTALL_STATIC.md)** — Basic HTML sites
-- **[WordPress](docs/INSTALL_WORDPRESS.md)** — WordPress themes/plugins
-- **[Next.js](docs/INSTALL_NEXTJS.md)** — Next.js App Router or Pages Router
 - **[React SPA](docs/INSTALL_REACT.md)** — Create React App, Vite, etc.
+- **[Next.js](docs/INSTALL_NEXTJS.md)** — Next.js App Router or Pages Router
+- **[WordPress](docs/INSTALL_WORDPRESS.md)** — WordPress themes/plugins
 - **[Shopify](docs/INSTALL_SHOPIFY.md)** — Shopify themes
 - **[Google Tag Manager](docs/INSTALL_GTM.md)** — GTM implementation
 - **[Django/Rails/.NET](docs/INSTALL_DJANGO.md)** — Server-side rendered apps
+- **[Custom Button Control](docs/INSTALL_CUSTOM_BUTTON.md)** — Hide default button, use your own header button
 
 ## How It Works
 
