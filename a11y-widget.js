@@ -222,6 +222,13 @@
       removeMagnifier();
     }
     
+    // Initialize/remove custom cursor
+    if (prefs.cursorEnabled && prefs.cursorSize && prefs.cursorSize !== "normal") {
+      createCustomCursor(prefs);
+    } else {
+      removeCustomCursor();
+    }
+    
     // Stop speech if disabled
     if (!prefs.textToSpeechEnabled) {
       stopSpeech();
@@ -598,447 +605,374 @@
   }
 
   // --- Magnifier Handler ------------------------------------------------------
+  // Uses CSS transforms for real-time magnification of actual page content
   var magnifierElement = null;
   var magnifierContent = null;
   var magnifierHandler = null;
-  var magnifierMouseEnterHandler = null;
-  var magnifierMouseLeaveHandler = null;
-  var magnifierCanvas = null;
+  var magnifierClone = null;
+  var magnifierRAF = null;
 
   function createMagnifier(prefs) {
-    if (magnifierElement) {
-      magnifierElement.remove();
-    }
-    if (magnifierHandler) {
-      document.removeEventListener("mousemove", magnifierHandler);
-    }
-    if (magnifierMouseEnterHandler) {
-      document.removeEventListener("mouseenter", magnifierMouseEnterHandler);
-    }
-    if (magnifierMouseLeaveHandler) {
-      document.removeEventListener("mouseleave", magnifierMouseLeaveHandler);
-    }
+    removeMagnifier(); // Clean up any existing magnifier
     
-    var size = 200;
+    var size = 220; // Magnifier lens size
     var zoom = parseFloat(prefs.magnifierZoom || 2.0);
-    var isMouseOver = false;
-    var lastUpdateTime = 0;
-    var throttleDelay = 0; // No throttling for real-time updates - use requestAnimationFrame instead
     
+    // Create magnifier container (the lens)
     magnifierElement = document.createElement("div");
     magnifierElement.id = "a11y-magnifier";
+    magnifierElement.setAttribute("aria-hidden", "true");
     magnifierElement.style.cssText = 
       "position: fixed; " +
       "pointer-events: none; " +
-      "z-index: 2147482997; " +
+      "z-index: 2147483000; " +
       "width: " + size + "px; " +
       "height: " + size + "px; " +
-      "border: 3px solid #0066cc; " +
+      "border: 4px solid #0066cc; " +
       "border-radius: 50%; " +
       "overflow: hidden; " +
-      "box-shadow: 0 0 20px rgba(0,0,0,0.5), inset 0 0 20px rgba(0,0,0,0.1); " +
+      "box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(0,102,204,0.3), inset 0 0 30px rgba(0,0,0,0.1); " +
       "display: none; " +
-      "background: white; " +
-      "transform: translate(-50%, -50%);";
+      "background: #fff;";
     
-    // Create canvas for magnified content with higher resolution for better quality
-    magnifierCanvas = document.createElement("canvas");
-    var canvasScale = 2; // Higher resolution for better quality
-    magnifierCanvas.width = size * canvasScale;
-    magnifierCanvas.height = size * canvasScale;
-    magnifierCanvas.style.cssText = 
-      "width: 100%; " +
-      "height: 100%; " +
-      "display: block; " +
-      "image-rendering: -webkit-optimize-contrast; " +
-      "image-rendering: crisp-edges;";
-    
+    // Create content container that holds the cloned/transformed content
     magnifierContent = document.createElement("div");
     magnifierContent.style.cssText = 
-      "width: 100%; " +
-      "height: 100%; " +
-      "position: relative; " +
-      "overflow: hidden; " +
-      "border-radius: 50%;";
-    magnifierContent.appendChild(magnifierCanvas);
+      "width: " + (size * 3) + "px; " +
+      "height: " + (size * 3) + "px; " +
+      "position: absolute; " +
+      "top: 50%; " +
+      "left: 50%; " +
+      "transform-origin: center center; " +
+      "pointer-events: none; " +
+      "background: #fff;";
+    
     magnifierElement.appendChild(magnifierContent);
     document.body.appendChild(magnifierElement);
     
-    // Pre-load html2canvas if not already loaded
-    if (typeof html2canvas === "undefined" && !window.html2canvasLoading && !window.html2canvasFailed) {
-      window.html2canvasLoading = true;
-      var script = document.createElement("script");
-      script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
-      script.onload = function() {
-        window.html2canvasLoading = false;
-        window.html2canvas = true;
-        // Trigger a redraw when html2canvas becomes available
-        if (magnifierElement && magnifierElement.style.display !== "none" && magnifierHandler) {
-          // Trigger a synthetic mousemove event to redraw with html2canvas
-          if (window.lastMagnifierMouseEvent) {
-            var syntheticEvent = {
-              clientX: window.lastMagnifierMouseEvent.clientX,
-              clientY: window.lastMagnifierMouseEvent.clientY,
-              type: "mousemove"
-            };
-            magnifierHandler(syntheticEvent);
-          }
-        }
-      };
-      script.onerror = function() {
-        window.html2canvasLoading = false;
-        window.html2canvasFailed = true;
-      };
-      document.head.appendChild(script);
-    }
+    // Create zoom level indicator
+    var zoomIndicator = document.createElement("div");
+    zoomIndicator.id = "a11y-magnifier-zoom-indicator";
+    zoomIndicator.style.cssText = 
+      "position: absolute; " +
+      "bottom: 8px; " +
+      "left: 50%; " +
+      "transform: translateX(-50%); " +
+      "background: rgba(0,102,204,0.9); " +
+      "color: #fff; " +
+      "padding: 2px 8px; " +
+      "border-radius: 10px; " +
+      "font-size: 11px; " +
+      "font-weight: bold; " +
+      "font-family: system-ui, sans-serif;";
+    zoomIndicator.textContent = zoom.toFixed(1) + "x";
+    magnifierElement.appendChild(zoomIndicator);
     
-    // Helper function to update magnifier position and content
-    function updateMagnifierPosition(e, currentZoom, magnifierSize) {
-      var html = document.documentElement;
-      var enabled = html.getAttribute("data-a11y-magnifier") === "1";
-      
-      if (!enabled || !magnifierElement || !magnifierCanvas) {
-        if (magnifierElement) {
-          magnifierElement.style.display = "none";
-        }
-        return;
-      }
-      
-      var currentZoomValue = parseFloat(html.style.getPropertyValue("--a11y-magnifier-zoom") || "2.0");
-      currentZoom = currentZoomValue;
-      
-      magnifierElement.style.display = "block";
-      
-      // Position magnifier to follow cursor with offset
-      var offsetX = 120;
-      var offsetY = 120;
-      var x = e.clientX + offsetX;
-      var y = e.clientY - offsetY;
-      
-      // Keep within viewport bounds
-      if (x + magnifierSize / 2 > window.innerWidth) {
-        x = e.clientX - offsetX - magnifierSize;
-      }
-      if (y - magnifierSize / 2 < 0) {
-        y = e.clientY + offsetY;
-      }
-      if (x - magnifierSize / 2 < 0) {
-        x = magnifierSize / 2;
-      }
-      if (y + magnifierSize / 2 > window.innerHeight) {
-        y = window.innerHeight - magnifierSize / 2;
-      }
-      
-      magnifierElement.style.left = x + "px";
-      magnifierElement.style.top = y + "px";
-      
-      // Draw magnified content immediately (real-time)
-      drawMagnifiedContent(e.clientX, e.clientY, currentZoom, magnifierCanvas, magnifierSize);
-    }
+    // Throttle for performance
+    var lastUpdate = 0;
+    var throttleMs = 16; // ~60fps
     
     magnifierHandler = function(e) {
       var html = document.documentElement;
       var enabled = html.getAttribute("data-a11y-magnifier") === "1";
       
-      if (!enabled || !magnifierElement || !magnifierCanvas) {
-        if (magnifierElement) {
-          magnifierElement.style.display = "none";
-        }
+      if (!enabled || !magnifierElement) {
+        if (magnifierElement) magnifierElement.style.display = "none";
         return;
       }
       
-      // Store last mouse event for redraw when html2canvas loads
-      window.lastMagnifierMouseEvent = e;
-      
-      // Use requestAnimationFrame for smooth real-time updates on mousemove
-      if (e.type === "mousemove") {
-        if (window.magnifierRAF) {
-          cancelAnimationFrame(window.magnifierRAF);
-        }
-        window.magnifierRAF = requestAnimationFrame(function() {
-          updateMagnifierPosition(e, zoom, size);
+      // Throttle updates
+      var now = Date.now();
+      if (now - lastUpdate < throttleMs) {
+        if (magnifierRAF) cancelAnimationFrame(magnifierRAF);
+        magnifierRAF = requestAnimationFrame(function() {
+          updateMagnifier(e);
         });
-      } else {
-        // For other events, update immediately
-        updateMagnifierPosition(e, zoom, size);
+        return;
       }
+      lastUpdate = now;
+      
+      updateMagnifier(e);
     };
     
-    // Handle mouse enter/leave for better performance
-    magnifierMouseEnterHandler = function(e) {
-      isMouseOver = true;
-      if (magnifierElement) {
-        magnifierElement.style.display = "block";
+    function updateMagnifier(e) {
+      var html = document.documentElement;
+      var currentZoom = parseFloat(html.style.getPropertyValue("--a11y-magnifier-zoom") || zoom);
+      
+      // Show magnifier
+      magnifierElement.style.display = "block";
+      
+      // Position magnifier near cursor (offset to not block view)
+      var offsetX = 30;
+      var offsetY = -30;
+      var magX = e.clientX + offsetX + size/2;
+      var magY = e.clientY + offsetY - size/2;
+      
+      // Keep within viewport bounds
+      if (magX + size/2 > window.innerWidth) {
+        magX = e.clientX - offsetX - size/2;
       }
-    };
-    
-    magnifierMouseLeaveHandler = function(e) {
-      isMouseOver = false;
-      if (magnifierElement) {
-        magnifierElement.style.display = "none";
+      if (magY - size/2 < 0) {
+        magY = e.clientY - offsetY + size/2;
       }
-    };
+      if (magX - size/2 < 0) {
+        magX = size/2 + 10;
+      }
+      if (magY + size/2 > window.innerHeight) {
+        magY = window.innerHeight - size/2 - 10;
+      }
+      
+      magnifierElement.style.left = magX + "px";
+      magnifierElement.style.top = magY + "px";
+      
+      // Update zoom indicator
+      var indicator = magnifierElement.querySelector("#a11y-magnifier-zoom-indicator");
+      if (indicator) indicator.textContent = currentZoom.toFixed(1) + "x";
+      
+      // Calculate what area to show (centered on mouse position)
+      var viewWidth = size / currentZoom;
+      var viewHeight = size / currentZoom;
+      
+      // Get the element under the cursor
+      magnifierElement.style.display = "none"; // Hide temporarily to get element under
+      var elementUnder = document.elementFromPoint(e.clientX, e.clientY);
+      magnifierElement.style.display = "block";
+      
+      if (elementUnder && !elementUnder.closest("#a11y-magnifier") && !elementUnder.closest("#a11y-widget-root")) {
+        // Clone and render content in magnifier
+        renderMagnifiedArea(e.clientX, e.clientY, currentZoom, size);
+      }
+    }
     
     document.addEventListener("mousemove", magnifierHandler, { passive: true });
-    document.addEventListener("mouseenter", magnifierMouseEnterHandler, { passive: true });
-    document.addEventListener("mouseleave", magnifierMouseLeaveHandler, { passive: true });
+    
+    // Hide on mouse leave
+    document.addEventListener("mouseleave", function() {
+      if (magnifierElement) magnifierElement.style.display = "none";
+    }, { passive: true });
   }
   
-  // Cache for html2canvas to avoid repeated captures
-  var magnifierCache = {
-    canvas: null,
-    timestamp: 0,
-    mouseX: 0,
-    mouseY: 0,
-    ttl: 100 // Cache for 100ms
-  };
-  
-  function drawMagnifiedContent(mouseX, mouseY, zoomLevel, canvas, size) {
-    if (!canvas) return;
+  function renderMagnifiedArea(mouseX, mouseY, zoomLevel, size) {
+    if (!magnifierContent) return;
     
-    var ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    // Calculate scroll offset
+    var scrollX = window.pageXOffset || document.documentElement.scrollLeft;
+    var scrollY = window.pageYOffset || document.documentElement.scrollTop;
     
-    var canvasScale = 2; // Match the scale used in createMagnifier
-    var scaledSize = size * canvasScale;
+    // The area we want to magnify (centered on mouse)
+    var areaWidth = size / zoomLevel;
+    var areaHeight = size / zoomLevel;
     
-    // Clear canvas
-    ctx.clearRect(0, 0, scaledSize, scaledSize);
+    // Use a simple CSS approach: clone body and transform
+    // Clear previous content
+    magnifierContent.innerHTML = "";
     
-    // Calculate source area (what part of the page to magnify)
-    var sourceSize = size / zoomLevel;
+    // Create a viewport for the magnified content
+    var viewport = document.createElement("div");
+    viewport.style.cssText = 
+      "position: absolute; " +
+      "width: " + document.documentElement.scrollWidth + "px; " +
+      "height: " + document.documentElement.scrollHeight + "px; " +
+      "transform: scale(" + zoomLevel + "); " +
+      "transform-origin: " + (mouseX + scrollX) + "px " + (mouseY + scrollY) + "px; " +
+      "left: " + (size/2 - (mouseX + scrollX) * zoomLevel) + "px; " +
+      "top: " + (size/2 - (mouseY + scrollY) * zoomLevel) + "px; " +
+      "pointer-events: none; " +
+      "background: #fff;";
     
-    // Use html2canvas if available and ready
-    if (typeof html2canvas !== "undefined" && html2canvas && !window.html2canvasLoading) {
-      var now = Date.now();
-      var useCache = false;
-      
-      // Check if we can use cached result
-      if (magnifierCache.canvas && 
-          (now - magnifierCache.timestamp) < magnifierCache.ttl &&
-          Math.abs(magnifierCache.mouseX - mouseX) < 10 &&
-          Math.abs(magnifierCache.mouseY - mouseY) < 10) {
-        useCache = true;
+    // Clone visible elements near the mouse cursor
+    var radius = Math.max(size / zoomLevel, 150);
+    var elementsInArea = getElementsInArea(mouseX + scrollX, mouseY + scrollY, radius);
+    
+    elementsInArea.forEach(function(el) {
+      try {
+        // Skip the magnifier and widget
+        if (el.id === "a11y-magnifier" || el.id === "a11y-widget-root" || 
+            el.closest("#a11y-magnifier") || el.closest("#a11y-widget-root")) {
+          return;
+        }
+        
+        var clone = el.cloneNode(true);
+        var rect = el.getBoundingClientRect();
+        
+        // Position clone at its original location
+        clone.style.cssText = 
+          "position: absolute !important; " +
+          "left: " + (rect.left + scrollX) + "px !important; " +
+          "top: " + (rect.top + scrollY) + "px !important; " +
+          "width: " + rect.width + "px !important; " +
+          "height: " + rect.height + "px !important; " +
+          "margin: 0 !important; " +
+          "pointer-events: none !important;";
+        
+        // Copy computed styles
+        var computedStyle = window.getComputedStyle(el);
+        clone.style.backgroundColor = computedStyle.backgroundColor;
+        clone.style.color = computedStyle.color;
+        clone.style.fontSize = computedStyle.fontSize;
+        clone.style.fontFamily = computedStyle.fontFamily;
+        clone.style.fontWeight = computedStyle.fontWeight;
+        clone.style.lineHeight = computedStyle.lineHeight;
+        clone.style.textAlign = computedStyle.textAlign;
+        clone.style.border = computedStyle.border;
+        clone.style.borderRadius = computedStyle.borderRadius;
+        clone.style.boxShadow = computedStyle.boxShadow;
+        clone.style.padding = computedStyle.padding;
+        
+        viewport.appendChild(clone);
+      } catch(err) {
+        // Skip elements that can't be cloned
       }
+    });
+    
+    magnifierContent.appendChild(viewport);
+  }
+  
+  function getElementsInArea(centerX, centerY, radius) {
+    var elements = [];
+    var allElements = document.body.querySelectorAll("*");
+    
+    for (var i = 0; i < allElements.length; i++) {
+      var el = allElements[i];
       
-      if (useCache && magnifierCache.canvas) {
-        // Use cached canvas
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(scaledSize / 2, scaledSize / 2, scaledSize / 2 - 4, 0, Math.PI * 2);
-        ctx.clip();
-        
-        var drawSize = sourceSize;
-        var drawX = (scaledSize / 2) - (drawSize * canvasScale / 2);
-        var drawY = (scaledSize / 2) - (drawSize * canvasScale / 2);
-        
-        // Adjust for mouse movement since cache
-        var offsetX = mouseX - magnifierCache.mouseX;
-        var offsetY = mouseY - magnifierCache.mouseY;
-        
-        ctx.drawImage(
-          magnifierCache.canvas,
-          Math.max(0, (sourceSize / 2) - offsetX * zoomLevel), 
-          Math.max(0, (sourceSize / 2) - offsetY * zoomLevel),
-          drawSize, drawSize,
-          drawX, drawY,
-          drawSize * canvasScale, drawSize * canvasScale
-        );
-        
-        ctx.restore();
-      } else {
-        // Capture new area
-        var captureSize = Math.max(sourceSize * 2, 400);
-        var captureX = Math.max(0, mouseX - captureSize / 2);
-        var captureY = Math.max(0, mouseY - captureSize / 2);
-        
-        html2canvas(document.body, {
-          x: captureX,
-          y: captureY,
-          width: Math.min(captureSize, window.innerWidth - captureX),
-          height: Math.min(captureSize, window.innerHeight - captureY),
-          scale: 2,
-          useCORS: true,
-          logging: false,
-          allowTaint: true,
-          backgroundColor: null,
-          windowWidth: window.innerWidth,
-          windowHeight: window.innerHeight,
-          removeContainer: true
-        }).then(function(canvasImg) {
-          if (canvasImg && ctx && magnifierCanvas === canvas) {
-            // Update cache
-            magnifierCache.canvas = canvasImg;
-            magnifierCache.timestamp = Date.now();
-            magnifierCache.mouseX = mouseX;
-            magnifierCache.mouseY = mouseY;
-            
-            // Calculate the offset within the captured image
-            var offsetX = (mouseX - captureX) * 2; // Account for scale
-            var offsetY = (mouseY - captureY) * 2;
-            
-            // Draw the captured content scaled up with circular clipping
-            ctx.save();
-            ctx.beginPath();
-            ctx.arc(scaledSize / 2, scaledSize / 2, scaledSize / 2 - 4, 0, Math.PI * 2);
-            ctx.clip();
-            
-            // Draw the magnified area
-            var drawSize = sourceSize;
-            var drawX = (scaledSize / 2) - (drawSize * canvasScale / 2);
-            var drawY = (scaledSize / 2) - (drawSize * canvasScale / 2);
-            
-            ctx.drawImage(
-              canvasImg,
-              Math.max(0, offsetX - (drawSize * 2 / 2)), 
-              Math.max(0, offsetY - (drawSize * 2 / 2)),
-              Math.min(drawSize * 2, canvasImg.width - Math.max(0, offsetX - (drawSize * 2 / 2))), 
-              Math.min(drawSize * 2, canvasImg.height - Math.max(0, offsetY - (drawSize * 2 / 2))),
-              drawX, drawY,
-              drawSize * canvasScale, drawSize * canvasScale
-            );
-            
-            ctx.restore();
-          }
-        }).catch(function(err) {
-          console.warn("Magnifier: html2canvas failed, using fallback", err);
-          // Fallback if html2canvas fails
-          drawRealTimeMagnifier(ctx, mouseX, mouseY, zoomLevel, scaledSize);
-        });
-      }
-    } else {
-      // Use real-time fallback immediately
-      drawRealTimeMagnifier(ctx, mouseX, mouseY, zoomLevel, scaledSize);
-    }
-  }
-  
-  // Real-time magnifier fallback that shows actual content
-  function drawRealTimeMagnifier(ctx, mouseX, mouseY, zoomLevel, canvasSize) {
-    // Clear canvas
-    ctx.clearRect(0, 0, canvasSize, canvasSize);
-    
-    // Draw white background with circular clipping
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(canvasSize / 2, canvasSize / 2, canvasSize / 2 - 4, 0, Math.PI * 2);
-    ctx.clip();
-    ctx.fillStyle = "#ffffff";
-    ctx.fill();
-    
-    var centerX = canvasSize / 2;
-    var centerY = canvasSize / 2;
-    var radius = canvasSize / 2 - 4;
-    
-    // Draw a subtle grid to show the magnifier is active
-    ctx.strokeStyle = "#e8e8e8";
-    ctx.lineWidth = 1;
-    var gridSize = 20;
-    for (var x = centerX - radius; x <= centerX + radius; x += gridSize) {
-      ctx.beginPath();
-      ctx.moveTo(x, centerY - radius);
-      ctx.lineTo(x, centerY + radius);
-      ctx.stroke();
-    }
-    for (var y = centerY - radius; y <= centerY + radius; y += gridSize) {
-      ctx.beginPath();
-      ctx.moveTo(centerX - radius, y);
-      ctx.lineTo(centerX + radius, y);
-      ctx.stroke();
-    }
-    
-    // Draw crosshair at center
-    ctx.strokeStyle = "#0066cc";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(centerX - 15, centerY);
-    ctx.lineTo(centerX + 15, centerY);
-    ctx.moveTo(centerX, centerY - 15);
-    ctx.lineTo(centerX, centerY + 15);
-    ctx.stroke();
-    
-    // Draw zoom level indicator
-    ctx.fillStyle = "#0066cc";
-    ctx.font = "bold 18px Arial";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(zoomLevel.toFixed(1) + "x", centerX, centerY);
-    
-    // Show status message only if html2canvas is still loading
-    if (window.html2canvasLoading && typeof html2canvas === "undefined") {
-      ctx.fillStyle = "#999";
-      ctx.font = "11px Arial";
-      ctx.textBaseline = "bottom";
-      ctx.fillText("Loading...", centerX, canvasSize - 8);
-    }
-    
-    ctx.restore();
-  }
-  
-  function drawFallbackMagnifier(ctx, size, zoomLevel) {
-    // Draw a white background
-    ctx.fillStyle = "#ffffff";
-    ctx.beginPath();
-    ctx.arc(size / 2, size / 2, size / 2 - 4, 0, Math.PI * 2);
-    ctx.fill();
-    
-    // Draw a subtle pattern
-    ctx.fillStyle = "#f0f0f0";
-    var patternSize = 20;
-    for (var y = 0; y < size; y += patternSize) {
-      for (var x = 0; x < size; x += patternSize) {
-        if ((x + y) % (patternSize * 2) === 0) {
-          ctx.fillRect(x, y, patternSize, patternSize);
+      // Skip hidden, script, style elements
+      if (el.tagName === "SCRIPT" || el.tagName === "STYLE" || el.tagName === "NOSCRIPT") continue;
+      
+      var rect = el.getBoundingClientRect();
+      var scrollX = window.pageXOffset || document.documentElement.scrollLeft;
+      var scrollY = window.pageYOffset || document.documentElement.scrollTop;
+      
+      var elCenterX = rect.left + scrollX + rect.width / 2;
+      var elCenterY = rect.top + scrollY + rect.height / 2;
+      
+      // Check if element is within the radius
+      var distance = Math.sqrt(Math.pow(centerX - elCenterX, 2) + Math.pow(centerY - elCenterY, 2));
+      
+      if (distance < radius + Math.max(rect.width, rect.height) / 2) {
+        // Only include leaf nodes or elements with direct text
+        if (el.children.length === 0 || el.textContent.trim().length < 200) {
+          elements.push(el);
         }
       }
     }
     
-    // Draw zoom level text
-    ctx.fillStyle = "#0066cc";
-    ctx.font = "bold 24px Arial";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(zoomLevel + "x", size / 2, size / 2);
-    
-    // Draw a crosshair at center
-    ctx.strokeStyle = "#0066cc";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(size / 2 - 15, size / 2);
-    ctx.lineTo(size / 2 + 15, size / 2);
-    ctx.moveTo(size / 2, size / 2 - 15);
-    ctx.lineTo(size / 2, size / 2 + 15);
-    ctx.stroke();
-    
-    // Draw zoom level text
-    ctx.fillStyle = "#0066cc";
-    ctx.font = "bold 16px Arial";
-    ctx.textAlign = "center";
-    ctx.fillText(zoomLevel.toFixed(1) + "x", size / 2, size - 15);
-    
-    // Draw instruction text
-    ctx.fillStyle = "#666";
-    ctx.font = "12px Arial";
-    ctx.fillText("Move mouse", size / 2, size / 2 + 5);
+    // Limit to 50 elements for performance
+    return elements.slice(0, 50);
   }
 
   function removeMagnifier() {
+    if (magnifierRAF) {
+      cancelAnimationFrame(magnifierRAF);
+      magnifierRAF = null;
+    }
     if (magnifierElement) {
       magnifierElement.remove();
       magnifierElement = null;
-      magnifierContent = null;
-      magnifierCanvas = null;
     }
     if (magnifierHandler) {
       document.removeEventListener("mousemove", magnifierHandler);
       magnifierHandler = null;
     }
-    if (magnifierMouseEnterHandler) {
-      document.removeEventListener("mouseenter", magnifierMouseEnterHandler);
-      magnifierMouseEnterHandler = null;
+    magnifierContent = null;
+  }
+
+  // --- Custom Cursor Handler -------------------------------------------------
+  var customCursorElement = null;
+  var customCursorHandler = null;
+  var customCursorClickHandler = null;
+  var customCursorHoverHandler = null;
+
+  function createCustomCursor(prefs) {
+    removeCustomCursor(); // Clean up any existing cursor
+    
+    var cursorSize = prefs.cursorSize || "large";
+    
+    // Create custom cursor element
+    customCursorElement = document.createElement("div");
+    customCursorElement.id = "a11y-custom-cursor";
+    customCursorElement.className = cursorSize;
+    customCursorElement.setAttribute("aria-hidden", "true");
+    document.body.appendChild(customCursorElement);
+    
+    // Track mouse movement
+    customCursorHandler = function(e) {
+      if (!customCursorElement) return;
+      
+      customCursorElement.style.left = e.clientX + "px";
+      customCursorElement.style.top = e.clientY + "px";
+      customCursorElement.style.display = "block";
+    };
+    
+    // Handle click feedback
+    customCursorClickHandler = function(e) {
+      if (!customCursorElement) return;
+      customCursorElement.classList.add("clicking");
+      setTimeout(function() {
+        if (customCursorElement) {
+          customCursorElement.classList.remove("clicking");
+        }
+      }, 150);
+    };
+    
+    // Handle hover states
+    customCursorHoverHandler = function(e) {
+      if (!customCursorElement) return;
+      
+      var target = e.target;
+      var isInteractive = (
+        target.tagName === "A" ||
+        target.tagName === "BUTTON" ||
+        target.tagName === "INPUT" ||
+        target.tagName === "SELECT" ||
+        target.tagName === "TEXTAREA" ||
+        target.getAttribute("role") === "button" ||
+        target.getAttribute("onclick") ||
+        target.style.cursor === "pointer" ||
+        window.getComputedStyle(target).cursor === "pointer"
+      );
+      
+      if (isInteractive) {
+        customCursorElement.classList.add("hovering");
+      } else {
+        customCursorElement.classList.remove("hovering");
+      }
+    };
+    
+    // Add event listeners
+    document.addEventListener("mousemove", customCursorHandler, { passive: true });
+    document.addEventListener("mousedown", customCursorClickHandler, { passive: true });
+    document.addEventListener("mouseover", customCursorHoverHandler, { passive: true });
+    
+    // Hide when mouse leaves window
+    document.addEventListener("mouseleave", function() {
+      if (customCursorElement) {
+        customCursorElement.style.display = "none";
+      }
+    }, { passive: true });
+    
+    document.addEventListener("mouseenter", function() {
+      if (customCursorElement) {
+        customCursorElement.style.display = "block";
+      }
+    }, { passive: true });
+  }
+
+  function removeCustomCursor() {
+    if (customCursorElement) {
+      customCursorElement.remove();
+      customCursorElement = null;
     }
-    if (magnifierMouseLeaveHandler) {
-      document.removeEventListener("mouseleave", magnifierMouseLeaveHandler);
-      magnifierMouseLeaveHandler = null;
+    if (customCursorHandler) {
+      document.removeEventListener("mousemove", customCursorHandler);
+      customCursorHandler = null;
+    }
+    if (customCursorClickHandler) {
+      document.removeEventListener("mousedown", customCursorClickHandler);
+      customCursorClickHandler = null;
+    }
+    if (customCursorHoverHandler) {
+      document.removeEventListener("mouseover", customCursorHoverHandler);
+      customCursorHoverHandler = null;
     }
   }
 
@@ -1156,12 +1090,61 @@
   }
 
   // --- Translation Handler ----------------------------------------------------
+  // Translation state tracking
+  var translationCache = {};
+  var translationNodes = [];
+  var translationInProgress = false;
+  var translationStatusEl = null;
+
+  function showTranslationStatus(message, isError, isPersistent) {
+    if (!translationStatusEl) {
+      translationStatusEl = document.createElement("div");
+      translationStatusEl.id = "a11y-translation-status";
+      translationStatusEl.style.cssText = 
+        "position: fixed; bottom: 80px; right: 20px; " +
+        "background: #333; color: #fff; padding: 12px 18px; " +
+        "border-radius: 8px; font-size: 14px; z-index: 2147483002; " +
+        "box-shadow: 0 4px 12px rgba(0,0,0,0.3); font-family: system-ui, sans-serif;" +
+        "transition: opacity 0.3s ease; display: flex; align-items: center; gap: 8px;";
+      document.body.appendChild(translationStatusEl);
+    }
+    translationStatusEl.innerHTML = message;
+    translationStatusEl.style.background = isError ? "#d32f2f" : "#333";
+    translationStatusEl.style.opacity = "1";
+    
+    // Auto-hide after 3 seconds unless persistent
+    if (!isPersistent) {
+      setTimeout(function() {
+        if (translationStatusEl) {
+          translationStatusEl.style.opacity = "0";
+          setTimeout(function() {
+            if (translationStatusEl && translationStatusEl.parentNode) {
+              translationStatusEl.remove();
+              translationStatusEl = null;
+            }
+          }, 300);
+        }
+      }, 3000);
+    }
+  }
+
+  function hideTranslationStatus() {
+    if (translationStatusEl) {
+      translationStatusEl.style.opacity = "0";
+      setTimeout(function() {
+        if (translationStatusEl && translationStatusEl.parentNode) {
+          translationStatusEl.remove();
+          translationStatusEl = null;
+        }
+      }, 300);
+    }
+  }
+
   function translateText(text, targetLang) {
     if (!text || !targetLang || targetLang === "en") return Promise.resolve(null);
     
-    // Use MyMemory API (free tier)
-    // Note: For production, you'd want to use a proper translation API with API key
-    var apiUrl = "https://api.mymemory.translated.net/get?q=" + encodeURIComponent(text) + "&langpair=en|" + targetLang;
+    // Use MyMemory API with improved error handling
+    var apiUrl = "https://api.mymemory.translated.net/get?q=" + encodeURIComponent(text.substring(0, 500)) + "&langpair=en|" + targetLang;
     
     return fetch(apiUrl)
       .then(function(response) {
@@ -1170,7 +1153,12 @@
       })
       .then(function(data) {
         if (data && data.responseData && data.responseData.translatedText) {
-          return data.responseData.translatedText;
+          var translated = data.responseData.translatedText;
+          // Check for quota exceeded or error messages
+          if (translated.indexOf("MYMEMORY WARNING") === -1 && 
+              translated.indexOf("PLEASE SELECT TWO DISTINCT") === -1) {
+            return translated;
+          }
         }
         return null;
       })
@@ -1179,13 +1167,23 @@
       });
   }
 
-  // Translation state tracking
-  var translationCache = {};
-  var translationNodes = [];
+  function getLanguageName(code) {
+    var names = {
+      "en": "English", "es": "Español", "fr": "Français", "de": "Deutsch",
+      "it": "Italiano", "pt": "Português", "ru": "Русский", "ja": "日本語",
+      "zh": "中文", "ar": "العربية", "hi": "हिन्दी", "ko": "한국어"
+    };
+    return names[code] || code;
+  }
 
   function applyTranslation(prefs) {
     if (!prefs.translationEnabled || prefs.translationLanguage === "en") {
       removeTranslation();
+      return;
+    }
+
+    if (translationInProgress) {
+      showTranslationStatus("⏳ Translation already in progress...", false);
       return;
     }
 
@@ -1195,12 +1193,15 @@
     // Clear previous translation state
     removeTranslation();
     translationNodes = [];
+    translationInProgress = true;
 
     // Collect all text nodes from surfaces
+    var totalNodes = 0;
     for (var i = 0; i < surfaces.length; i++) {
       var surface = surfaces[i];
       // Skip widget elements
       if (surface.id && surface.id.indexOf("a11y-widget") === 0) continue;
+      if (surface.closest && surface.closest("#a11y-widget-root")) continue;
       
       var walker = document.createTreeWalker(
         surface,
@@ -1212,9 +1213,15 @@
       var node;
       while ((node = walker.nextNode())) {
         var text = node.textContent.trim();
-        if (text && text.length > 0) {
+        // Skip very short text, numbers only, or special characters only
+        if (text && text.length > 2 && !/^[\d\s\W]+$/.test(text)) {
           // Skip if already has original text stored (already translated)
           if (node.parentElement && node.parentElement.getAttribute("data-a11y-original-text")) {
+            continue;
+          }
+          // Skip script/style/noscript content
+          var parent = node.parentElement;
+          if (parent && (parent.tagName === "SCRIPT" || parent.tagName === "STYLE" || parent.tagName === "NOSCRIPT")) {
             continue;
           }
           translationNodes.push({
@@ -1222,45 +1229,57 @@
             text: text,
             parent: node.parentElement
           });
+          totalNodes++;
         }
       }
     }
 
+    if (totalNodes === 0) {
+      translationInProgress = false;
+      showTranslationStatus("ℹ️ No translatable content found", true);
+      return;
+    }
+    
+    showTranslationStatus('<span style="animation: pulse 1s infinite">🌍</span> Translating to ' + getLanguageName(targetLang) + '... (0/' + totalNodes + ')', false, true);
+
     // Translate in batches to reduce API calls
-    translateBatch(translationNodes, targetLang, 0);
+    translateBatch(translationNodes, targetLang, 0, totalNodes);
   }
 
-  function translateBatch(nodes, targetLang, startIndex) {
-    var batchSize = 5; // Translate 5 nodes at a time
+  function translateBatch(nodes, targetLang, startIndex, totalNodes) {
+    var batchSize = 8; // Translate 8 nodes at a time
     var endIndex = Math.min(startIndex + batchSize, nodes.length);
     var batch = nodes.slice(startIndex, endIndex);
     
     if (batch.length === 0) {
       // All translations complete
+      translationInProgress = false;
+      showTranslationStatus("✅ Translation complete!", false);
       return;
     }
 
     var promises = [];
     for (var i = 0; i < batch.length; i++) {
-      var item = batch[i];
-      var text = item.text;
-      
-      // Check cache first
-      var cacheKey = text + "|" + targetLang;
-      if (translationCache[cacheKey]) {
-        applyTranslationToNode(item, translationCache[cacheKey]);
-        continue;
-      }
-
-      // Translate text
-      var promise = translateText(text, targetLang).then(function(result) {
-        if (result && result !== text) {
-          translationCache[cacheKey] = result;
-          return { item: item, translated: result };
+      (function(item, itemIndex) {
+        var text = item.text;
+        
+        // Check cache first
+        var cacheKey = text.substring(0, 100) + "|" + targetLang;
+        if (translationCache[cacheKey]) {
+          applyTranslationToNode(item, translationCache[cacheKey]);
+          return;
         }
-        return null;
-      });
-      promises.push(promise);
+
+        // Translate text
+        var promise = translateText(text, targetLang).then(function(result) {
+          if (result && result !== text) {
+            translationCache[cacheKey] = result;
+            return { item: item, translated: result };
+          }
+          return null;
+        });
+        promises.push(promise);
+      })(batch[i], i);
     }
 
     // Wait for all promises in batch
@@ -1271,12 +1290,23 @@
         }
       }
       
+      // Update progress
+      var progress = Math.min(endIndex, totalNodes);
+      showTranslationStatus('🌍 Translating to ' + getLanguageName(targetLang) + '... (' + progress + '/' + totalNodes + ')', false, true);
+      
       // Continue with next batch
       if (endIndex < nodes.length) {
         setTimeout(function() {
-          translateBatch(nodes, targetLang, endIndex);
-        }, 100); // Small delay to avoid rate limiting
+          translateBatch(nodes, targetLang, endIndex, totalNodes);
+        }, 150); // Small delay to avoid rate limiting
+      } else {
+        translationInProgress = false;
+        showTranslationStatus("✅ Translation complete!", false);
       }
+    }).catch(function(err) {
+      console.warn('[A11Y] Translation batch error:', err);
+      translationInProgress = false;
+      showTranslationStatus("❌ Translation failed. Please try again.", true);
     });
   }
 
@@ -1288,7 +1318,7 @@
       item.parent.setAttribute("data-a11y-original-text", item.text);
     }
     
-    // Replace text content
+    // Replace text content with fade effect
     try {
       item.node.textContent = translatedText;
     } catch (e) {
@@ -1297,6 +1327,8 @@
   }
 
   function removeTranslation() {
+    hideTranslationStatus();
+    
     // Restore original text from data attributes
     var elements = document.querySelectorAll("[data-a11y-original-text]");
     for (var i = 0; i < elements.length; i++) {
@@ -1322,6 +1354,7 @@
       }
     }
     translationNodes = [];
+    translationInProgress = false;
   }
 
   // --- Keyboard Shortcut Handler -------------------------------------------
@@ -2239,6 +2272,49 @@
       presetLabel.style.color = "#111";
       presetRow.appendChild(presetLabel);
       var presets = el("div", { class: "a11y-widget-presets" });
+      
+      // Helper function to add visual feedback to preset buttons
+      function applyPresetFeedback(btn, presetContainer) {
+        // Remove applied class from all buttons
+        var allBtns = presetContainer.querySelectorAll(".a11y-widget-preset-btn");
+        for (var i = 0; i < allBtns.length; i++) {
+          allBtns[i].classList.remove("applied");
+        }
+        // Add applied class to clicked button
+        btn.classList.add("applied");
+        // Show confirmation toast
+        showPresetToast("✓ " + btn.textContent.trim() + " preset applied!");
+      }
+      
+      function showPresetToast(message) {
+        var existingToast = document.getElementById("a11y-preset-toast");
+        if (existingToast) existingToast.remove();
+        
+        var toast = document.createElement("div");
+        toast.id = "a11y-preset-toast";
+        toast.textContent = message;
+        toast.style.cssText = 
+          "position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); " +
+          "background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%); color: #fff; " +
+          "padding: 12px 24px; border-radius: 25px; font-size: 14px; font-weight: 600; " +
+          "z-index: 2147483003; box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4); " +
+          "animation: a11y-toast-in 0.3s ease; font-family: system-ui, sans-serif;";
+        document.body.appendChild(toast);
+        
+        // Add animation keyframes if not exists
+        if (!document.getElementById("a11y-toast-styles")) {
+          var style = document.createElement("style");
+          style.id = "a11y-toast-styles";
+          style.textContent = "@keyframes a11y-toast-in { from { opacity: 0; transform: translateX(-50%) translateY(20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }";
+          document.head.appendChild(style);
+        }
+        
+        setTimeout(function() {
+          toast.style.opacity = "0";
+          toast.style.transition = "opacity 0.3s ease";
+          setTimeout(function() { if (toast.parentNode) toast.remove(); }, 300);
+        }, 2000);
+      }
 
       // Core Presets - Based on WCAG 2.1 and accessibility research
       // Reduced to 6 essential presets to avoid overwhelming users
@@ -2253,6 +2329,7 @@
         "aria-label": "Apply low vision preset: high contrast, 150% text size, comfortable spacing, readable font"
       });
       lowVision.addEventListener("click", function () {
+        applyPresetFeedback(lowVision, presets);
         onChange({ 
           contrast: "high", 
           fontScale: 1.5,  // 150% - WCAG recommended for low vision
@@ -2272,6 +2349,7 @@
         "aria-label": "Apply dyslexia-friendly preset: readable font, maximum spacing, 120% text size, reduced motion"
       });
       dyslexia.addEventListener("click", function () {
+        applyPresetFeedback(dyslexia, presets);
         onChange({ 
           readableFont: true, 
           spacing: "max",  // Maximum spacing helps with letter/word recognition
@@ -2290,6 +2368,7 @@
         "aria-label": "Apply reduced motion preset: disable animations and transitions"
       });
       motion.addEventListener("click", function () {
+        applyPresetFeedback(motion, presets);
         onChange({ 
           reduceMotion: true
         });
@@ -2304,6 +2383,7 @@
         "aria-label": "Apply high contrast preset: enhanced color contrast for better visibility"
       });
       highContrast.addEventListener("click", function () {
+        applyPresetFeedback(highContrast, presets);
         onChange({ 
           contrast: "high",
           readableFont: true  // Sans-serif improves readability with high contrast
@@ -2319,6 +2399,7 @@
         "aria-label": "Apply large text preset: 150% text size with comfortable spacing"
       });
       largeText.addEventListener("click", function () {
+        applyPresetFeedback(largeText, presets);
         onChange({ 
           fontScale: 1.5,  // 150% - WCAG recommended minimum
           spacing: "comfortable",
@@ -2335,6 +2416,7 @@
         "aria-label": "Apply dark theme preset: dark background with light text for reduced eye strain"
       });
       darkTheme.addEventListener("click", function () {
+        applyPresetFeedback(darkTheme, presets);
         onChange({ 
           contrast: "dark",
           spacing: "comfortable",
@@ -2649,3 +2731,4 @@
 
   init();
 })();
+
