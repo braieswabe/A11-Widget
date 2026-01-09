@@ -69,13 +69,52 @@ html[data-a11y]{
 /* Global Mode: Apply transformations to entire website */
 html[data-a11y][data-a11y-global-mode="1"] {
   /* Override all fonts globally */
-  font-family: var(--a11y-font-family, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Noto Sans", "Liberation Sans", sans-serif) !important;
+  font-family: var(--a11y-global-font-family, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Noto Sans", "Liberation Sans", sans-serif) !important;
+  /* Override background color globally */
+  background-color: var(--a11y-global-bg-color, #ffffff) !important;
+}
+
+/* Global Mode Font Families */
+html[data-a11y][data-a11y-global-mode="1"][data-a11y-global-font="system"] {
+  --a11y-global-font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Noto Sans", "Liberation Sans", sans-serif;
+}
+
+html[data-a11y][data-a11y-global-mode="1"][data-a11y-global-font="arial"] {
+  --a11y-global-font-family: Arial, Helvetica, sans-serif;
+}
+
+html[data-a11y][data-a11y-global-mode="1"][data-a11y-global-font="times"] {
+  --a11y-global-font-family: "Times New Roman", Times, serif;
+}
+
+html[data-a11y][data-a11y-global-mode="1"][data-a11y-global-font="courier"] {
+  --a11y-global-font-family: "Courier New", Courier, monospace;
+}
+
+html[data-a11y][data-a11y-global-mode="1"][data-a11y-global-font="comic"] {
+  --a11y-global-font-family: "Comic Sans MS", cursive;
+}
+
+html[data-a11y][data-a11y-global-mode="1"][data-a11y-global-font="verdana"] {
+  --a11y-global-font-family: Verdana, Geneva, sans-serif;
+}
+
+html[data-a11y][data-a11y-global-mode="1"][data-a11y-global-font="georgia"] {
+  --a11y-global-font-family: Georgia, serif;
+}
+
+html[data-a11y][data-a11y-global-mode="1"][data-a11y-global-font="trebuchet"] {
+  --a11y-global-font-family: "Trebuchet MS", Helvetica, sans-serif;
 }
 
 html[data-a11y][data-a11y-global-mode="1"] * {
+  /* Global font family replacement */
+  font-family: var(--a11y-global-font-family, var(--a11y-font-family)) !important;
   /* Apply font scaling globally */
   font-size: calc(1em * var(--a11y-font-scale, 1)) !important;
   line-height: var(--a11y-line-height, 1.4) !important;
+  /* Global background color (can be overridden by contrast modes) */
+  background-color: var(--a11y-global-bg-color, var(--a11y-color-bg)) !important;
 }
 
 html[data-a11y][data-a11y-global-mode="1"][data-a11y-readable-font="1"] * {
@@ -173,16 +212,20 @@ html[data-a11y][data-a11y-margins="1"] [data-a11y-surface="true"] {
 
 /* Cursor Options */
 html[data-a11y][data-a11y-cursor="large"] * {
-  cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="%23000" d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/></svg>') 12 12, auto !important;
+  cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" fill="%23000" stroke="%23fff" stroke-width="2"/><circle cx="16" cy="16" r="4" fill="%23fff"/></svg>') 16 16, auto !important;
 }
 
 html[data-a11y][data-a11y-cursor="extra-large"] * {
-  cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><path fill="%23000" stroke="%23fff" stroke-width="1" d="M4 4l9.43 22.63 3.35-9.86 9.86-3.35L4 4z"/></svg>') 16 16, auto !important;
+  cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48"><circle cx="24" cy="24" r="20" fill="%23000" stroke="%23fff" stroke-width="3"/><circle cx="24" cy="24" r="6" fill="%23fff"/></svg>') 24 24, auto !important;
 }
 
 html[data-a11y][data-a11y-cursor="large"] *:hover,
 html[data-a11y][data-a11y-cursor="extra-large"] *:hover {
-  cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="%230066cc" d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/></svg>') 12 12, pointer !important;
+  cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" fill="%230066cc" stroke="%23fff" stroke-width="2"/><circle cx="16" cy="16" r="4" fill="%23fff"/></svg>') 16 16, pointer !important;
+}
+
+html[data-a11y][data-a11y-cursor="extra-large"] *:hover {
+  cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48"><circle cx="24" cy="24" r="20" fill="%230066cc" stroke="%23fff" stroke-width="3"/><circle cx="24" cy="24" r="6" fill="%23fff"/></svg>') 24 24, pointer !important;
 }
 
 /* Magnifier - handled by JavaScript overlay */
@@ -213,9 +256,6 @@ html[data-a11y][data-a11y-cursor="extra-large"] *:hover {
 }
 
 /* Contrast modes: applied ONLY to our surfaces by setting data-a11y-contrast on html */
-html[data-a11y][data-a11y-contrast="default"] {
-  /* Default contrast - no changes needed */
-}
 
 /* High Contrast Mode */
 html[data-a11y][data-a11y-contrast="high"] [data-a11y-surface="true"],

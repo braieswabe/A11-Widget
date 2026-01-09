@@ -110,6 +110,8 @@
     readableFont: false,
     reduceMotion: false,
     globalMode: false,               // Apply transformations to entire website (not just surfaces)
+    globalModeFont: "system",        // Font family: system|arial|times|courier|comic|verdana|georgia|trebuchet
+    globalModeBgColor: "#ffffff",    // Background color (hex)
     // Advanced features preferences
     textToSpeechEnabled: false,
     textToSpeechVoice: null,         // Voice name or null for default
@@ -142,6 +144,9 @@
       spacing: (p.spacing === "comfortable" || p.spacing === "max") ? p.spacing : "normal",
       readableFont: !!p.readableFont,
       reduceMotion: !!p.reduceMotion,
+      globalMode: !!p.globalMode,
+      globalModeFont: p.globalModeFont || "system",
+      globalModeBgColor: p.globalModeBgColor || "#ffffff",
       // Advanced features
       textToSpeechEnabled: !!p.textToSpeechEnabled,
       textToSpeechVoice: p.textToSpeechVoice || null,
@@ -186,8 +191,10 @@
     html.setAttribute("data-a11y-cursor", prefs.cursorEnabled ? prefs.cursorSize : "0");
     html.setAttribute("data-a11y-magnifier", prefs.magnifierEnabled ? "1" : "0");
     html.setAttribute("data-a11y-dictionary", prefs.dictionaryEnabled ? "1" : "0");
+    html.setAttribute("data-a11y-translation", prefs.translationEnabled ? prefs.translationLanguage : "0");
     // CSS variables
     html.style.setProperty("--a11y-font-scale", String(prefs.fontScale));
+    html.style.setProperty("--a11y-global-bg-color", prefs.globalModeBgColor || "#ffffff");
     html.style.setProperty("--a11y-reading-ruler-height", String(prefs.readingRulerHeight) + "px");
     html.style.setProperty("--a11y-reading-ruler-color", prefs.readingRulerColor);
     html.style.setProperty("--a11y-screen-mask-opacity", String(prefs.screenMaskOpacity));
@@ -217,6 +224,13 @@
     // Stop speech if disabled
     if (!prefs.textToSpeechEnabled) {
       stopSpeech();
+    }
+    
+    // Apply or remove translation
+    if (prefs.translationEnabled && prefs.translationLanguage && prefs.translationLanguage !== "en") {
+      applyTranslation(prefs);
+    } else {
+      removeTranslation();
     }
   }
 
@@ -310,10 +324,43 @@
     utterance.pitch = prefs.textToSpeechPitch || 1.0;
     utterance.volume = prefs.textToSpeechVolume || 1.0;
     
+    var voices = getAvailableVoices();
+    var selectedVoice = null;
+    
     if (prefs.textToSpeechVoice) {
-      var voices = getAvailableVoices();
-      var voice = voices.find(function(v) { return v.name === prefs.textToSpeechVoice; });
-      if (voice) utterance.voice = voice;
+      selectedVoice = voices.find(function(v) { return v.name === prefs.textToSpeechVoice; });
+    }
+    
+    // If no voice selected or Siri-like voice requested, find best Siri-like voice
+    if (!selectedVoice) {
+      // Look for Siri-like voices (enhanced, premium voices on macOS/iOS)
+      // Common Siri voice names: Samantha, Alex, Victoria, Daniel, Karen, etc.
+      var siriLikeNames = ["Samantha", "Alex", "Victoria", "Daniel", "Karen", "Moira", "Tessa", "Veena", "Fiona", "Siri"];
+      for (var i = 0; i < siriLikeNames.length; i++) {
+        selectedVoice = voices.find(function(v) { 
+          return v.name.indexOf(siriLikeNames[i]) !== -1 || 
+                 (v.name.toLowerCase().indexOf("enhanced") !== -1 && v.lang.indexOf("en") === 0);
+        });
+        if (selectedVoice) break;
+      }
+      
+      // If still no voice found, prefer enhanced/premium voices
+      if (!selectedVoice) {
+        selectedVoice = voices.find(function(v) { 
+          return v.name.toLowerCase().indexOf("enhanced") !== -1 || 
+                 v.name.toLowerCase().indexOf("premium") !== -1;
+        });
+      }
+      
+      // Fallback: use default system voice (usually best quality)
+      if (!selectedVoice && voices.length > 0) {
+        // Prefer voices with "en" language
+        selectedVoice = voices.find(function(v) { return v.lang.indexOf("en") === 0; }) || voices[0];
+      }
+    }
+    
+    if (selectedVoice) {
+      utterance.voice = selectedVoice;
     }
     
     currentUtterance = utterance;
@@ -336,7 +383,102 @@
       text += surfaces[i].innerText || surfaces[i].textContent || "";
       text += " ";
     }
+    
+    // Try to extract text from PDFs if available (synchronous cache check only)
+    var pdfText = extractPDFTextFromPageSync();
+    if (pdfText) {
+      text += " " + pdfText;
+    }
+    
     return text.trim();
+  }
+
+  // PDF text extraction support
+  var pdfTextCache = {};
+  
+  function extractPDFTextFromPageSync() {
+    var pdfText = "";
+    
+    // Find PDF elements on the page
+    var pdfElements = document.querySelectorAll('iframe[src*=".pdf"], embed[src*=".pdf"], object[data*=".pdf"]');
+    
+    for (var i = 0; i < pdfElements.length; i++) {
+      var element = pdfElements[i];
+      var pdfUrl = element.src || element.data;
+      
+      if (pdfUrl && pdfUrl.indexOf(".pdf") !== -1) {
+        // Check cache first (synchronous)
+        if (pdfTextCache[pdfUrl]) {
+          pdfText += " " + pdfTextCache[pdfUrl];
+        } else {
+          // Try to extract text asynchronously and cache for next time
+          // Note: This won't be available immediately, but will be cached for future calls
+          extractPDFText(pdfUrl).then(function(result) {
+            if (result && result.text) {
+              pdfTextCache[result.url] = result.text;
+            }
+          }).catch(function() {
+            // Ignore errors - PDF extraction may fail due to CORS
+          });
+        }
+      }
+    }
+    
+    return pdfText.trim();
+  }
+
+  function extractPDFText(pdfUrl) {
+    return new Promise(function(resolve, reject) {
+      // Check if PDF.js is available
+      if (typeof window.pdfjsLib === "undefined") {
+        // Try to load PDF.js dynamically
+        var script = document.createElement("script");
+        script.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+        script.onload = function() {
+          window.pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+          performPDFExtraction(pdfUrl, resolve, reject);
+        };
+        script.onerror = function() {
+          reject(new Error("PDF.js failed to load"));
+        };
+        document.head.appendChild(script);
+      } else {
+        performPDFExtraction(pdfUrl, resolve, reject);
+      }
+    });
+  }
+
+  function performPDFExtraction(pdfUrl, resolve, reject) {
+    try {
+      window.pdfjsLib.getDocument(pdfUrl).promise.then(function(pdf) {
+        var textPromises = [];
+        
+        // Extract text from all pages
+        for (var pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+          textPromises.push(
+            pdf.getPage(pageNum).then(function(page) {
+              return page.getTextContent().then(function(textContent) {
+                var pageText = "";
+                for (var i = 0; i < textContent.items.length; i++) {
+                  pageText += textContent.items[i].str + " ";
+                }
+                return pageText;
+              });
+            })
+          );
+        }
+        
+        Promise.all(textPromises).then(function(pages) {
+          var fullText = pages.join(" ");
+          resolve({ url: pdfUrl, text: fullText });
+        }).catch(reject);
+      }).catch(function(error) {
+        // CORS or other error - silently fail
+        reject(error);
+      });
+    } catch (error) {
+      reject(error);
+    }
   }
 
   function getSelectedText() {
@@ -458,6 +600,7 @@
   var magnifierElement = null;
   var magnifierContent = null;
   var magnifierHandler = null;
+  var magnifierCanvas = null;
 
   function createMagnifier(prefs) {
     if (magnifierElement) {
@@ -467,44 +610,79 @@
       document.removeEventListener("mousemove", magnifierHandler);
     }
     
+    var size = 200;
+    var zoom = parseFloat(prefs.magnifierZoom || 2.0);
+    
     magnifierElement = document.createElement("div");
     magnifierElement.id = "a11y-magnifier";
     magnifierElement.style.cssText = 
       "position: fixed; " +
       "pointer-events: none; " +
       "z-index: 2147482997; " +
-      "width: 200px; " +
-      "height: 200px; " +
-      "border: 2px solid #0066cc; " +
+      "width: " + size + "px; " +
+      "height: " + size + "px; " +
+      "border: 3px solid #0066cc; " +
       "border-radius: 50%; " +
       "overflow: hidden; " +
-      "box-shadow: 0 0 20px rgba(0,0,0,0.5); " +
+      "box-shadow: 0 0 20px rgba(0,0,0,0.5), inset 0 0 20px rgba(0,0,0,0.1); " +
       "display: none; " +
-      "background: white;";
+      "background: white; " +
+      "transform: translate(-50%, -50%);";
+    
+    // Create canvas for magnified content
+    magnifierCanvas = document.createElement("canvas");
+    magnifierCanvas.width = size;
+    magnifierCanvas.height = size;
+    magnifierCanvas.style.cssText = 
+      "width: 100%; " +
+      "height: 100%; " +
+      "display: block;";
     
     magnifierContent = document.createElement("div");
     magnifierContent.style.cssText = 
       "width: 100%; " +
       "height: 100%; " +
-      "background: radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(200,200,200,0.8) 100%); " +
+      "position: relative; " +
+      "overflow: hidden; " +
       "border-radius: 50%;";
+    magnifierContent.appendChild(magnifierCanvas);
     magnifierElement.appendChild(magnifierContent);
     document.body.appendChild(magnifierElement);
     
     magnifierHandler = function(e) {
       var html = document.documentElement;
       var enabled = html.getAttribute("data-a11y-magnifier") === "1";
-      if (enabled && magnifierElement) {
-        var zoom = parseFloat(html.style.getPropertyValue("--a11y-magnifier-zoom") || "2.0");
+      if (enabled && magnifierElement && magnifierCanvas) {
+        var currentZoom = parseFloat(html.style.getPropertyValue("--a11y-magnifier-zoom") || "2.0");
+        zoom = currentZoom;
+        
         magnifierElement.style.display = "block";
-        var x = Math.max(100, Math.min(e.clientX - 100, window.innerWidth - 100));
-        var y = Math.max(100, Math.min(e.clientY - 100, window.innerHeight - 100));
+        
+        // Position magnifier near cursor (offset to avoid covering content)
+        var offsetX = 120;
+        var offsetY = 120;
+        var x = e.clientX + offsetX;
+        var y = e.clientY - offsetY;
+        
+        // Keep within viewport
+        if (x + size / 2 > window.innerWidth) {
+          x = e.clientX - offsetX - size;
+        }
+        if (y - size / 2 < 0) {
+          y = e.clientY + offsetY;
+        }
+        if (x - size / 2 < 0) {
+          x = size / 2;
+        }
+        if (y + size / 2 > window.innerHeight) {
+          y = window.innerHeight - size / 2;
+        }
+        
         magnifierElement.style.left = x + "px";
         magnifierElement.style.top = y + "px";
         
-        // Note: Full page magnifier would require html2canvas or similar
-        // This provides a visual indicator that magnifier is active
-        magnifierElement.setAttribute("data-zoom", String(zoom));
+        // Draw magnified content on canvas
+        drawMagnifiedContent(e.clientX, e.clientY, zoom, magnifierCanvas, size);
       } else if (magnifierElement) {
         magnifierElement.style.display = "none";
       }
@@ -512,12 +690,112 @@
     
     document.addEventListener("mousemove", magnifierHandler);
   }
+  
+  function drawMagnifiedContent(mouseX, mouseY, zoomLevel, canvas, size) {
+    if (!canvas) return;
+    
+    var ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    
+    // Clear canvas
+    ctx.clearRect(0, 0, size, size);
+    
+    // Calculate source area (what part of the page to magnify)
+    var sourceSize = size / zoomLevel;
+    var sourceX = mouseX - sourceSize / 2;
+    var sourceY = mouseY - sourceSize / 2;
+    
+    // Try to use html2canvas if available, otherwise use CSS transform approach
+    if (typeof html2canvas !== "undefined") {
+      // Use html2canvas to capture the page
+      html2canvas(document.body, {
+        x: sourceX,
+        y: sourceY,
+        width: sourceSize,
+        height: sourceSize,
+        scale: 1,
+        useCORS: true,
+        logging: false
+      }).then(function(canvasImg) {
+        if (canvasImg && ctx) {
+          // Draw the captured content scaled up
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(size / 2, size / 2, size / 2 - 2, 0, Math.PI * 2);
+          ctx.clip();
+          ctx.drawImage(canvasImg, 0, 0, sourceSize, sourceSize, 0, 0, size, size);
+          ctx.restore();
+        }
+      }).catch(function() {
+        drawFallbackMagnifier(ctx, size, zoomLevel);
+      });
+    } else {
+      // Fallback: Load html2canvas dynamically or show visual indicator
+      if (!window.html2canvasLoading) {
+        window.html2canvasLoading = true;
+        var script = document.createElement("script");
+        script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
+        script.onload = function() {
+          window.html2canvasLoading = false;
+          drawMagnifiedContent(mouseX, mouseY, zoomLevel, canvas, size);
+        };
+        script.onerror = function() {
+          window.html2canvasLoading = false;
+          drawFallbackMagnifier(ctx, size, zoomLevel);
+        };
+        document.head.appendChild(script);
+      } else {
+        drawFallbackMagnifier(ctx, size, zoomLevel);
+      }
+    }
+  }
+  
+  function drawFallbackMagnifier(ctx, size, zoomLevel) {
+    // Draw a white background
+    ctx.fillStyle = "#ffffff";
+    ctx.beginPath();
+    ctx.arc(size / 2, size / 2, size / 2 - 2, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Draw a subtle pattern
+    ctx.fillStyle = "#f0f0f0";
+    var patternSize = 20;
+    for (var y = 0; y < size; y += patternSize) {
+      for (var x = 0; x < size; x += patternSize) {
+        if ((x + y) % (patternSize * 2) === 0) {
+          ctx.fillRect(x, y, patternSize, patternSize);
+        }
+      }
+    }
+    
+    // Draw a crosshair at center
+    ctx.strokeStyle = "#0066cc";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(size / 2 - 15, size / 2);
+    ctx.lineTo(size / 2 + 15, size / 2);
+    ctx.moveTo(size / 2, size / 2 - 15);
+    ctx.lineTo(size / 2, size / 2 + 15);
+    ctx.stroke();
+    
+    // Draw zoom level text
+    ctx.fillStyle = "#0066cc";
+    ctx.font = "bold 16px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText(zoomLevel.toFixed(1) + "x", size / 2, size - 15);
+    
+    // Draw instruction text
+    ctx.fillStyle = "#666";
+    ctx.font = "12px Arial";
+    ctx.fillText("Move mouse", size / 2, size / 2 + 5);
+  }
 
   function removeMagnifier() {
     if (magnifierElement) {
       magnifierElement.remove();
       magnifierElement = null;
       magnifierContent = null;
+      magnifierCanvas = null;
     }
     if (magnifierHandler) {
       document.removeEventListener("mousemove", magnifierHandler);
@@ -640,9 +918,9 @@
 
   // --- Translation Handler ----------------------------------------------------
   function translateText(text, targetLang) {
-    if (!text || !targetLang) return Promise.resolve(null);
+    if (!text || !targetLang || targetLang === "en") return Promise.resolve(null);
     
-    // Use Google Translate API (free tier) or MyMemory API
+    // Use MyMemory API (free tier)
     // Note: For production, you'd want to use a proper translation API with API key
     var apiUrl = "https://api.mymemory.translated.net/get?q=" + encodeURIComponent(text) + "&langpair=en|" + targetLang;
     
@@ -660,6 +938,151 @@
       .catch(function() {
         return null;
       });
+  }
+
+  // Translation state tracking
+  var translationCache = {};
+  var translationNodes = [];
+
+  function applyTranslation(prefs) {
+    if (!prefs.translationEnabled || prefs.translationLanguage === "en") {
+      removeTranslation();
+      return;
+    }
+
+    var targetLang = prefs.translationLanguage;
+    var surfaces = document.querySelectorAll("[data-a11y-surface='true']");
+    
+    // Clear previous translation state
+    removeTranslation();
+    translationNodes = [];
+
+    // Collect all text nodes from surfaces
+    for (var i = 0; i < surfaces.length; i++) {
+      var surface = surfaces[i];
+      // Skip widget elements
+      if (surface.id && surface.id.indexOf("a11y-widget") === 0) continue;
+      
+      var walker = document.createTreeWalker(
+        surface,
+        NodeFilter.SHOW_TEXT,
+        null,
+        false
+      );
+      
+      var node;
+      while ((node = walker.nextNode())) {
+        var text = node.textContent.trim();
+        if (text && text.length > 0) {
+          // Skip if already has original text stored (already translated)
+          if (node.parentElement && node.parentElement.getAttribute("data-a11y-original-text")) {
+            continue;
+          }
+          translationNodes.push({
+            node: node,
+            text: text,
+            parent: node.parentElement
+          });
+        }
+      }
+    }
+
+    // Translate in batches to reduce API calls
+    translateBatch(translationNodes, targetLang, 0);
+  }
+
+  function translateBatch(nodes, targetLang, startIndex) {
+    var batchSize = 5; // Translate 5 nodes at a time
+    var endIndex = Math.min(startIndex + batchSize, nodes.length);
+    var batch = nodes.slice(startIndex, endIndex);
+    
+    if (batch.length === 0) {
+      // All translations complete
+      return;
+    }
+
+    var promises = [];
+    for (var i = 0; i < batch.length; i++) {
+      var item = batch[i];
+      var text = item.text;
+      
+      // Check cache first
+      var cacheKey = text + "|" + targetLang;
+      if (translationCache[cacheKey]) {
+        applyTranslationToNode(item, translationCache[cacheKey]);
+        continue;
+      }
+
+      // Translate text
+      var promise = translateText(text, targetLang).then(function(result) {
+        if (result && result !== text) {
+          translationCache[cacheKey] = result;
+          return { item: item, translated: result };
+        }
+        return null;
+      });
+      promises.push(promise);
+    }
+
+    // Wait for all promises in batch
+    Promise.all(promises).then(function(results) {
+      for (var j = 0; j < results.length; j++) {
+        if (results[j]) {
+          applyTranslationToNode(results[j].item, results[j].translated);
+        }
+      }
+      
+      // Continue with next batch
+      if (endIndex < nodes.length) {
+        setTimeout(function() {
+          translateBatch(nodes, targetLang, endIndex);
+        }, 100); // Small delay to avoid rate limiting
+      }
+    });
+  }
+
+  function applyTranslationToNode(item, translatedText) {
+    if (!item.node || !item.parent) return;
+    
+    // Store original text in parent element's data attribute
+    if (!item.parent.getAttribute("data-a11y-original-text")) {
+      item.parent.setAttribute("data-a11y-original-text", item.text);
+    }
+    
+    // Replace text content
+    try {
+      item.node.textContent = translatedText;
+    } catch (e) {
+      // Ignore errors
+    }
+  }
+
+  function removeTranslation() {
+    // Restore original text from data attributes
+    var elements = document.querySelectorAll("[data-a11y-original-text]");
+    for (var i = 0; i < elements.length; i++) {
+      var element = elements[i];
+      var originalText = element.getAttribute("data-a11y-original-text");
+      if (originalText) {
+        // Find text node and restore
+        var walker = document.createTreeWalker(
+          element,
+          NodeFilter.SHOW_TEXT,
+          null,
+          false
+        );
+        var node = walker.nextNode();
+        if (node) {
+          try {
+            node.textContent = originalText;
+          } catch (e) {
+            // Ignore errors
+          }
+        }
+        element.removeAttribute("data-a11y-original-text");
+      }
+    }
+    translationNodes = [];
   }
 
   // --- Keyboard Shortcut Handler -------------------------------------------
@@ -817,6 +1240,18 @@
     }
     if (controls.globalModeCheckbox !== undefined) {
       controls.globalModeCheckbox.checked = !!prefs.globalMode;
+      if (controls.updateGlobalModeControls) {
+        controls.updateGlobalModeControls(!!prefs.globalMode);
+      }
+    }
+    if (controls.globalModeFontSelect !== undefined) {
+      controls.globalModeFontSelect.value = prefs.globalModeFont || "system";
+    }
+    if (controls.globalModeBgColorInput !== undefined) {
+      controls.globalModeBgColorInput.value = prefs.globalModeBgColor || "#ffffff";
+    }
+    if (controls.globalModeBgColorTextInput !== undefined) {
+      controls.globalModeBgColorTextInput.value = prefs.globalModeBgColor || "#ffffff";
     }
     
     // Update dynamic controls visibility
@@ -1091,11 +1526,117 @@
         var normalizedPrefs = normalizePrefs(assign(assign({}, PREF_DEFAULTS), currentPrefs));
         normalizedPrefs.globalMode = v;
         markSurfaces(cfg.surfaces, normalizedPrefs.globalMode || cfg.globalMode || false);
+        // Show/hide global mode controls
+        updateGlobalModeControls(v);
       },
       "Apply transformations to entire website (fonts, colors, sizes). When disabled, only affects declared surfaces."
     );
     controls.globalModeCheckbox = globalModeRow.checkbox;
     content.appendChild(globalModeRow.row);
+    
+    // Global Mode Controls Container (shown/hidden based on globalMode)
+    var globalModeControlsContainer = el("div", { 
+      id: "a11y-global-mode-controls",
+      class: "a11y-widget-row",
+      style: "margin-top: 0.5rem; padding-left: 1.5rem; display: " + (prefs.globalMode ? "block" : "none") + ";"
+    });
+    
+    // Font Selection
+    var fontRow = el("div", { class: "a11y-widget-row", style: "margin-bottom: 0.75rem;" });
+    fontRow.appendChild(el("label", { for: "a11y-global-font", text: "🔤 Font Family", style: "font-size: 12px; display: block; margin-bottom: 0.4rem;" }));
+    var fontSelect = el("select", {
+      id: "a11y-global-font",
+      style: "width: 100%; padding: 0.5rem; font-size: 12px; border: 1px solid var(--a11y-color-border); border-radius: 4px;",
+      "aria-label": "Select font family for global mode"
+    });
+    controls.globalModeFontSelect = fontSelect;
+    
+    var fontOptions = [
+      ["system", "System Default"],
+      ["arial", "Arial"],
+      ["times", "Times New Roman"],
+      ["courier", "Courier New"],
+      ["comic", "Comic Sans MS"],
+      ["verdana", "Verdana"],
+      ["georgia", "Georgia"],
+      ["trebuchet", "Trebuchet MS"]
+    ];
+    
+    for (var f = 0; f < fontOptions.length; f++) {
+      var opt = el("option", { value: fontOptions[f][0], text: fontOptions[f][1] });
+      if (fontOptions[f][0] === (prefs.globalModeFont || "system")) opt.selected = true;
+      fontSelect.appendChild(opt);
+    }
+    
+    fontSelect.addEventListener("change", function() {
+      onChange({ globalModeFont: fontSelect.value });
+    });
+    fontRow.appendChild(fontSelect);
+    globalModeControlsContainer.appendChild(fontRow);
+    
+    // Background Color
+    var bgColorRow = el("div", { class: "a11y-widget-row" });
+    bgColorRow.appendChild(el("label", { for: "a11y-global-bg-color", text: "🎨 Background Color", style: "font-size: 12px; display: block; margin-bottom: 0.4rem;" }));
+    var colorWrapper = el("div", { style: "display: flex; gap: 0.5rem; align-items: center;" });
+    
+    var colorInput = el("input", {
+      id: "a11y-global-bg-color",
+      type: "color",
+      value: prefs.globalModeBgColor || "#ffffff",
+      style: "width: 60px; height: 40px; border: 1px solid var(--a11y-color-border); border-radius: 4px; cursor: pointer;",
+      "aria-label": "Select background color for global mode"
+    });
+    controls.globalModeBgColorInput = colorInput;
+    
+    var colorTextInput = el("input", {
+      id: "a11y-global-bg-color-text",
+      type: "text",
+      value: prefs.globalModeBgColor || "#ffffff",
+      placeholder: "#ffffff",
+      style: "flex: 1; padding: 0.5rem; font-size: 12px; border: 1px solid var(--a11y-color-border); border-radius: 4px; font-family: monospace;",
+      "aria-label": "Background color hex code"
+    });
+    controls.globalModeBgColorTextInput = colorTextInput;
+    
+    var updateColor = function(color) {
+      colorInput.value = color;
+      colorTextInput.value = color;
+      onChange({ globalModeBgColor: color });
+    };
+    
+    colorInput.addEventListener("input", function() {
+      updateColor(colorInput.value);
+    });
+    
+    colorTextInput.addEventListener("input", function() {
+      var val = colorTextInput.value.trim();
+      if (/^#[0-9A-Fa-f]{6}$/.test(val)) {
+        updateColor(val);
+      }
+    });
+    
+    colorTextInput.addEventListener("blur", function() {
+      var val = colorTextInput.value.trim();
+      if (!/^#[0-9A-Fa-f]{6}$/.test(val)) {
+        colorTextInput.value = colorInput.value;
+      }
+    });
+    
+    colorWrapper.appendChild(colorInput);
+    colorWrapper.appendChild(colorTextInput);
+    bgColorRow.appendChild(colorWrapper);
+    globalModeControlsContainer.appendChild(bgColorRow);
+    
+    content.appendChild(globalModeControlsContainer);
+    controls.globalModeControlsContainer = globalModeControlsContainer;
+    
+    // Function to show/hide global mode controls
+    function updateGlobalModeControls(enabled) {
+      if (controls.globalModeControlsContainer) {
+        controls.globalModeControlsContainer.style.display = enabled ? "block" : "none";
+      }
+    }
+    controls.updateGlobalModeControls = updateGlobalModeControls;
 
     // Reading & Focus Aids Section
     content.appendChild(el("div", { class: "a11y-divider" }));
@@ -1399,13 +1940,17 @@
       presetRow.appendChild(presetLabel);
       var presets = el("div", { class: "a11y-widget-presets" });
 
-      // Low Vision Preset - Based on WCAG and accessibility best practices
-      // Recommended: High contrast, 150% text size, comfortable spacing, readable font
+      // Core Presets - Based on WCAG 2.1 and accessibility research
+      // Reduced to 6 essential presets to avoid overwhelming users
+      
+      // 1. Low Vision Preset - WCAG 2.1 SC 1.4.3, 1.4.4, 1.4.12
+      // Combines: High contrast + Large text (150%) + Comfortable spacing + Readable font
+      // Research: 150% text size is WCAG recommended minimum for low vision users
       var lowVision = el("button", { 
         type: "button", 
         class: "a11y-widget-preset-btn", 
         text: "🔍 Low Vision",
-        "aria-label": "Apply low vision preset: high contrast mode, 150% text size, comfortable spacing, readable font, reduced motion"
+        "aria-label": "Apply low vision preset: high contrast, 150% text size, comfortable spacing, readable font"
       });
       lowVision.addEventListener("click", function () {
         onChange({ 
@@ -1417,42 +1962,41 @@
         });
       });
       
-      // Dyslexia-Friendly Preset - Based on dyslexia research and best practices
-      // Recommended: Readable font, max spacing, slightly larger text (120%), reduced motion
-      // Note: High contrast can worsen dyslexia, so we use default contrast
+      // 2. Dyslexia-Friendly Preset - Based on dyslexia research
+      // Research: Increased spacing (0.05em+ letter, 0.12em word) improves reading speed
+      // Note: High contrast can worsen dyslexia, so default contrast is used
       var dyslexia = el("button", { 
         type: "button", 
         class: "a11y-widget-preset-btn", 
-        text: "📖 Dyslexia-Friendly",
-        "aria-label": "Apply dyslexia-friendly preset: readable sans-serif font, maximum spacing, 120% text size, reduced motion"
+        text: "📖 Dyslexia",
+        "aria-label": "Apply dyslexia-friendly preset: readable font, maximum spacing, 120% text size, reduced motion"
       });
       dyslexia.addEventListener("click", function () {
         onChange({ 
           readableFont: true, 
           spacing: "max",  // Maximum spacing helps with letter/word recognition
-          fontScale: 1.2,  // 120% - slightly larger helps without being too large
+          fontScale: 1.2,  // 120% - slightly larger helps without being overwhelming
           reduceMotion: true,
-          contrast: "default"  // High contrast can worsen dyslexia
+          contrast: "default"  // High contrast can worsen dyslexia symptoms
         });
       });
       
-      // Reduced Motion Preset - WCAG 2.1 SC 2.3.3 (Animation from Interactions)
-      // Recommended: Disable all motion, comfortable spacing for reading flow
+      // 3. Reduced Motion Preset - WCAG 2.1 SC 2.3.3 (Level AAA)
+      // Respects prefers-reduced-motion and helps users with vestibular disorders
       var motion = el("button", { 
         type: "button", 
         class: "a11y-widget-preset-btn", 
         text: "⏸️ Reduced Motion",
-        "aria-label": "Apply reduced motion preset: disable animations and transitions, comfortable spacing"
+        "aria-label": "Apply reduced motion preset: disable animations and transitions"
       });
       motion.addEventListener("click", function () {
         onChange({ 
-          reduceMotion: true,
-          spacing: "comfortable"  // Helps maintain reading flow
+          reduceMotion: true
         });
       });
       
-      // High Contrast Preset - WCAG 2.1 SC 1.4.3 (Contrast Minimum)
-      // Recommended: High contrast mode for better visibility
+      // 4. High Contrast Preset - WCAG 2.1 SC 1.4.3 (Contrast Minimum - Level AA)
+      // Helps users with low vision, color blindness, and in bright lighting
       var highContrast = el("button", { 
         type: "button", 
         class: "a11y-widget-preset-btn", 
@@ -1461,12 +2005,13 @@
       });
       highContrast.addEventListener("click", function () {
         onChange({ 
-          contrast: "high"
+          contrast: "high",
+          readableFont: true  // Sans-serif improves readability with high contrast
         });
       });
       
-      // Large Text Preset - WCAG 2.1 SC 1.4.4 (Resize Text)
-      // Recommended: 150% text size with comfortable spacing
+      // 5. Large Text Preset - WCAG 2.1 SC 1.4.4 (Resize Text - Level AA)
+      // 150% text size is WCAG recommended minimum for low vision users
       var largeText = el("button", { 
         type: "button", 
         class: "a11y-widget-preset-btn", 
@@ -1475,36 +2020,19 @@
       });
       largeText.addEventListener("click", function () {
         onChange({ 
-          fontScale: 1.5,  // 150% - WCAG recommended
+          fontScale: 1.5,  // 150% - WCAG recommended minimum
           spacing: "comfortable",
           readableFont: true
         });
       });
       
-      // Extra Large Text Preset - WCAG 2.1 SC 1.4.4 (Resize Text)
-      // Recommended: 160% text size for severe vision impairments
-      var extraLargeText = el("button", { 
-        type: "button", 
-        class: "a11y-widget-preset-btn", 
-        text: "🔠 Extra Large",
-        "aria-label": "Apply extra large text preset: 160% text size with maximum spacing for severe vision impairments"
-      });
-      extraLargeText.addEventListener("click", function () {
-        onChange({ 
-          fontScale: 1.6,  // 160% - Maximum supported
-          spacing: "max",
-          readableFont: true,
-          contrast: "high"
-        });
-      });
-      
-      // Dark Theme Preset - For light sensitivity and eye strain
-      // Recommended: Dark contrast mode with comfortable settings
+      // 6. Dark Theme Preset - For light sensitivity and eye strain
+      // Helps users with photophobia and reduces eye strain in low-light conditions
       var darkTheme = el("button", { 
         type: "button", 
         class: "a11y-widget-preset-btn", 
         text: "🌙 Dark Theme",
-        "aria-label": "Apply dark theme preset: dark contrast mode with comfortable spacing and readable font"
+        "aria-label": "Apply dark theme preset: dark background with light text for reduced eye strain"
       });
       darkTheme.addEventListener("click", function () {
         onChange({ 
@@ -1514,82 +2042,13 @@
           reduceMotion: true
         });
       });
-      
-      // Reading Mode Preset - Optimized for reading comprehension
-      // Recommended: Comfortable spacing, readable font, reduced motion
-      var readingMode = el("button", { 
-        type: "button", 
-        class: "a11y-widget-preset-btn", 
-        text: "📚 Reading Mode",
-        "aria-label": "Apply reading mode preset: optimized spacing, readable font, reduced motion for better reading comprehension"
-      });
-      readingMode.addEventListener("click", function () {
-        onChange({ 
-          spacing: "comfortable",
-          readableFont: true,
-          reduceMotion: true,
-          fontScale: 1.1  // Slightly larger for easier reading
-        });
-      });
-      
-      // Focus Mode Preset - Minimal distractions for concentration
-      // Recommended: Reduced motion, comfortable spacing, readable font
-      var focusMode = el("button", { 
-        type: "button", 
-        class: "a11y-widget-preset-btn", 
-        text: "🎯 Focus Mode",
-        "aria-label": "Apply focus mode preset: reduced motion and comfortable spacing to minimize distractions"
-      });
-      focusMode.addEventListener("click", function () {
-        onChange({ 
-          reduceMotion: true,
-          spacing: "comfortable",
-          readableFont: true
-        });
-      });
-      
-      // Color Blind Friendly Preset - Enhanced contrast without color dependency
-      // Recommended: High contrast mode with readable font
-      var colorBlindFriendly = el("button", { 
-        type: "button", 
-        class: "a11y-widget-preset-btn", 
-        text: "🎨 Color Blind",
-        "aria-label": "Apply color blind friendly preset: high contrast mode with readable font for better color distinction"
-      });
-      colorBlindFriendly.addEventListener("click", function () {
-        onChange({ 
-          contrast: "high",
-          readableFont: true,
-          spacing: "comfortable"
-        });
-      });
-      
-      // Minimal Preset - Simplest settings for basic needs
-      // Recommended: Just readable font and comfortable spacing
-      var minimal = el("button", { 
-        type: "button", 
-        class: "a11y-widget-preset-btn", 
-        text: "✨ Minimal",
-        "aria-label": "Apply minimal preset: readable font and comfortable spacing with default settings"
-      });
-      minimal.addEventListener("click", function () {
-        onChange({ 
-          readableFont: true,
-          spacing: "comfortable"
-        });
-      });
 
       presets.appendChild(lowVision);
       presets.appendChild(dyslexia);
       presets.appendChild(motion);
       presets.appendChild(highContrast);
       presets.appendChild(largeText);
-      presets.appendChild(extraLargeText);
       presets.appendChild(darkTheme);
-      presets.appendChild(readingMode);
-      presets.appendChild(focusMode);
-      presets.appendChild(colorBlindFriendly);
-      presets.appendChild(minimal);
       presetRow.appendChild(presets);
       content.appendChild(presetRow);
     }

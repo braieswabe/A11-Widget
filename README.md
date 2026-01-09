@@ -12,13 +12,13 @@ This widget is a **support layer** + **render-time accessibility controls** — 
 - ✅ Global keyboard shortcut (Alt+A) to quickly open widget
 - ✅ Preference persistence (localStorage/cookie)
 - ✅ Optional profile presets (dyslexia-friendly, low-vision, reduced motion)
-- ✅ **Text-to-Speech**: Read selected text or full page aloud with customizable voice settings
-- ✅ **Translation**: Translate page content into 100+ languages
+- ✅ **Text-to-Speech**: Read selected text or full page aloud with customizable voice settings (including PDF text extraction when available)
+- ✅ **Translation**: Automatically translate page content into multiple languages (translates all text on declared surfaces)
 - ✅ **Reading Aids**: Reading ruler, screen mask, text-only mode, adjustable margins
 - ✅ **Focus Tools**: Customizable cursor size, page magnifier
 - ✅ **Dictionary**: Double-click words to see definitions
 
-**Scope boundaries**: This widget only affects elements you explicitly declare as surfaces. It does not fix host-site HTML outside those surfaces, third-party embeds, PDFs, or guarantee full-site compliance.
+**Scope boundaries**: This widget only affects elements you explicitly declare as surfaces. It does not fix host-site HTML outside those surfaces, third-party embeds, or guarantee full-site compliance. PDF text extraction is attempted for same-origin PDFs but may be limited by CORS restrictions.
 
 ## Quick Start
 
@@ -141,6 +141,15 @@ User preferences are stored per domain in:
 2. Cookies (fallback if localStorage unavailable)
 
 Storage key: `__a11yWidgetPrefs__`
+
+### Translation Behavior
+
+When translation is enabled:
+- All text content within declared surfaces (`[data-a11y-surface="true"]`) is automatically translated
+- Original text is preserved and restored when translation is disabled
+- Language changes trigger automatic re-translation
+- Translations are cached to improve performance
+- Translation API rate limits apply (MyMemory API free tier)
 
 ### Telemetry (Optional)
 

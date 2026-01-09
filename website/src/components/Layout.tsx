@@ -47,9 +47,27 @@ export default function Layout({ children }: LayoutProps) {
       const loaderScript = document.createElement('script')
       loaderScript.id = 'a11y-widget-loader'
       
-      // Use jsDelivr CDN with cache-busting (more reliable than raw GitHub)
+      // In development, load from local files; in production, load from GitHub CDN
       const timestamp = Math.floor(Date.now() / 1000)
-      const loaderUrl = `https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js?v=${timestamp}`
+      const isDev = import.meta.env.DEV
+      
+      let loaderUrl: string
+      if (isDev) {
+        // Development: Load widget files directly from local files
+        // First, load CSS
+        const cssLink = document.createElement('link')
+        cssLink.id = 'a11y-widget-stylesheet'
+        cssLink.rel = 'stylesheet'
+        cssLink.href = '/a11y-widget.css?v=' + timestamp
+        document.head.appendChild(cssLink)
+        
+        // Then load JS directly
+        loaderUrl = '/a11y-widget.js?v=' + timestamp
+      } else {
+        // Production: Use GitHub CDN
+        loaderUrl = `https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js?v=${timestamp}`
+      }
+      
       loaderScript.src = loaderUrl
       loaderScript.defer = true // Defer ensures script runs after DOM is parsed
       
