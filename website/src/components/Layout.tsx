@@ -87,10 +87,13 @@ export default function Layout({ children }: LayoutProps) {
           loaderScript.parentNode.removeChild(loaderScript)
         }
         
-        // Try fallback URL (jsDelivr CDN)
+        // Try fallback URL (jsDelivr CDN) with even more aggressive cache-busting
         const fallbackScript = document.createElement('script')
         fallbackScript.id = 'a11y-widget-loader'
-        fallbackScript.src = fallbackUrl
+        // Add additional cache-busting for fallback
+        const fallbackCacheBuster = Date.now() + '_' + Math.random().toString(36).substring(7)
+        fallbackScript.src = `https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js?v=${fallbackCacheBuster}&_=${Math.random()}&nocache=${Date.now()}&t=${Date.now()}&cb=${fallbackCacheBuster}&force=${Date.now()}`
+        fallbackScript.setAttribute('data-version', '1.3') // Set version attribute
         fallbackScript.defer = true
         
         fallbackScript.onload = () => {
