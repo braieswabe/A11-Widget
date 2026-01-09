@@ -5,35 +5,6 @@ import './Pages.css'
 export default function GettingStarted() {
   const canonicalCode = `<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js" defer></script>`
 
-  const cspCode = `<script
-  src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js"
-  defer
-></script>`
-
-  const configCode = `// Optional: Customize widget settings
-window.__A11Y_WIDGET__ = {
-  position: "right",              // Widget position: "left" or "right"
-  surfaces: ["body", "main"],    // CSS selectors for surfaces to transform
-  initialOpen: false,            // Open widget on page load
-  features: {                    // Feature flags
-    contrast: true,
-    fontScale: true,
-    spacing: true,
-    reduceMotion: true,
-    readableFont: true,
-    presets: true,
-    reset: true,
-    skipLink: true
-  }
-};`
-
-  const surfacesCode = `surfaces: [
-  "body",                              // All body content
-  "main",                              // Main content area
-  ".content",                          // Content wrapper class
-  "[data-canonical-surface='true']"    // Custom attribute
-]`
-
   const testCode = `<!DOCTYPE html>
 <html lang="en">
 <head>

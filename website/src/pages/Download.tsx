@@ -1,22 +1,7 @@
 import { Link } from 'react-router-dom'
-import CodeBlock from '../components/CodeBlock'
 import './Pages.css'
 
 export default function Download() {
-  const configCode = `window.__A11Y_WIDGET__ = {
-  siteId: "example-site",
-  position: "right",
-  surfaces: ["body", "main"],
-  enableTelemetry: false
-};`
-
-  const localPathsCode = `<!-- If widget files are in same directory -->
-<link rel="stylesheet" href="a11y-widget.css" />
-<script src="a11y-widget.js" defer></script>
-
-<!-- Or use CDN paths -->
-<link rel="stylesheet" href="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.css" />
-<script src="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.js" defer></script>`
 
   return (
     <section className="section">
