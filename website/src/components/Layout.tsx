@@ -91,9 +91,9 @@ export default function Layout({ children }: LayoutProps) {
         // Try fallback URL (jsDelivr CDN) with versioned filename
         const fallbackScript = document.createElement('script')
         fallbackScript.id = 'a11y-widget-loader'
-        const LOADER_VERSION = '1.3'
-        fallbackScript.src = `https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader-v${LOADER_VERSION}.js`
-        fallbackScript.setAttribute('data-version', LOADER_VERSION) // Set version attribute
+        const LOADER_VERSION_FALLBACK = '1.4'
+        fallbackScript.src = `https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader-v${LOADER_VERSION_FALLBACK}.js`
+        fallbackScript.setAttribute('data-version', LOADER_VERSION_FALLBACK) // Set version attribute
         fallbackScript.defer = true
         
         fallbackScript.onload = () => {
