@@ -29,6 +29,7 @@ export default function Home() {
               <li><strong>Text spacing</strong> — Normal, Comfortable, or Max spacing</li>
               <li><strong>Readable font</strong> — System-friendly sans-serif font</li>
               <li><strong>Reduce motion</strong> — Disable animations and transitions</li>
+              <li><strong>Quick Presets</strong> — Low Vision, Dyslexia-Friendly, Reduced Motion, High Contrast, Large Text</li>
             </ul>
             <p>All settings persist across page reloads. Try adjusting the settings and reloading this page!</p>
           </div>
