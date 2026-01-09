@@ -3,7 +3,7 @@ import CodeBlock from '../components/CodeBlock'
 import './Pages.css'
 
 export default function GettingStarted() {
-  const canonicalCode = `<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js" defer></script>`
+  const canonicalCode = `<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.1/a11y-widget-loader.js" defer></script>`
 
   const testCode = `<!DOCTYPE html>
 <html lang="en">
@@ -11,7 +11,7 @@ export default function GettingStarted() {
   <meta charset="UTF-8">
   <title>Test Page</title>
   <!-- Just one line - loads everything from GitHub automatically! -->
-  <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.1/a11y-widget-loader.js" defer></script>
 </head>
 <body>
   <h1>Test Page</h1>
@@ -46,7 +46,7 @@ export default function GettingStarted() {
     surfaces: ["body", "main"]     // CSS selectors
   };
 </script>
-<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js" defer></script>`} />
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.1/a11y-widget-loader.js" defer></script>`} />
         </div>
 
         <h2>Test It</h2>

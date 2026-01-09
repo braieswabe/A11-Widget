@@ -68,10 +68,10 @@ export default function Layout({ children }: LayoutProps) {
         loaderUrl = '/a11y-widget.js?v=' + timestamp
         fallbackUrl = loaderUrl // No fallback needed in dev
       } else {
-        // Production: Try raw GitHub first, fallback to jsDelivr CDN
-        // Add multiple cache-busting parameters to ensure fresh load
-        loaderUrl = `https://raw.githubusercontent.com/braieswabe/A11-Widget/main/a11y-widget-loader.js?v=${timestamp}&_=${random}&nocache=${timestamp}&t=${Date.now()}`
-        fallbackUrl = `https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js?v=${timestamp}&_=${random}&nocache=${timestamp}&t=${Date.now()}`
+        // Production: Use versioned tag for reliable CDN delivery
+        // Version tags bypass jsDelivr cache (branch URLs are cached for 7 days)
+        loaderUrl = `https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.1/a11y-widget-loader.js`
+        fallbackUrl = `https://raw.githubusercontent.com/braieswabe/A11-Widget/main/a11y-widget-loader.js`
       }
       
       loaderScript.src = loaderUrl
@@ -183,7 +183,7 @@ export default function Layout({ children }: LayoutProps) {
           // Try fallback URL (jsDelivr CDN)
           const fallbackScript = document.createElement('script')
           fallbackScript.id = 'a11y-widget-loader'
-          fallbackScript.src = `https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js?v=${timestamp}&_=${random}`
+          fallbackScript.src = `https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.1/a11y-widget-loader.js`
           fallbackScript.defer = true
           
           fallbackScript.onload = () => {

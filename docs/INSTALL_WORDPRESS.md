@@ -20,7 +20,7 @@ This guide covers installing the Accessibility Widget v1 on WordPress sites.
 
 ```html
 <!-- Just one line - widget loads automatically! -->
-<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.1/a11y-widget-loader.js" defer></script>
 ```
 
 4. Click **Save**
@@ -38,7 +38,7 @@ This guide covers installing the Accessibility Widget v1 on WordPress sites.
 
 ```php
 <!-- Accessibility Widget - Just one line! -->
-<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.1/a11y-widget-loader.js" defer></script>
   window.__A11Y_WIDGET__ = {
     siteId: "<?php echo get_option('a11y_site_id', 'wordpress-site'); ?>",
     position: "right",

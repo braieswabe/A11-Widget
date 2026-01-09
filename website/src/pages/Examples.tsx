@@ -3,7 +3,7 @@ import CodeBlock from '../components/CodeBlock'
 import './Pages.css'
 
 export default function Examples() {
-  const basicCode = `<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js" defer></script>`
+  const basicCode = `<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.1/a11y-widget-loader.js" defer></script>`
 
   const advancedCode = `<script>
   window.__A11Y_WIDGET__ = {
@@ -18,7 +18,7 @@ export default function Examples() {
     telemetryEndpoint: "/api/telemetry"
   };
 </script>
-<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js" defer></script>`
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.1/a11y-widget-loader.js" defer></script>`
 
   const blogSurfaces = `surfaces: [
   "body",

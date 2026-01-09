@@ -15,7 +15,7 @@ This guide covers installing the Accessibility Widget v1 on static HTML sites or
 Add this single line to your HTML files before `</head>` or before `</body>`:
 
 ```html
-<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.1/a11y-widget-loader.js" defer></script>
 ```
 
 That's it! The widget loads automatically from GitHub. No configuration needed.
@@ -31,7 +31,7 @@ If you want to customize the widget, add configuration before the loader script:
     surfaces: ["body", "main"]  // Optional: CSS selectors
   };
 </script>
-<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.1/a11y-widget-loader.js" defer></script>
 ```
 
 ### Step 3: Optional - Custom Button Control
@@ -72,13 +72,13 @@ If using a templating system (Jekyll, Hugo, etc.), add to your base template:
 **Jekyll** (`_includes/head.html` or `_layouts/default.html`):
 ```liquid
 <!-- Just one line - widget loads automatically! -->
-<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.1/a11y-widget-loader.js" defer></script>
 ```
 
 **Hugo** (`layouts/partials/head.html`):
 ```go
 <!-- Just one line - widget loads automatically! -->
-<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.1/a11y-widget-loader.js" defer></script>
 ```
 
 ## Troubleshooting
@@ -121,7 +121,7 @@ If you see CSP errors:
   <title>My Site</title>
   
   <!-- Accessibility Widget - Just one line! -->
-  <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.1/a11y-widget-loader.js" defer></script>
 </head>
 <body>
   <main>

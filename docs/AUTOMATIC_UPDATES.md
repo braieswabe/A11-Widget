@@ -7,7 +7,7 @@ This document explains how widget updates automatically propagate to all existin
 When users install the widget using the loader script:
 
 ```html
-<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.1/a11y-widget-loader.js" defer></script>
 ```
 
 The widget files (`a11y-widget.js` and `a11y-widget.css`) are loaded directly from the GitHub repository via jsDelivr CDN.
@@ -95,7 +95,7 @@ To force an immediate update for testing:
 
 ```html
 <!-- Add timestamp to loader script URL -->
-<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js?v=<?php echo time(); ?>" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.1/a11y-widget-loader.js?v=<?php echo time(); ?>" defer></script>
 ```
 
 ## Benefits

@@ -20,7 +20,7 @@ Add the loader script to `public/index.html`:
     <meta charset="utf-8" />
     <title>React App</title>
     <!-- Accessibility Widget - Just one line! -->
-    <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.1/a11y-widget-loader.js" defer></script>
   </head>
   <body>
     <div id="root"></div>
@@ -52,7 +52,7 @@ If you need to customize settings, add configuration before the loader script:
       };
     </script>
     <!-- Load widget from GitHub -->
-    <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.1/a11y-widget-loader.js" defer></script>
   </head>
   <body>
     <div id="root"></div>
@@ -79,7 +79,7 @@ function App() {
     // Load widget from GitHub
     const script = document.createElement('script')
     script.id = 'a11y-widget-loader'
-    script.src = 'https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js'
+    script.src = 'https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.1/a11y-widget-loader.js'
     script.defer = true
     
     // Optional: Set config before loading
@@ -127,7 +127,7 @@ export function useA11yWidget(config = {}) {
     // Load widget from GitHub
     const script = document.createElement('script')
     script.id = 'a11y-widget-loader'
-    script.src = 'https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js'
+    script.src = 'https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.1/a11y-widget-loader.js'
     script.defer = true
     document.body.appendChild(script)
   }, [])
@@ -156,7 +156,7 @@ If CSP blocks inline scripts, the loader script works without any configuration:
 ```html
 <!-- In public/index.html -->
 <script
-  src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js"
+  src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.1/a11y-widget-loader.js"
   defer
 ></script>
 ```
@@ -299,7 +299,7 @@ If build fails:
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>React App</title>
     <!-- Just one line - widget loads automatically! -->
-    <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.1/a11y-widget-loader.js" defer></script>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
@@ -318,7 +318,7 @@ If build fails:
   <head>
     <meta charset="UTF-8" />
     <!-- Just one line - widget loads automatically! -->
-    <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.1/a11y-widget-loader.js" defer></script>
   </head>
   <body>
     <div id="root"></div>

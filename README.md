@@ -27,20 +27,15 @@ This widget is a **support layer** + **render-time accessibility controls** — 
 Just add this single line to your HTML:
 
 ```html
-<!-- Use versioned filename to ensure you get the latest version -->
-<script src="https://raw.githubusercontent.com/braieswabe/A11-Widget/main/a11y-widget-loader-v1.3.js" defer></script>
+<!-- Use versioned tag to ensure you get the latest stable version -->
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.1/a11y-widget-loader.js" defer></script>
 ```
 
-**Note:** We use versioned filenames (`a11y-widget-loader-v1.3.js`) instead of query parameters because CDNs cache based on the URL path, not query parameters. This ensures you always get the latest version.
+**Note:** We use version tags (`@v1.6.1`) instead of branch names (`@main`) because jsDelivr CDN aggressively caches branch URLs for up to 7 days. Version tags are served immediately and ensure you always get the exact version you specify.
 
 That's it! The widget loads automatically from GitHub. No configuration needed.
 
-**✨ Automatic Updates**: When you update the widget files in the GitHub repository, all existing integrations automatically receive the updates on their next page load. The loader script includes aggressive cache-busting to ensure users always get the latest version.
-
-**Note**: If you need to force immediate updates, add cache-busting to the loader script URL:
-```html
-<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js?v=latest" defer></script>
-```
+**✨ Version Updates**: When a new version is released, update the version tag in your script tag (e.g., `@v1.6.1` → `@v1.7.0`). This ensures you get the latest features and fixes immediately.
 
 **⌨️ Keyboard Shortcut**: Press **Alt+A** (Option+A on Mac) from anywhere on the page to quickly open/close the accessibility widget. The shortcut doesn't interfere with typing in input fields.
 
@@ -57,7 +52,7 @@ If you want to customize the widget, add configuration before the loader script:
     surfaces: ["body", "main"]  // Optional: CSS selectors (ignored if globalMode is true)
   };
 </script>
-<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.1/a11y-widget-loader.js" defer></script>
 ```
 
 **Global Mode**: When enabled, the widget applies transformations (fonts, font sizes, colors, spacing) to the entire website, completely overhauling the user interface. When disabled (default), transformations only apply to declared surfaces.
