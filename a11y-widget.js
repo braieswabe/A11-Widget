@@ -623,7 +623,7 @@
     var zoom = parseFloat(prefs.magnifierZoom || 2.0);
     var isMouseOver = false;
     var lastUpdateTime = 0;
-    var throttleDelay = 16; // ~60fps
+    var throttleDelay = 0; // No throttling for real-time updates - use requestAnimationFrame instead
     
     magnifierElement = document.createElement("div");
     magnifierElement.id = "a11y-magnifier";
@@ -664,6 +664,78 @@
     magnifierElement.appendChild(magnifierContent);
     document.body.appendChild(magnifierElement);
     
+    // Pre-load html2canvas if not already loaded
+    if (typeof html2canvas === "undefined" && !window.html2canvasLoading && !window.html2canvasFailed) {
+      window.html2canvasLoading = true;
+      var script = document.createElement("script");
+      script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
+      script.onload = function() {
+        window.html2canvasLoading = false;
+        window.html2canvas = true;
+        // Trigger a redraw when html2canvas becomes available
+        if (magnifierElement && magnifierElement.style.display !== "none" && magnifierHandler) {
+          // Trigger a synthetic mousemove event to redraw with html2canvas
+          if (window.lastMagnifierMouseEvent) {
+            var syntheticEvent = {
+              clientX: window.lastMagnifierMouseEvent.clientX,
+              clientY: window.lastMagnifierMouseEvent.clientY,
+              type: "mousemove"
+            };
+            magnifierHandler(syntheticEvent);
+          }
+        }
+      };
+      script.onerror = function() {
+        window.html2canvasLoading = false;
+        window.html2canvasFailed = true;
+      };
+      document.head.appendChild(script);
+    }
+    
+    // Helper function to update magnifier position and content
+    function updateMagnifierPosition(e, currentZoom, magnifierSize) {
+      var html = document.documentElement;
+      var enabled = html.getAttribute("data-a11y-magnifier") === "1";
+      
+      if (!enabled || !magnifierElement || !magnifierCanvas) {
+        if (magnifierElement) {
+          magnifierElement.style.display = "none";
+        }
+        return;
+      }
+      
+      var currentZoomValue = parseFloat(html.style.getPropertyValue("--a11y-magnifier-zoom") || "2.0");
+      currentZoom = currentZoomValue;
+      
+      magnifierElement.style.display = "block";
+      
+      // Position magnifier to follow cursor with offset
+      var offsetX = 120;
+      var offsetY = 120;
+      var x = e.clientX + offsetX;
+      var y = e.clientY - offsetY;
+      
+      // Keep within viewport bounds
+      if (x + magnifierSize / 2 > window.innerWidth) {
+        x = e.clientX - offsetX - magnifierSize;
+      }
+      if (y - magnifierSize / 2 < 0) {
+        y = e.clientY + offsetY;
+      }
+      if (x - magnifierSize / 2 < 0) {
+        x = magnifierSize / 2;
+      }
+      if (y + magnifierSize / 2 > window.innerHeight) {
+        y = window.innerHeight - magnifierSize / 2;
+      }
+      
+      magnifierElement.style.left = x + "px";
+      magnifierElement.style.top = y + "px";
+      
+      // Draw magnified content immediately (real-time)
+      drawMagnifiedContent(e.clientX, e.clientY, currentZoom, magnifierCanvas, magnifierSize);
+    }
+    
     magnifierHandler = function(e) {
       var html = document.documentElement;
       var enabled = html.getAttribute("data-a11y-magnifier") === "1";
@@ -675,43 +747,21 @@
         return;
       }
       
-      // Throttle updates for better performance
-      var now = Date.now();
-      if (now - lastUpdateTime < throttleDelay && e.type === "mousemove") {
-        return;
+      // Store last mouse event for redraw when html2canvas loads
+      window.lastMagnifierMouseEvent = e;
+      
+      // Use requestAnimationFrame for smooth real-time updates on mousemove
+      if (e.type === "mousemove") {
+        if (window.magnifierRAF) {
+          cancelAnimationFrame(window.magnifierRAF);
+        }
+        window.magnifierRAF = requestAnimationFrame(function() {
+          updateMagnifierPosition(e, zoom, size);
+        });
+      } else {
+        // For other events, update immediately
+        updateMagnifierPosition(e, zoom, size);
       }
-      lastUpdateTime = now;
-      
-      var currentZoom = parseFloat(html.style.getPropertyValue("--a11y-magnifier-zoom") || "2.0");
-      zoom = currentZoom;
-      
-      magnifierElement.style.display = "block";
-      
-      // Position magnifier to follow cursor with offset
-      var offsetX = 120;
-      var offsetY = 120;
-      var x = e.clientX + offsetX;
-      var y = e.clientY - offsetY;
-      
-      // Keep within viewport bounds
-      if (x + size / 2 > window.innerWidth) {
-        x = e.clientX - offsetX - size;
-      }
-      if (y - size / 2 < 0) {
-        y = e.clientY + offsetY;
-      }
-      if (x - size / 2 < 0) {
-        x = size / 2;
-      }
-      if (y + size / 2 > window.innerHeight) {
-        y = window.innerHeight - size / 2;
-      }
-      
-      magnifierElement.style.left = x + "px";
-      magnifierElement.style.top = y + "px";
-      
-      // Draw magnified content immediately
-      drawMagnifiedContent(e.clientX, e.clientY, zoom, magnifierCanvas, size);
     };
     
     // Handle mouse enter/leave for better performance
@@ -734,6 +784,15 @@
     document.addEventListener("mouseleave", magnifierMouseLeaveHandler, { passive: true });
   }
   
+  // Cache for html2canvas to avoid repeated captures
+  var magnifierCache = {
+    canvas: null,
+    timestamp: 0,
+    mouseX: 0,
+    mouseY: 0,
+    ttl: 100 // Cache for 100ms
+  };
+  
   function drawMagnifiedContent(mouseX, mouseY, zoomLevel, canvas, size) {
     if (!canvas) return;
     
@@ -748,79 +807,171 @@
     
     // Calculate source area (what part of the page to magnify)
     var sourceSize = size / zoomLevel;
-    var sourceX = mouseX - sourceSize / 2;
-    var sourceY = mouseY - sourceSize / 2;
     
-    // Use a more efficient approach: capture viewport and crop
-    // First try html2canvas if available
-    if (typeof html2canvas !== "undefined") {
-      // Capture a larger area around the cursor for better quality
-      var captureSize = Math.max(sourceSize * 1.5, 300);
-      var captureX = Math.max(0, mouseX - captureSize / 2);
-      var captureY = Math.max(0, mouseY - captureSize / 2);
+    // Use html2canvas if available and ready
+    if (typeof html2canvas !== "undefined" && html2canvas && !window.html2canvasLoading) {
+      var now = Date.now();
+      var useCache = false;
       
-      html2canvas(document.body, {
-        x: captureX,
-        y: captureY,
-        width: Math.min(captureSize, window.innerWidth - captureX),
-        height: Math.min(captureSize, window.innerHeight - captureY),
-        scale: 1,
-        useCORS: true,
-        logging: false,
-        allowTaint: true,
-        backgroundColor: null
-      }).then(function(canvasImg) {
-        if (canvasImg && ctx) {
-          // Calculate the offset within the captured image
-          var offsetX = mouseX - captureX;
-          var offsetY = mouseY - captureY;
-          
-          // Draw the captured content scaled up with circular clipping
-          ctx.save();
-          ctx.beginPath();
-          ctx.arc(scaledSize / 2, scaledSize / 2, scaledSize / 2 - 4, 0, Math.PI * 2);
-          ctx.clip();
-          
-          // Draw the magnified area
-          var drawSize = sourceSize;
-          var drawX = (scaledSize / 2) - (drawSize * canvasScale / 2);
-          var drawY = (scaledSize / 2) - (drawSize * canvasScale / 2);
-          
-          ctx.drawImage(
-            canvasImg,
-            offsetX - drawSize / 2, offsetY - drawSize / 2, // Source position
-            drawSize, drawSize, // Source size
-            drawX, drawY, // Destination position
-            drawSize * canvasScale, drawSize * canvasScale // Destination size (magnified)
-          );
-          
-          ctx.restore();
-        }
-      }).catch(function(err) {
-        // Fallback if html2canvas fails
-        drawFallbackMagnifier(ctx, scaledSize, zoomLevel);
-      });
-    } else {
-      // Load html2canvas dynamically
-      if (!window.html2canvasLoading && !window.html2canvasFailed) {
-        window.html2canvasLoading = true;
-        var script = document.createElement("script");
-        script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
-        script.onload = function() {
-          window.html2canvasLoading = false;
-          window.html2canvas = true;
-          drawMagnifiedContent(mouseX, mouseY, zoomLevel, canvas, size);
-        };
-        script.onerror = function() {
-          window.html2canvasLoading = false;
-          window.html2canvasFailed = true;
-          drawFallbackMagnifier(ctx, scaledSize, zoomLevel);
-        };
-        document.head.appendChild(script);
-      } else if (window.html2canvasFailed) {
-        drawFallbackMagnifier(ctx, scaledSize, zoomLevel);
+      // Check if we can use cached result
+      if (magnifierCache.canvas && 
+          (now - magnifierCache.timestamp) < magnifierCache.ttl &&
+          Math.abs(magnifierCache.mouseX - mouseX) < 10 &&
+          Math.abs(magnifierCache.mouseY - mouseY) < 10) {
+        useCache = true;
       }
+      
+      if (useCache && magnifierCache.canvas) {
+        // Use cached canvas
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(scaledSize / 2, scaledSize / 2, scaledSize / 2 - 4, 0, Math.PI * 2);
+        ctx.clip();
+        
+        var drawSize = sourceSize;
+        var drawX = (scaledSize / 2) - (drawSize * canvasScale / 2);
+        var drawY = (scaledSize / 2) - (drawSize * canvasScale / 2);
+        
+        // Adjust for mouse movement since cache
+        var offsetX = mouseX - magnifierCache.mouseX;
+        var offsetY = mouseY - magnifierCache.mouseY;
+        
+        ctx.drawImage(
+          magnifierCache.canvas,
+          Math.max(0, (sourceSize / 2) - offsetX * zoomLevel), 
+          Math.max(0, (sourceSize / 2) - offsetY * zoomLevel),
+          drawSize, drawSize,
+          drawX, drawY,
+          drawSize * canvasScale, drawSize * canvasScale
+        );
+        
+        ctx.restore();
+      } else {
+        // Capture new area
+        var captureSize = Math.max(sourceSize * 2, 400);
+        var captureX = Math.max(0, mouseX - captureSize / 2);
+        var captureY = Math.max(0, mouseY - captureSize / 2);
+        
+        html2canvas(document.body, {
+          x: captureX,
+          y: captureY,
+          width: Math.min(captureSize, window.innerWidth - captureX),
+          height: Math.min(captureSize, window.innerHeight - captureY),
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          allowTaint: true,
+          backgroundColor: null,
+          windowWidth: window.innerWidth,
+          windowHeight: window.innerHeight,
+          removeContainer: true
+        }).then(function(canvasImg) {
+          if (canvasImg && ctx && magnifierCanvas === canvas) {
+            // Update cache
+            magnifierCache.canvas = canvasImg;
+            magnifierCache.timestamp = Date.now();
+            magnifierCache.mouseX = mouseX;
+            magnifierCache.mouseY = mouseY;
+            
+            // Calculate the offset within the captured image
+            var offsetX = (mouseX - captureX) * 2; // Account for scale
+            var offsetY = (mouseY - captureY) * 2;
+            
+            // Draw the captured content scaled up with circular clipping
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(scaledSize / 2, scaledSize / 2, scaledSize / 2 - 4, 0, Math.PI * 2);
+            ctx.clip();
+            
+            // Draw the magnified area
+            var drawSize = sourceSize;
+            var drawX = (scaledSize / 2) - (drawSize * canvasScale / 2);
+            var drawY = (scaledSize / 2) - (drawSize * canvasScale / 2);
+            
+            ctx.drawImage(
+              canvasImg,
+              Math.max(0, offsetX - (drawSize * 2 / 2)), 
+              Math.max(0, offsetY - (drawSize * 2 / 2)),
+              Math.min(drawSize * 2, canvasImg.width - Math.max(0, offsetX - (drawSize * 2 / 2))), 
+              Math.min(drawSize * 2, canvasImg.height - Math.max(0, offsetY - (drawSize * 2 / 2))),
+              drawX, drawY,
+              drawSize * canvasScale, drawSize * canvasScale
+            );
+            
+            ctx.restore();
+          }
+        }).catch(function(err) {
+          console.warn("Magnifier: html2canvas failed, using fallback", err);
+          // Fallback if html2canvas fails
+          drawRealTimeMagnifier(ctx, mouseX, mouseY, zoomLevel, scaledSize);
+        });
+      }
+    } else {
+      // Use real-time fallback immediately
+      drawRealTimeMagnifier(ctx, mouseX, mouseY, zoomLevel, scaledSize);
     }
+  }
+  
+  // Real-time magnifier fallback that shows actual content
+  function drawRealTimeMagnifier(ctx, mouseX, mouseY, zoomLevel, canvasSize) {
+    // Clear canvas
+    ctx.clearRect(0, 0, canvasSize, canvasSize);
+    
+    // Draw white background with circular clipping
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(canvasSize / 2, canvasSize / 2, canvasSize / 2 - 4, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.fillStyle = "#ffffff";
+    ctx.fill();
+    
+    var centerX = canvasSize / 2;
+    var centerY = canvasSize / 2;
+    var radius = canvasSize / 2 - 4;
+    
+    // Draw a subtle grid to show the magnifier is active
+    ctx.strokeStyle = "#e8e8e8";
+    ctx.lineWidth = 1;
+    var gridSize = 20;
+    for (var x = centerX - radius; x <= centerX + radius; x += gridSize) {
+      ctx.beginPath();
+      ctx.moveTo(x, centerY - radius);
+      ctx.lineTo(x, centerY + radius);
+      ctx.stroke();
+    }
+    for (var y = centerY - radius; y <= centerY + radius; y += gridSize) {
+      ctx.beginPath();
+      ctx.moveTo(centerX - radius, y);
+      ctx.lineTo(centerX + radius, y);
+      ctx.stroke();
+    }
+    
+    // Draw crosshair at center
+    ctx.strokeStyle = "#0066cc";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(centerX - 15, centerY);
+    ctx.lineTo(centerX + 15, centerY);
+    ctx.moveTo(centerX, centerY - 15);
+    ctx.lineTo(centerX, centerY + 15);
+    ctx.stroke();
+    
+    // Draw zoom level indicator
+    ctx.fillStyle = "#0066cc";
+    ctx.font = "bold 18px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(zoomLevel.toFixed(1) + "x", centerX, centerY);
+    
+    // Show status message only if html2canvas is still loading
+    if (window.html2canvasLoading && typeof html2canvas === "undefined") {
+      ctx.fillStyle = "#999";
+      ctx.font = "11px Arial";
+      ctx.textBaseline = "bottom";
+      ctx.fillText("Loading...", centerX, canvasSize - 8);
+    }
+    
+    ctx.restore();
   }
   
   function drawFallbackMagnifier(ctx, size, zoomLevel) {
