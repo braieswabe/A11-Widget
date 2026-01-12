@@ -1,7 +1,7 @@
 import { ReactNode, useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { WIDGET_VERSION, WIDGET_LOADER_URL, WIDGET_SCRIPT_URL, WIDGET_CSS_URL } from '../constants'
+import { WIDGET_VERSION, WIDGET_SCRIPT_URL, WIDGET_CSS_URL } from '../constants'
 import A11yLogo from './A11yLogo'
 import './Layout.css'
 
