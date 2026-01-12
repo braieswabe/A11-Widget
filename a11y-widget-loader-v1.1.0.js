@@ -193,14 +193,36 @@ try {
     }
 
     var form = document.getElementById(LOGIN_FORM_ID);
-    var errorDiv = document.getElementById("a11y-auth-error");
-    var submitBtn = document.getElementById("a11y-auth-submit");
-    var emailInput = document.getElementById("a11y-auth-email");
-    var passwordInput = document.getElementById("a11y-auth-password");
-    var apiKeyInput = document.getElementById("a11y-auth-api-key");
+    if (!form) {
+      console.error("[A11Y Auth] Login form not found, cannot attach submit handler");
+      return;
+    }
+    
+    // Get modal reference for later use
+    var modal = document.getElementById(LOGIN_MODAL_ID);
+    
+    // Check if form already has listeners (avoid duplicates)
+    var formHasListener = form.hasAttribute("data-listener-attached");
+    if (formHasListener) {
+      // Form already has listener, skip
+      return;
+    }
+    form.setAttribute("data-listener-attached", "true");
 
     form.addEventListener("submit", function(e) {
       e.preventDefault();
+      
+      // Get form elements fresh each time to ensure we have the right references
+      var errorDiv = document.getElementById("a11y-auth-error");
+      var submitBtn = document.getElementById("a11y-auth-submit");
+      var emailInput = document.getElementById("a11y-auth-email");
+      var passwordInput = document.getElementById("a11y-auth-password");
+      var apiKeyInput = document.getElementById("a11y-auth-api-key");
+      
+      if (!errorDiv || !submitBtn || !emailInput || !passwordInput || !apiKeyInput) {
+        console.error("[A11Y Auth] Form elements not found");
+        return;
+      }
       
       var email = emailInput.value.trim();
       var password = passwordInput.value;
@@ -234,7 +256,17 @@ try {
 
       login(credentials).then(function(result) {
         if (result.success) {
-          modal.style.display = "none";
+          // Update auth status
+          if (window.__a11yAuth) {
+            window.__a11yAuth.__status = { authenticated: true, client: result.client };
+          }
+          
+          // Hide modal
+          var currentModal = document.getElementById(LOGIN_MODAL_ID);
+          if (currentModal) {
+            currentModal.style.display = "none";
+          }
+          
           window.dispatchEvent(new CustomEvent("a11y-auth-success", { detail: result.client }));
           // Reload widget if needed
           if (window.__a11yWidget && window.__a11yWidget.reload) {
@@ -243,7 +275,17 @@ try {
             location.reload();
           }
         } else {
-          errorDiv.textContent = result.error || "Login failed. Please try again.";
+          if (errorDiv && submitBtn) {
+            errorDiv.textContent = result.error || "Login failed. Please try again.";
+            errorDiv.style.display = "block";
+            submitBtn.disabled = false;
+            submitBtn.textContent = "Login";
+          }
+        }
+      }).catch(function(error) {
+        console.error("[A11Y Auth] Login error:", error);
+        if (errorDiv && submitBtn) {
+          errorDiv.textContent = "Network error. Please try again.";
           errorDiv.style.display = "block";
           submitBtn.disabled = false;
           submitBtn.textContent = "Login";
@@ -251,11 +293,16 @@ try {
       });
     });
 
-    if (apiKeyInput.value) {
-      apiKeyInput.focus();
-    } else {
-      emailInput.focus();
-    }
+    // Focus first input
+    setTimeout(function() {
+      var apiKeyInput = document.getElementById("a11y-auth-api-key");
+      var emailInput = document.getElementById("a11y-auth-email");
+      if (apiKeyInput && apiKeyInput.value) {
+        apiKeyInput.focus();
+      } else if (emailInput) {
+        emailInput.focus();
+      }
+    }, 100);
   }
 
   // Hide login modal
@@ -324,13 +371,18 @@ try {
         });
       }
       removeToken();
+      // Clear stored auth status
+      if (window.__a11yAuth) {
+        window.__a11yAuth.__status = { authenticated: false };
+      }
     },
     showLoginModal: showLoginModal,
     hideLoginModal: hideLoginModal,
     getToken: getStoredToken,
     isAuthenticated: function() {
       return !!getStoredToken();
-    }
+    },
+    __status: null // Will store early auth check result
   };
   
   // Listen for auth required event (from widget button click)
@@ -340,8 +392,39 @@ try {
 
   // Listen for successful auth
   window.addEventListener("a11y-auth-success", function() {
+    // Update auth status
+    if (window.__a11yAuth) {
+      window.__a11yAuth.__status = { authenticated: true };
+    }
     // Widget will reload automatically via loader script
   });
+  
+  // EARLY AUTH CHECK: Initialize authentication status before widget loads
+  // This ensures the login portal is ready and auth status is known
+  function initializeAuthSystem() {
+    return checkAuth().then(function(result) {
+      // Store auth status for later use
+      if (window.__a11yAuth) {
+        window.__a11yAuth.__status = result;
+      }
+      // Pre-create login modal HTML structure (hidden) to ensure it's ready
+      // The modal will be created when showLoginModal() is called, but we ensure
+      // the function is ready and tested
+      if (typeof showLoginModal === 'function') {
+        // Function is ready - modal will be created on demand
+        console.log('[A11Y Auth] Authentication system initialized, status:', result.authenticated ? 'authenticated' : 'not authenticated');
+      }
+      return result;
+    }).catch(function(error) {
+      // On error, assume not authenticated
+      var result = { authenticated: false };
+      if (window.__a11yAuth) {
+        window.__a11yAuth.__status = result;
+      }
+      console.log('[A11Y Auth] Auth check failed, assuming not authenticated');
+      return result;
+    });
+  }
   
   // IMMEDIATE: Check if this loader script is outdated and force reload
   // This runs BEFORE any other code to catch cached loader scripts
@@ -609,9 +692,21 @@ try {
     }
   }
   
-  // Load widget button (authentication will be checked when button is clicked)
-  // For non-trusted domains, we still load the widget but authentication is required to use it
-  loadWidget();
+  // Initialize authentication system FIRST, then load widget
+  // This ensures login portal is ready before widget loads
+  initializeAuthSystem().then(function() {
+    // Auth system is now initialized and ready
+    // Login modal functions are available
+    // Auth status is stored in window.__a11yAuth.__status
+    
+    // Load widget button (authentication will be checked when button is clicked)
+    // For non-trusted domains, we still load the widget but authentication is required to use it
+    loadWidget();
+  }).catch(function(error) {
+    // If auth initialization fails, still load widget (graceful degradation)
+    console.warn('[A11Y Auth] Auth initialization failed, loading widget anyway:', error);
+    loadWidget();
+  });
   
   // Check for updates immediately and periodically
   // Reduce check interval to 1 minute for faster updates
@@ -634,6 +729,13 @@ try {
       return;
     }
     
+    // Ensure auth system is initialized before setting up interceptor
+    if (!window.__a11yAuth || typeof showLoginModal !== 'function') {
+      console.warn('[A11Y Auth] Auth system not ready, retrying interceptor setup...');
+      setTimeout(setupAuthInterceptor, 500);
+      return;
+    }
+    
     // Wait for widget to load, then intercept button clicks
     var checkInterval = setInterval(function() {
       var toggleButton = document.getElementById("a11y-widget-toggle");
@@ -653,41 +755,97 @@ try {
             e.preventDefault();
             
             // Check authentication before opening panel
-            checkAuth().then(function(result) {
-              if (!result.authenticated) {
-                // Not authenticated, show login modal immediately
+            // First check cached status if available
+            var cachedStatus = window.__a11yAuth && window.__a11yAuth.__status;
+            if (cachedStatus && cachedStatus.authenticated) {
+              // Use cached status for faster response, but still validate
+              checkAuth().then(function(result) {
+                if (result.authenticated) {
+                  // Authenticated, allow widget to open by programmatically clicking
+                  toggleButton.removeEventListener("click", clickHandler, true);
+                  var syntheticEvent = new MouseEvent("click", {
+                    bubbles: true,
+                    cancelable: true,
+                    view: window
+                  });
+                  toggleButton.dispatchEvent(syntheticEvent);
+                  // Re-add handler after a short delay
+                  setTimeout(function() {
+                    toggleButton.addEventListener("click", clickHandler, true);
+                  }, 100);
+                } else {
+                  // Token expired or invalid, show login modal
+                  if (window.__a11yAuth) {
+                    window.__a11yAuth.__status = { authenticated: false };
+                  }
+                  showLoginModal();
+                }
+              }).catch(function(error) {
+                // On any error, show login modal
+                console.log('[A11Y Auth] Auth validation failed:', error);
+                if (window.__a11yAuth) {
+                  window.__a11yAuth.__status = { authenticated: false };
+                }
                 showLoginModal();
-              } else {
-                // Authenticated, allow widget to open by programmatically clicking
-                // Remove our handler temporarily and trigger click
-                toggleButton.removeEventListener("click", clickHandler, true);
-                var syntheticEvent = new MouseEvent("click", {
-                  bubbles: true,
-                  cancelable: true,
-                  view: window
-                });
-                toggleButton.dispatchEvent(syntheticEvent);
-                // Re-add handler after a short delay
-                setTimeout(function() {
-                  toggleButton.addEventListener("click", clickHandler, true);
-                }, 100);
-              }
-            }).catch(function(error) {
-              // On any error (including 401), show login modal instead of error
-              // Silently handle errors - don't log to avoid confusion with other scripts' errors
-              showLoginModal();
-            });
+              });
+            } else {
+              // No cached status or not authenticated, check auth
+              checkAuth().then(function(result) {
+                // Update cached status
+                if (window.__a11yAuth) {
+                  window.__a11yAuth.__status = result;
+                }
+                
+                if (!result.authenticated) {
+                  // Not authenticated, show login modal immediately
+                  showLoginModal();
+                } else {
+                  // Authenticated, allow widget to open by programmatically clicking
+                  toggleButton.removeEventListener("click", clickHandler, true);
+                  var syntheticEvent = new MouseEvent("click", {
+                    bubbles: true,
+                    cancelable: true,
+                    view: window
+                  });
+                  toggleButton.dispatchEvent(syntheticEvent);
+                  // Re-add handler after a short delay
+                  setTimeout(function() {
+                    toggleButton.addEventListener("click", clickHandler, true);
+                  }, 100);
+                }
+              }).catch(function(error) {
+                // On any error (including network errors), show login modal
+                console.log('[A11Y Auth] Auth check failed:', error);
+                if (window.__a11yAuth) {
+                  window.__a11yAuth.__status = { authenticated: false };
+                }
+                // Ensure login modal is shown
+                try {
+                  showLoginModal();
+                } catch (modalError) {
+                  console.error('[A11Y Auth] Failed to show login modal:', modalError);
+                  // Fallback: alert user
+                  alert("Please log in to access the accessibility widget. If you don't have an account, please contact your administrator.");
+                }
+              });
+            }
           }
           // If closing (expanded=true), always allow it
         };
         
         toggleButton.addEventListener("click", clickHandler, true); // Use capture phase to run before widget's handler
+        console.log('[A11Y Auth] Auth interceptor attached to widget button');
       }
     }, 100);
     
     // Timeout after 10 seconds
     setTimeout(function() {
       clearInterval(checkInterval);
+      // If button still not found, log warning
+      var toggleButton = document.getElementById("a11y-widget-toggle");
+      if (!toggleButton) {
+        console.warn('[A11Y Auth] Widget button not found after 10 seconds, interceptor not attached');
+      }
     }, 10000);
   }
   

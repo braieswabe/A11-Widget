@@ -12,39 +12,9 @@ export default defineConfig({
       configureServer(server) {
         // In development, serve widget files from root
         server.middlewares.use((req, res, next) => {
-          // Serve new versioned widget file (v1.1.0)
+          // Serve versioned widget file (v1.1.0)
           if (req.url === '/a11y-widget-v1.1.0.js' || req.url?.startsWith('/a11y-widget-v1.1.0.js?')) {
             const widgetJs = join(__dirname, '..', 'a11y-widget-v1.1.0.js')
-            if (existsSync(widgetJs)) {
-              res.setHeader('Content-Type', 'application/javascript')
-              res.setHeader('Cache-Control', 'no-cache')
-              res.end(readFileSync(widgetJs))
-              return
-            }
-          }
-          // Fallback to v1.0.0 for backward compatibility
-          if (req.url === '/a11y-widget-v1.0.0.js' || req.url?.startsWith('/a11y-widget-v1.0.0.js?')) {
-            const widgetJs = join(__dirname, '..', 'a11y-widget-v1.0.0.js')
-            if (existsSync(widgetJs)) {
-              res.setHeader('Content-Type', 'application/javascript')
-              res.setHeader('Cache-Control', 'no-cache')
-              res.end(readFileSync(widgetJs))
-              return
-            }
-          }
-          // Fallback to v1.8.0 for backward compatibility
-          if (req.url === '/a11y-widget-v1.8.0.js' || req.url?.startsWith('/a11y-widget-v1.8.0.js?')) {
-            const widgetJs = join(__dirname, '..', 'a11y-widget-v1.8.0.js')
-            if (existsSync(widgetJs)) {
-              res.setHeader('Content-Type', 'application/javascript')
-              res.setHeader('Cache-Control', 'no-cache')
-              res.end(readFileSync(widgetJs))
-              return
-            }
-          }
-          // Fallback to v1.7.0 for backward compatibility
-          if (req.url === '/a11y-widget-v1.7.0.js' || req.url?.startsWith('/a11y-widget-v1.7.0.js?')) {
-            const widgetJs = join(__dirname, '..', 'a11y-widget-v1.7.0.js')
             if (existsSync(widgetJs)) {
               res.setHeader('Content-Type', 'application/javascript')
               res.setHeader('Cache-Control', 'no-cache')
@@ -79,20 +49,16 @@ export default defineConfig({
         const distPath = join(__dirname, 'dist')
         const widgetJs = join(__dirname, '..', 'a11y-widget.js')
         const widgetJsV110 = join(__dirname, '..', 'a11y-widget-v1.1.0.js')
-        const widgetJsV100 = join(__dirname, '..', 'a11y-widget-v1.0.0.js')
         const widgetCss = join(__dirname, '..', 'a11y-widget.css')
         const downloadsDir = join(__dirname, 'public', 'downloads')
         const distDownloadsDir = join(distPath, 'downloads')
         
-        // Copy widget files (current version and fallback for backward compatibility)
+        // Copy widget files (v1.1.0 only)
         if (existsSync(widgetJs)) {
           copyFileSync(widgetJs, join(distPath, 'a11y-widget.js'))
         }
         if (existsSync(widgetJsV110)) {
           copyFileSync(widgetJsV110, join(distPath, 'a11y-widget-v1.1.0.js'))
-        }
-        if (existsSync(widgetJsV100)) {
-          copyFileSync(widgetJsV100, join(distPath, 'a11y-widget-v1.0.0.js'))
         }
         if (existsSync(widgetCss)) {
           copyFileSync(widgetCss, join(distPath, 'a11y-widget.css'))
