@@ -38,6 +38,12 @@ try {
   var GITHUB_RAW_BASE = "https://raw.githubusercontent.com/" + GITHUB_REPO + "/" + GITHUB_BRANCH + "/";
   var LOADER_VERSION = "1.6"; // Increment this when loader logic changes
   var WIDGET_FILES_VERSION = "20260112"; // Increment this when widget CSS/JS files change (format: YYYYMMDD)
+  
+  // #region agent log
+  try {
+    fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'a11y-widget-loader-v1.6.1.js:40',message:'CDN configuration',data:{WIDGET_VERSION_TAG:WIDGET_VERSION_TAG,CDN_BASE:CDN_BASE,WIDGET_FILES_VERSION:WIDGET_FILES_VERSION},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+  } catch(e) {}
+  // #endregion
   var LOADER_VERSION_KEY = "__a11y_loader_version";
   var WIDGET_VERSION_KEY = "__a11y_widget_version";
   var LAST_UPDATE_CHECK_KEY = "__a11y_widget_last_check";
@@ -300,6 +306,11 @@ try {
     // GitHub raw serves files as text/plain, which browsers reject
     // Use widget files version in URL path to bypass jsDelivr cache (creates new URL)
     var cssUrl = CDN_BASE + "a11y-widget.css?v=" + WIDGET_FILES_VERSION + "&_=" + timestamp + "&nocache=" + timestamp;
+    // #region agent log
+    try {
+      fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'a11y-widget-loader-v1.6.1.js:302',message:'CSS URL construction',data:{CDN_BASE:CDN_BASE,WIDGET_FILES_VERSION:WIDGET_FILES_VERSION,cssUrl:cssUrl,WIDGET_VERSION_TAG:WIDGET_VERSION_TAG},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+    } catch(e) {}
+    // #endregion
     cssLink.href = cssUrl;
     cssLink.crossOrigin = "anonymous";
     
@@ -332,6 +343,11 @@ try {
     // GitHub raw serves files as text/plain, which browsers reject
     // Use widget files version in URL path to bypass jsDelivr cache (creates new URL)
     var scriptUrl = CDN_BASE + "a11y-widget.js?v=" + WIDGET_FILES_VERSION + "&_=" + timestamp + "&nocache=" + timestamp;
+    // #region agent log
+    try {
+      fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'a11y-widget-loader-v1.6.1.js:334',message:'JS URL construction',data:{CDN_BASE:CDN_BASE,WIDGET_FILES_VERSION:WIDGET_FILES_VERSION,scriptUrl:scriptUrl,WIDGET_VERSION_TAG:WIDGET_VERSION_TAG},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+    } catch(e) {}
+    // #endregion
     script.src = scriptUrl;
     script.defer = true;
     script.crossOrigin = "anonymous";
