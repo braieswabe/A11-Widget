@@ -1,7 +1,7 @@
 import { ReactNode, useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { WIDGET_VERSION, WIDGET_SCRIPT_URL, WIDGET_CSS_URL } from '../constants'
+import { WIDGET_VERSION, WIDGET_SCRIPT_URL, WIDGET_SCRIPT_URL_FALLBACK, WIDGET_CSS_URL } from '../constants'
 import A11yLogo from './A11yLogo'
 import './Layout.css'
 
@@ -47,17 +47,9 @@ export default function Layout({ children }: LayoutProps) {
         return
       }
 
-      // #region agent log
-      fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Layout.tsx:50',message:'Widget loading started',data:{isDev:import.meta.env.DEV,hostname:window.location.hostname,constants:{WIDGET_SCRIPT_URL,WIDGET_CSS_URL}},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
-
       // In development, use local files served by Vite dev server
       // In production, use CDN URLs
       const isDevelopment = import.meta.env.DEV || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-      
-      // #region agent log
-      fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Layout.tsx:55',message:'Environment detection',data:{isDevelopment,hostname:window.location.hostname,envDev:import.meta.env.DEV},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
 
       // Load CSS first
       const cssLink = document.createElement('link')
@@ -65,10 +57,6 @@ export default function Layout({ children }: LayoutProps) {
       const cssUrl = isDevelopment ? '/a11y-widget.css?v=' + Date.now() : WIDGET_CSS_URL + '?v=' + Date.now()
       cssLink.href = cssUrl
       cssLink.id = 'a11y-widget-stylesheet'
-      
-      // #region agent log
-      fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Layout.tsx:62',message:'CSS URL determined',data:{cssUrl,isDevelopment},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
       
       document.head.appendChild(cssLink)
 
@@ -82,21 +70,13 @@ export default function Layout({ children }: LayoutProps) {
         : WIDGET_SCRIPT_URL + '?v=' + Date.now()
       const fallbackUrl = isDevelopment
         ? '/a11y-widget.js?v=' + Date.now() // Fallback to original in dev
-        : `https://raw.githubusercontent.com/braieswabe/A11-Widget/main/a11y-widget-v1.7.0.js?v=${Date.now()}`
-      
-      // #region agent log
-      fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Layout.tsx:75',message:'Widget script URLs determined',data:{widgetUrl,fallbackUrl,isDevelopment},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
+        : WIDGET_SCRIPT_URL_FALLBACK + '?v=' + Date.now() // Fallback to original widget file
       
       widgetScript.src = widgetUrl
       widgetScript.defer = true // Defer ensures script runs after DOM is parsed
       
       // Track loading state
       widgetScript.onload = () => {
-        // #region agent log
-        fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Layout.tsx:82',message:'Widget script loaded successfully',data:{widgetUrl},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-        // #endregion
-        
         // Wait for widget to initialize
         let attempts = 0
         const maxAttempts = 60 // 6 seconds max (widget needs time to initialize)
@@ -136,11 +116,7 @@ export default function Layout({ children }: LayoutProps) {
       }
       
       // Add error handler with fallback
-      widgetScript.onerror = (error) => {
-        // #region agent log
-        fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Layout.tsx:110',message:'Widget script load error',data:{widgetUrl,error:error?.toString(),isDevelopment},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-        // #endregion
-        
+      widgetScript.onerror = () => {
         console.warn('Failed to load widget from primary source, trying fallback...')
         // Remove failed script
         if (widgetScript.parentNode) {
@@ -154,10 +130,6 @@ export default function Layout({ children }: LayoutProps) {
         fallbackScript.defer = true
         
         fallbackScript.onload = () => {
-          // #region agent log
-          fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Layout.tsx:125',message:'Fallback script loaded successfully',data:{fallbackUrl},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-          // #endregion
-          
           // Use the same loading logic as the main script
           let attempts = 0
           const maxAttempts = 60
@@ -187,11 +159,7 @@ export default function Layout({ children }: LayoutProps) {
           }, 100)
         }
         
-        fallbackScript.onerror = (error) => {
-          // #region agent log
-          fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Layout.tsx:155',message:'Both widget URLs failed',data:{widgetUrl,fallbackUrl,error:error?.toString(),isDevelopment},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-          // #endregion
-          
+        fallbackScript.onerror = () => {
           setWidgetError('Failed to load widget script from both sources')
           console.error('Failed to load accessibility widget from both:', widgetUrl, 'and', fallbackUrl)
         }

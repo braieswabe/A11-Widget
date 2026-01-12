@@ -9,6 +9,8 @@ export const WIDGET_LOADER_URL = `${WIDGET_CDN_BASE}/a11y-widget-loader-v1.6.1.j
 
 // Widget script URL (direct) - using new versioned file
 export const WIDGET_SCRIPT_URL = `${WIDGET_CDN_BASE}/a11y-widget-v1.7.0.js`
+// Fallback to original widget file if versioned file doesn't exist
+export const WIDGET_SCRIPT_URL_FALLBACK = `${WIDGET_CDN_BASE}/a11y-widget.js`
 
 // Widget CSS URL
 export const WIDGET_CSS_URL = `${WIDGET_CDN_BASE}/a11y-widget.css`
