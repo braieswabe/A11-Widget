@@ -37,7 +37,7 @@ try {
   var CDN_BASE = "https://cdn.jsdelivr.net/gh/" + GITHUB_REPO + "@" + WIDGET_VERSION_TAG + "/";
   var GITHUB_RAW_BASE = "https://raw.githubusercontent.com/" + GITHUB_REPO + "/" + GITHUB_BRANCH + "/";
   var LOADER_VERSION = "1.6"; // Increment this when loader logic changes
-  var WIDGET_FILES_VERSION = "20250110"; // Increment this when widget CSS/JS files change (format: YYYYMMDD)
+  var WIDGET_FILES_VERSION = "20260112"; // Increment this when widget CSS/JS files change (format: YYYYMMDD)
   var LOADER_VERSION_KEY = "__a11y_loader_version";
   var WIDGET_VERSION_KEY = "__a11y_widget_version";
   var LAST_UPDATE_CHECK_KEY = "__a11y_widget_last_check";
