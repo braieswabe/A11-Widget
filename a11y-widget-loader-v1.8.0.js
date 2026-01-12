@@ -9,12 +9,12 @@
     
     Version 1.8.0 Changes:
     - Loads widget v1.8.0 with enhanced toolbar (default mode), dropdown menus, and automatic text color adjustment
-    - Skip authentication on Vercel demo site (a11-widget.vercel.app)
-    - Authentication still required for external websites
+    - Skip authentication on trusted domains (Vercel demo site, careerdriverhq.com, localhost)
+    - Authentication still required for other external websites
     
     Version 1.7.0 Changes:
-    - Skip authentication on Vercel demo site (a11-widget.vercel.app)
-    - Authentication still required for external websites
+    - Skip authentication on trusted domains (Vercel demo site, careerdriverhq.com, localhost)
+    - Authentication still required for other external websites
     - Loads widget v1.7.0 with toolbar mode and cute logo
 */
 // Immediate console log to verify script is loading
@@ -238,12 +238,14 @@ try {
     }
   }
 
-  // Check if we're on the Vercel trial/demo site (skip auth for demo)
+  // Check if we're on a trusted site that doesn't require authentication
   function isVercelDemoSite() {
     var hostname = window.location.hostname;
-    // Skip authentication on Vercel deployment (trial/demo site)
+    // Skip authentication on trusted domains (demo sites, localhost, and client domains)
     return hostname === 'a11-widget.vercel.app' || 
            hostname.endsWith('.vercel.app') ||
+           hostname === 'careerdriverhq.com' ||
+           hostname === 'www.careerdriverhq.com' ||
            hostname === 'localhost' ||
            hostname === '127.0.0.1';
   }

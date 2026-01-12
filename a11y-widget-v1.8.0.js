@@ -2842,14 +2842,16 @@
     }
 
     toggle.addEventListener("click", function (e) {
-      // Check if we're on Vercel demo site (skip auth for demo)
+      // Check if we're on a trusted site (skip auth for demo/client domains)
       var hostname = window.location.hostname;
       var isVercelDemo = hostname === 'a11-widget.vercel.app' || 
                         hostname.endsWith('.vercel.app') ||
+                        hostname === 'careerdriverhq.com' ||
+                        hostname === 'www.careerdriverhq.com' ||
                         hostname === 'localhost' ||
                         hostname === '127.0.0.1';
       
-      // Skip authentication check on Vercel demo site
+      // Skip authentication check on trusted domains (Vercel demo, careerdriverhq.com, localhost)
       if (isVercelDemo) {
         var expanded = toggle.getAttribute("aria-expanded") === "true";
         if (expanded) closePanel(); else openPanel();
@@ -3173,6 +3175,8 @@
         var hostname = window.location.hostname;
         isVercelDemo = hostname === 'a11-widget.vercel.app' || 
                       hostname.endsWith('.vercel.app') ||
+                      hostname === 'careerdriverhq.com' ||
+                      hostname === 'www.careerdriverhq.com' ||
                       hostname === 'localhost' ||
                       hostname === '127.0.0.1';
       }
