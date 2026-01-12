@@ -12,6 +12,17 @@ export default defineConfig({
       configureServer(server) {
         // In development, serve widget files from root
         server.middlewares.use((req, res, next) => {
+          // Serve new versioned widget file
+          if (req.url === '/a11y-widget-v1.7.0.js' || req.url?.startsWith('/a11y-widget-v1.7.0.js?')) {
+            const widgetJs = join(__dirname, '..', 'a11y-widget-v1.7.0.js')
+            if (existsSync(widgetJs)) {
+              res.setHeader('Content-Type', 'application/javascript')
+              res.setHeader('Cache-Control', 'no-cache')
+              res.end(readFileSync(widgetJs))
+              return
+            }
+          }
+          // Fallback to original widget file for backward compatibility
           if (req.url === '/a11y-widget.js' || req.url?.startsWith('/a11y-widget.js?')) {
             const widgetJs = join(__dirname, '..', 'a11y-widget.js')
             if (existsSync(widgetJs)) {
@@ -37,13 +48,17 @@ export default defineConfig({
         // Copy widget files to dist root for serving
         const distPath = join(__dirname, 'dist')
         const widgetJs = join(__dirname, '..', 'a11y-widget.js')
+        const widgetJsV170 = join(__dirname, '..', 'a11y-widget-v1.7.0.js')
         const widgetCss = join(__dirname, '..', 'a11y-widget.css')
         const downloadsDir = join(__dirname, 'public', 'downloads')
         const distDownloadsDir = join(distPath, 'downloads')
         
-        // Copy widget files
+        // Copy widget files (both versions for backward compatibility)
         if (existsSync(widgetJs)) {
           copyFileSync(widgetJs, join(distPath, 'a11y-widget.js'))
+        }
+        if (existsSync(widgetJsV170)) {
+          copyFileSync(widgetJsV170, join(distPath, 'a11y-widget-v1.7.0.js'))
         }
         if (existsSync(widgetCss)) {
           copyFileSync(widgetCss, join(distPath, 'a11y-widget.css'))

@@ -360,20 +360,33 @@
     }
   };
 
-  // Auto-check auth on load
+  // Listen for auth required event (from widget button click)
+  window.addEventListener("a11y-auth-required", function() {
+    showLoginModal();
+  });
+
+  // Listen for successful auth to reload widget
+  window.addEventListener("a11y-auth-success", function() {
+    // Widget will reload automatically via loader script
+    // But we can also trigger widget reload if needed
+    if (window.__a11yWidget && window.__a11yWidget.reload) {
+      window.__a11yWidget.reload();
+    }
+  });
+
+  // Don't auto-show login modal on page load
+  // Only show when user clicks the widget button
+  // Auto-check auth silently in background
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", function() {
       checkAuth().then(function(result) {
-        if (!result.authenticated) {
-          showLoginModal();
-        }
+        // Silently check auth, don't show modal automatically
+        // Modal will show when user clicks widget button
       });
     });
   } else {
     checkAuth().then(function(result) {
-      if (!result.authenticated) {
-        showLoginModal();
-      }
+      // Silently check auth, don't show modal automatically
     });
   }
 })();

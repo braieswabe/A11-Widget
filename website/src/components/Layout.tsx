@@ -1,6 +1,8 @@
 import { ReactNode, useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { WIDGET_VERSION, WIDGET_LOADER_URL } from '../constants'
+import { useAuth } from '../contexts/AuthContext'
+import { WIDGET_VERSION, WIDGET_LOADER_URL, WIDGET_SCRIPT_URL, WIDGET_CSS_URL } from '../constants'
+import A11yLogo from './A11yLogo'
 import './Layout.css'
 
 interface LayoutProps {
@@ -9,12 +11,13 @@ interface LayoutProps {
 
 export default function Layout({ children }: LayoutProps) {
   const location = useLocation()
+  const { admin } = useAuth()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [widgetLoaded, setWidgetLoaded] = useState(false)
   const [widgetError, setWidgetError] = useState<string | null>(null)
 
   useEffect(() => {
-    // Load widget from GitHub CDN with cache-busting for updates
+    // Load widget directly from GitHub CDN (using new versioned file v1.7.0)
     // Uses jsDelivr CDN as primary (more reliable than raw GitHub)
     const loadWidget = () => {
       // Check if widget is already loaded
@@ -23,9 +26,9 @@ export default function Layout({ children }: LayoutProps) {
         return
       }
 
-      // Check if loader script already exists
-      const existingLoader = document.getElementById('a11y-widget-loader')
-      if (existingLoader) {
+      // Check if widget script already exists
+      const existingWidgetScript = document.querySelector('script[src*="a11y-widget"]')
+      if (existingWidgetScript) {
         // Script already loading, wait for widget to initialize
         const checkWidget = setInterval(() => {
           if (window.__a11yWidget?.__loaded) {
@@ -44,81 +47,59 @@ export default function Layout({ children }: LayoutProps) {
         return
       }
 
-      // Create loader script with cache-busting
-      const loaderScript = document.createElement('script')
-      loaderScript.id = 'a11y-widget-loader'
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Layout.tsx:50',message:'Widget loading started',data:{isDev:import.meta.env.DEV,hostname:window.location.hostname,constants:{WIDGET_SCRIPT_URL,WIDGET_CSS_URL}},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
+
+      // In development, use local files served by Vite dev server
+      // In production, use CDN URLs
+      const isDevelopment = import.meta.env.DEV || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
       
-      // Always use versioned CDN URL to ensure latest version
-      // Version tags bypass jsDelivr cache (branch URLs are cached for 7 days)
-      const loaderUrl = WIDGET_LOADER_URL
-      const fallbackUrl = `https://raw.githubusercontent.com/braieswabe/A11-Widget/main/a11y-widget-loader-v1.6.1.js`
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Layout.tsx:55',message:'Environment detection',data:{isDevelopment,hostname:window.location.hostname,envDev:import.meta.env.DEV},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
+
+      // Load CSS first
+      const cssLink = document.createElement('link')
+      cssLink.rel = 'stylesheet'
+      const cssUrl = isDevelopment ? '/a11y-widget.css?v=' + Date.now() : WIDGET_CSS_URL + '?v=' + Date.now()
+      cssLink.href = cssUrl
+      cssLink.id = 'a11y-widget-stylesheet'
       
-      loaderScript.src = loaderUrl
-      loaderScript.defer = true // Defer ensures script runs after DOM is parsed
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Layout.tsx:62',message:'CSS URL determined',data:{cssUrl,isDevelopment},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
       
-      // Add error handler with fallback
-      loaderScript.onerror = () => {
-        console.warn('Failed to load widget loader from raw GitHub, trying jsDelivr CDN fallback...')
-        // Remove failed script
-        if (loaderScript.parentNode) {
-          loaderScript.parentNode.removeChild(loaderScript)
-        }
-        
-        // Try fallback URL (jsDelivr CDN)
-        const fallbackScript = document.createElement('script')
-        fallbackScript.id = 'a11y-widget-loader'
-        fallbackScript.src = fallbackUrl
-        fallbackScript.defer = true
-        
-        fallbackScript.onload = () => {
-          // Use the same loading logic as the main script
-          let attempts = 0
-          const maxAttempts = 60
-          
-          const checkWidget = setInterval(() => {
-            attempts++
-            
-            if (window.__a11yWidget?.__loaded) {
-              setWidgetLoaded(true)
-              clearInterval(checkWidget)
-              return
-            }
-            
-            if (document.getElementById('a11y-widget-toggle') || document.getElementById('a11y-widget-root')) {
-              setWidgetLoaded(true)
-              clearInterval(checkWidget)
-              return
-            }
-            
-            if (attempts >= maxAttempts) {
-              clearInterval(checkWidget)
-              if (!window.__a11yWidget?.__loaded && !document.getElementById('a11y-widget-toggle')) {
-                setWidgetError('Widget failed to initialize. Check browser console for errors.')
-                console.error('Widget initialization timeout. Check if CSS/JS loaded correctly.')
-              }
-            }
-          }, 100)
-        }
-        
-        fallbackScript.onerror = () => {
-          setWidgetError('Failed to load widget loader script from both sources')
-          console.error('Failed to load accessibility widget loader from both:', loaderUrl, 'and', fallbackUrl)
-        }
-        
-        // Insert fallback script
-        const firstScript = document.getElementsByTagName('script')[0]
-        if (firstScript?.parentNode) {
-          firstScript.parentNode.insertBefore(fallbackScript, firstScript)
-        } else {
-          document.head.appendChild(fallbackScript)
-        }
-      }
+      document.head.appendChild(cssLink)
+
+      // Load widget script directly (using new versioned file)
+      const widgetScript = document.createElement('script')
+      widgetScript.id = 'a11y-widget-script'
+      
+      // Use local file in development, CDN in production
+      const widgetUrl = isDevelopment 
+        ? '/a11y-widget-v1.7.0.js?v=' + Date.now()
+        : WIDGET_SCRIPT_URL + '?v=' + Date.now()
+      const fallbackUrl = isDevelopment
+        ? '/a11y-widget.js?v=' + Date.now() // Fallback to original in dev
+        : `https://raw.githubusercontent.com/braieswabe/A11-Widget/main/a11y-widget-v1.7.0.js?v=${Date.now()}`
+      
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Layout.tsx:75',message:'Widget script URLs determined',data:{widgetUrl,fallbackUrl,isDevelopment},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
+      
+      widgetScript.src = widgetUrl
+      widgetScript.defer = true // Defer ensures script runs after DOM is parsed
       
       // Track loading state
-      loaderScript.onload = () => {
-        // Wait for widget to initialize (loader loads CSS/JS, then widget initializes)
+      widgetScript.onload = () => {
+        // #region agent log
+        fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Layout.tsx:82',message:'Widget script loaded successfully',data:{widgetUrl},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+        // #endregion
+        
+        // Wait for widget to initialize
         let attempts = 0
-        const maxAttempts = 60 // 6 seconds max (widget needs time to load CSS/JS and initialize)
+        const maxAttempts = 60 // 6 seconds max (widget needs time to initialize)
         
         const checkWidget = setInterval(() => {
           attempts++
@@ -141,30 +122,42 @@ export default function Layout({ children }: LayoutProps) {
           if (attempts >= maxAttempts) {
             clearInterval(checkWidget)
             // Check one more time before showing error
-            if (!window.__a11yWidget?.__loaded && !document.getElementById('a11y-widget-toggle')) {
+            // Widget button might exist even if __loaded flag isn't set
+            var toggleButton = document.getElementById('a11y-widget-toggle')
+            if (!window.__a11yWidget?.__loaded && !toggleButton) {
               setWidgetError('Widget failed to initialize. Check browser console for errors.')
               console.error('Widget initialization timeout. Check if CSS/JS loaded correctly.')
+            } else if (toggleButton && !window.__a11yWidget?.__loaded) {
+              // Button exists but widget not fully initialized - this is OK, widget might be loading
+              setWidgetLoaded(true)
             }
           }
         }, 100)
       }
       
-      loaderScript.onerror = () => {
-        // Try fallback to raw GitHub if jsDelivr CDN fails
-        console.warn('Failed to load widget loader from jsDelivr CDN, trying GitHub raw fallback...')
+      // Add error handler with fallback
+      widgetScript.onerror = (error) => {
+        // #region agent log
+        fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Layout.tsx:110',message:'Widget script load error',data:{widgetUrl,error:error?.toString(),isDevelopment},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+        // #endregion
         
+        console.warn('Failed to load widget from primary source, trying fallback...')
         // Remove failed script
-        if (loaderScript.parentNode) {
-          loaderScript.parentNode.removeChild(loaderScript)
+        if (widgetScript.parentNode) {
+          widgetScript.parentNode.removeChild(widgetScript)
         }
         
         // Try fallback URL (raw GitHub)
         const fallbackScript = document.createElement('script')
-        fallbackScript.id = 'a11y-widget-loader'
+        fallbackScript.id = 'a11y-widget-script'
         fallbackScript.src = fallbackUrl
         fallbackScript.defer = true
         
         fallbackScript.onload = () => {
+          // #region agent log
+          fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Layout.tsx:125',message:'Fallback script loaded successfully',data:{fallbackUrl},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+          // #endregion
+          
           // Use the same loading logic as the main script
           let attempts = 0
           const maxAttempts = 60
@@ -194,9 +187,13 @@ export default function Layout({ children }: LayoutProps) {
           }, 100)
         }
         
-        fallbackScript.onerror = () => {
-          setWidgetError('Failed to load widget loader script from both sources')
-          console.error('Failed to load accessibility widget loader from both:', loaderUrl, 'and', fallbackUrl)
+        fallbackScript.onerror = (error) => {
+          // #region agent log
+          fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Layout.tsx:155',message:'Both widget URLs failed',data:{widgetUrl,fallbackUrl,error:error?.toString(),isDevelopment},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+          // #endregion
+          
+          setWidgetError('Failed to load widget script from both sources')
+          console.error('Failed to load accessibility widget from both:', widgetUrl, 'and', fallbackUrl)
         }
         
         // Insert fallback script
@@ -211,9 +208,9 @@ export default function Layout({ children }: LayoutProps) {
       // Insert script before first script or append to head
       const firstScript = document.getElementsByTagName('script')[0]
       if (firstScript?.parentNode) {
-        firstScript.parentNode.insertBefore(loaderScript, firstScript)
+        firstScript.parentNode.insertBefore(widgetScript, firstScript)
       } else {
-        document.head.appendChild(loaderScript)
+        document.head.appendChild(widgetScript)
       }
     }
 
@@ -237,7 +234,12 @@ export default function Layout({ children }: LayoutProps) {
     <>
       <header className="header">
         <nav className="nav">
-          <Link to="/" className="nav-logo">Accessibility Widget <span style={{ fontSize: '0.875rem', opacity: 0.8 }}>{WIDGET_VERSION}</span></Link>
+          <Link to="/" className="nav-logo" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <A11yLogo size={32} />
+            <span>
+              Accessibility Widget <span style={{ fontSize: '0.875rem', opacity: 0.8 }}>{WIDGET_VERSION}</span>
+            </span>
+          </Link>
           <button 
             className="mobile-menu-toggle" 
             aria-label="Toggle menu" 
@@ -251,6 +253,21 @@ export default function Layout({ children }: LayoutProps) {
             <li><Link to="/features" className={isActive('/features') ? 'active' : ''}>Features</Link></li>
             <li><Link to="/getting-started" className={isActive('/getting-started') ? 'active' : ''}>Installation</Link></li>
             <li><Link to="/download" className={isActive('/download') ? 'active' : ''}>Download</Link></li>
+            <li>
+              <Link 
+                to={admin ? "/admin/dashboard" : "/admin/login"}
+                className={isActive('/admin/login') || isActive('/admin/dashboard') ? 'active' : ''}
+                style={{
+                  backgroundColor: 'var(--color-primary, #0066cc)',
+                  color: '#fff',
+                  padding: '0.5rem 1rem',
+                  borderRadius: '4px',
+                  fontWeight: '500'
+                }}
+              >
+                {admin ? 'Admin Dashboard' : 'Admin Login'}
+              </Link>
+            </li>
           </ul>
         </nav>
       </header>

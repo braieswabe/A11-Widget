@@ -1,4 +1,11 @@
-/*! a11y-widget.js — Accessibility Widget v1 (IIFE, no deps)
+/*! a11y-widget-v1.7.0.js — Accessibility Widget v1.7.0 (IIFE, no deps)
+    Version 1.7.0 Changes:
+    - Added Toolbar Mode: Floating bottom toolbar with icon-based quick access to all features
+    - Added Keyboard Instructions section in widget panel showing available shortcuts
+    - Updated widget button to use custom logo SVG icon (dark teal badge with accessibility symbols)
+    - Enhanced toolbar with color-coded buttons for different feature types
+    - Improved responsive design for mobile devices
+    - Toolbar mode preference is saved and persists across sessions
     Scope: widget UI + configured surfaces only.
     No claims of full-site ADA compliance.
     
@@ -2645,6 +2652,28 @@
       style: "margin-top: 0.5rem; font-weight: 500;",
       text: "Check for the latest widget design updates."
     });
+    
+    // Check for Updates function
+    function checkForUpdates(cfg, btn, statusEl) {
+      btn.disabled = true;
+      btn.textContent = "⏳ Checking...";
+      statusEl.textContent = "Checking for updates...";
+      
+      // Force reload widget files by clearing cache and reloading
+      setTimeout(function() {
+        // Clear localStorage cache
+        try {
+          localStorage.removeItem(cfg.storageKey + "_version");
+          localStorage.removeItem("__a11y_widget_version");
+        } catch(e) {}
+        
+        // Reload page to get latest version
+        statusEl.textContent = "✓ Update check complete. Reloading page...";
+        setTimeout(function() {
+          window.location.reload();
+        }, 1000);
+      }, 500);
+    }
     
     updateBtn.addEventListener("click", function () {
       checkForUpdates(cfg, updateBtn, updateStatus);

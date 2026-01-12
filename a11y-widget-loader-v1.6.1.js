@@ -39,36 +39,248 @@ try {
   var LOADER_VERSION = "1.6"; // Increment this when loader logic changes
   var WIDGET_FILES_VERSION = "20260112"; // Increment this when widget CSS/JS files change (format: YYYYMMDD)
   
-  // #region agent log
-  try {
-    fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'a11y-widget-loader-v1.6.1.js:40',message:'CDN configuration',data:{WIDGET_VERSION_TAG:WIDGET_VERSION_TAG,CDN_BASE:CDN_BASE,WIDGET_FILES_VERSION:WIDGET_FILES_VERSION},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-  } catch(e) {}
-  // #endregion
+  // Debug telemetry removed - was causing connection errors
   var LOADER_VERSION_KEY = "__a11y_loader_version";
   var WIDGET_VERSION_KEY = "__a11y_widget_version";
   var LAST_UPDATE_CHECK_KEY = "__a11y_widget_last_check";
   
-  // Debug logging helper (works in production) - defined early so it's available everywhere
-  function debugLog(location, message, data, hypothesisId) {
+  // Authentication constants
+  var AUTH_STORAGE_KEY = "__a11y_auth_token__";
+  var AUTH_API_BASE = window.__A11Y_AUTH_API_BASE__ || "/api/auth";
+  var LOGIN_MODAL_ID = "a11y-auth-login-modal";
+  var LOGIN_FORM_ID = "a11y-auth-login-form";
+  
+  // Log that loader script is executing
+  console.log('[A11Y] Loader script executing, version:', LOADER_VERSION);
+  
+  // --- Authentication Functions ------------------------------------------------
+  
+  // Get stored token
+  function getStoredToken() {
     try {
-      var logs = JSON.parse(localStorage.getItem('__a11y_debug_logs') || '[]');
-      logs.push({location: location, message: message, data: data, timestamp: Date.now(), hypothesisId: hypothesisId});
-      // Keep only last 100 logs
-      if (logs.length > 100) logs = logs.slice(-100);
-      localStorage.setItem('__a11y_debug_logs', JSON.stringify(logs));
-      console.log('[A11Y Debug]', location, message, data);
-    } catch(e) {
-      // Fallback to console only if localStorage fails
-      console.log('[A11Y Debug]', location, message, data, '(localStorage failed:', e.message + ')');
+      return localStorage.getItem(AUTH_STORAGE_KEY);
+    } catch (e) {
+      return null;
     }
   }
-  
-  // Log immediately that loader script is executing
-  try {
-    debugLog('a11y-widget-loader.js:start', 'Loader script file loaded and executing', {LOADER_VERSION: LOADER_VERSION, timestamp: Date.now()}, 'C');
-  } catch(e) {
-    console.log('[A11Y] Loader script executing, version:', LOADER_VERSION);
+
+  // Store token
+  function storeToken(token) {
+    try {
+      localStorage.setItem(AUTH_STORAGE_KEY, token);
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
+
+  // Remove token
+  function removeToken() {
+    try {
+      localStorage.removeItem(AUTH_STORAGE_KEY);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Validate token with server
+  function validateToken(token) {
+    return fetch(AUTH_API_BASE + "/validate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + token
+      }
+    })
+    .then(function(response) {
+      if (response.ok) {
+        return response.json();
+      }
+      return null;
+    })
+    .catch(function(error) {
+      console.error("[A11Y Auth] Token validation error:", error);
+      return null;
+    });
+  }
+
+  // Login function
+  function login(credentials) {
+    return fetch(AUTH_API_BASE + "/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(credentials)
+    })
+    .then(function(response) {
+      return response.json().then(function(data) {
+        if (response.ok && data.success && data.token) {
+          storeToken(data.token);
+          return { success: true, client: data.client };
+        }
+        return { success: false, error: data.error || "Login failed" };
+      });
+    })
+    .catch(function(error) {
+      console.error("[A11Y Auth] Login error:", error);
+      return { success: false, error: "Network error. Please try again." };
+    });
+  }
+
+  // Create login modal HTML
+  function createLoginModal() {
+    var modal = document.createElement("div");
+    modal.id = LOGIN_MODAL_ID;
+    modal.setAttribute("role", "dialog");
+    modal.setAttribute("aria-labelledby", "a11y-auth-login-title");
+    modal.setAttribute("aria-modal", "true");
+    modal.style.cssText = "position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.7); display: flex; align-items: center; justify-content: center; z-index: 2147483647; font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif;";
+
+    modal.innerHTML = '<div style="background: white; border-radius: 8px; padding: 32px; max-width: 400px; width: 90%; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);"><h2 id="a11y-auth-login-title" style="margin: 0 0 24px 0; font-size: 24px; font-weight: 600; color: #1a1a1a;">Accessibility Widget Login</h2><form id="' + LOGIN_FORM_ID + '" style="margin: 0;"><div style="margin-bottom: 16px;"><label for="a11y-auth-email" style="display: block; margin-bottom: 8px; font-weight: 500; color: #333;">Email</label><input type="email" id="a11y-auth-email" name="email" required autocomplete="email" style="width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px; box-sizing: border-box;" /></div><div style="margin-bottom: 16px;"><label for="a11y-auth-password" style="display: block; margin-bottom: 8px; font-weight: 500; color: #333;">Password</label><input type="password" id="a11y-auth-password" name="password" required autocomplete="current-password" style="width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px; box-sizing: border-box;" /></div><div style="margin-bottom: 16px; padding-top: 8px; border-top: 1px solid #eee;"><p style="margin: 0 0 12px 0; font-size: 14px; color: #666;">Or use API Key:</p><input type="text" id="a11y-auth-api-key" name="apiKey" placeholder="Enter API key" autocomplete="off" style="width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px; box-sizing: border-box;" /></div><div id="a11y-auth-error" style="display: none; padding: 12px; margin-bottom: 16px; background: #fee; border: 1px solid #fcc; border-radius: 4px; color: #c33; font-size: 14px;"></div><div style="display: flex; gap: 12px;"><button type="submit" id="a11y-auth-submit" style="flex: 1; padding: 12px 24px; background: #0066cc; color: white; border: none; border-radius: 4px; font-size: 16px; font-weight: 500; cursor: pointer;">Login</button></div></form></div>';
+
+    return modal;
+  }
+
+  // Show login modal
+  function showLoginModal() {
+    var existingModal = document.getElementById(LOGIN_MODAL_ID);
+    if (existingModal) {
+      existingModal.style.display = "flex";
+      return;
+    }
+
+    var modal = createLoginModal();
+    document.body.appendChild(modal);
+
+    var form = document.getElementById(LOGIN_FORM_ID);
+    var errorDiv = document.getElementById("a11y-auth-error");
+    var submitBtn = document.getElementById("a11y-auth-submit");
+    var emailInput = document.getElementById("a11y-auth-email");
+    var passwordInput = document.getElementById("a11y-auth-password");
+    var apiKeyInput = document.getElementById("a11y-auth-api-key");
+
+    form.addEventListener("submit", function(e) {
+      e.preventDefault();
+      
+      var email = emailInput.value.trim();
+      var password = passwordInput.value;
+      var apiKey = apiKeyInput.value.trim();
+
+      errorDiv.style.display = "none";
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Logging in...";
+
+      var credentials = {};
+      if (apiKey) {
+        credentials.apiKey = apiKey;
+      } else {
+        if (!email || !password) {
+          errorDiv.textContent = "Please enter email and password, or API key";
+          errorDiv.style.display = "block";
+          submitBtn.disabled = false;
+          submitBtn.textContent = "Login";
+          return;
+        }
+        credentials.email = email;
+        credentials.password = password;
+      }
+
+      // Add siteId if available from widget config
+      if (window.__A11Y_WIDGET__ && window.__A11Y_WIDGET__.siteId) {
+        credentials.siteId = window.__A11Y_WIDGET__.siteId;
+      } else if (window.location && window.location.hostname) {
+        credentials.siteId = window.location.hostname.replace(/^www\./, "");
+      }
+
+      login(credentials).then(function(result) {
+        if (result.success) {
+          modal.style.display = "none";
+          window.dispatchEvent(new CustomEvent("a11y-auth-success", { detail: result.client }));
+          // Reload widget if needed
+          if (window.__a11yWidget && window.__a11yWidget.reload) {
+            window.__a11yWidget.reload();
+          } else {
+            location.reload();
+          }
+        } else {
+          errorDiv.textContent = result.error || "Login failed. Please try again.";
+          errorDiv.style.display = "block";
+          submitBtn.disabled = false;
+          submitBtn.textContent = "Login";
+        }
+      });
+    });
+
+    if (apiKeyInput.value) {
+      apiKeyInput.focus();
+    } else {
+      emailInput.focus();
+    }
+  }
+
+  // Hide login modal
+  function hideLoginModal() {
+    var modal = document.getElementById(LOGIN_MODAL_ID);
+    if (modal) {
+      modal.style.display = "none";
+    }
+  }
+
+  // Check authentication status
+  function checkAuth() {
+    var token = getStoredToken();
+    
+    if (!token) {
+      return Promise.resolve({ authenticated: false });
+    }
+
+    return validateToken(token).then(function(result) {
+      if (result && result.valid) {
+        return { authenticated: true, client: result.client };
+      }
+      removeToken();
+      return { authenticated: false };
+    });
+  }
+
+  // Expose auth API to window for widget to use
+  window.__a11yAuth = {
+    checkAuth: checkAuth,
+    login: login,
+    logout: function() {
+      var token = getStoredToken();
+      if (token) {
+        fetch(AUTH_API_BASE + "/logout", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + token
+          }
+        }).catch(function(error) {
+          console.error("[A11Y Auth] Logout error:", error);
+        });
+      }
+      removeToken();
+    },
+    showLoginModal: showLoginModal,
+    hideLoginModal: hideLoginModal,
+    getToken: getStoredToken,
+    isAuthenticated: function() {
+      return !!getStoredToken();
+    }
+  };
+  
+  // Listen for auth required event (from widget button click)
+  window.addEventListener("a11y-auth-required", function() {
+    showLoginModal();
+  });
+
+  // Listen for successful auth
+  window.addEventListener("a11y-auth-success", function() {
+    // Widget will reload automatically via loader script
+  });
   
   // IMMEDIATE: Check if this loader script is outdated and force reload
   // This runs BEFORE any other code to catch cached loader scripts
@@ -86,10 +298,6 @@ try {
         }
       }
       var scriptVersion = currentScript ? currentScript.getAttribute("data-version") : null;
-      
-      // #region agent log
-      console.log('[A11Y Debug] Loader version check:', {storedVersion: storedVersion, LOADER_VERSION: LOADER_VERSION, scriptVersion: scriptVersion, scriptSrc: currentScript ? currentScript.src : 'not found'});
-      // #endregion
       
       // ALWAYS check: If stored version doesn't match, or script version doesn't match, reload
       // Also reload if storedVersion is null (first time or old loader without version tracking)
@@ -144,25 +352,14 @@ try {
   // Check for widget version updates by fetching version from GitHub
   // This ensures we always get the latest widget even if loader is cached
   function checkForUpdates() {
-    // #region agent log
-    debugLog('a11y-widget-loader.js:checkForUpdates', 'checkForUpdates called', {timestamp: Date.now()}, 'A,B,D');
-    // #endregion
     var lastCheck = localStorage.getItem(LAST_UPDATE_CHECK_KEY);
     var now = Date.now();
     // Check every 1 minute for updates (reduced from 5 minutes for faster updates)
     if (lastCheck && (now - parseInt(lastCheck, 10)) < 60000) {
-      // #region agent log
-      debugLog('a11y-widget-loader.js:checkForUpdates', 'Skipping check - too soon', {lastCheck: lastCheck, now: now, diff: now - parseInt(lastCheck, 10)}, 'B');
-      // #endregion
       return; // Skip check if checked recently
     }
     
     localStorage.setItem(LAST_UPDATE_CHECK_KEY, String(now));
-    
-    // #region agent log
-    var currentVersion = localStorage.getItem(WIDGET_VERSION_KEY);
-    debugLog('a11y-widget-loader.js:checkForUpdates', 'Before HTTP request', {currentVersion: currentVersion, checkUrl: GITHUB_RAW_BASE + "a11y-widget.js?nocache=" + now}, 'A,B,D');
-    // #endregion
     
     // Fetch widget JS to check its version/update time
     var xhr = new XMLHttpRequest();
@@ -181,27 +378,13 @@ try {
         }
       } catch(e) {}
       
-      // #region agent log
-      debugLog('a11y-widget-loader.js:xhr.onload', 'HEAD request success', {lastModified: lastModified, currentVersion: currentVersion, status: xhr.status, allHeaders: allHeaders}, 'A,B,D');
-      // #endregion
-      
       if (lastModified && lastModified !== currentVersion) {
-        // #region agent log
-        debugLog('a11y-widget-loader.js:xhr.onload', 'Update detected - calling forceReloadWidget', {lastModified: lastModified, currentVersion: currentVersion}, 'D');
-        // #endregion
         // Widget has been updated, force reload
         localStorage.setItem(WIDGET_VERSION_KEY, lastModified);
         forceReloadWidget();
-      } else {
-        // #region agent log
-        debugLog('a11y-widget-loader.js:xhr.onload', 'No update detected', {lastModified: lastModified, currentVersion: currentVersion, areEqual: lastModified === currentVersion}, 'B,D');
-        // #endregion
       }
     };
     xhr.onerror = function() {
-      // #region agent log
-      debugLog('a11y-widget-loader.js:xhr.onerror', 'HEAD request failed - trying GET fallback', {status: xhr.status, readyState: xhr.readyState}, 'A');
-      // #endregion
       // If HEAD fails, try GET with small range
       var xhr2 = new XMLHttpRequest();
       xhr2.open('GET', GITHUB_RAW_BASE + "a11y-widget.js?nocache=" + now, true);
@@ -210,22 +393,13 @@ try {
         var lastModified = xhr2.getResponseHeader('Last-Modified') || xhr2.getResponseHeader('Date');
         var currentVersion = localStorage.getItem(WIDGET_VERSION_KEY);
         
-        // #region agent log
-        debugLog('a11y-widget-loader.js:xhr2.onload', 'GET fallback success', {lastModified: lastModified, currentVersion: currentVersion, status: xhr2.status}, 'A,B,D');
-        // #endregion
-        
         if (lastModified && lastModified !== currentVersion) {
-          // #region agent log
-          debugLog('a11y-widget-loader.js:xhr2.onload', 'Update detected in fallback - calling forceReloadWidget', {lastModified: lastModified, currentVersion: currentVersion}, 'D');
-          // #endregion
           localStorage.setItem(WIDGET_VERSION_KEY, lastModified);
           forceReloadWidget();
         }
       };
       xhr2.onerror = function() {
-        // #region agent log
-        debugLog('a11y-widget-loader.js:xhr2.onerror', 'GET fallback also failed', {status: xhr2.status, readyState: xhr2.readyState}, 'A');
-        // #endregion
+        // Silent fail - update check is optional
       };
       xhr2.send();
     };
@@ -233,9 +407,6 @@ try {
   }
   
   function forceReloadWidget() {
-    // #region agent log
-    debugLog('a11y-widget-loader.js:forceReloadWidget', 'forceReloadWidget called', {hasWidget: !!window.__a11yWidget}, 'D');
-    // #endregion
     // Remove existing widget completely
     var existingCSS = document.getElementById("a11y-widget-stylesheet") || 
                       document.querySelector('link[href*="a11y-widget.css"]');
@@ -270,9 +441,6 @@ try {
   }
   
   function loadWidget() {
-    // #region agent log
-    debugLog('a11y-widget-loader.js:loadWidget', 'loadWidget called', {timestamp: Date.now()}, 'E');
-    // #endregion
     // Force reload: Always reload CSS and JS to ensure latest version
     // Remove existing CSS and JS to force fresh loads
     var existingCSS = document.getElementById("a11y-widget-stylesheet") || 
@@ -306,32 +474,17 @@ try {
     // GitHub raw serves files as text/plain, which browsers reject
     // Use widget files version in URL path to bypass jsDelivr cache (creates new URL)
     var cssUrl = CDN_BASE + "a11y-widget.css?v=" + WIDGET_FILES_VERSION + "&_=" + timestamp + "&nocache=" + timestamp;
-    // #region agent log
-    try {
-      fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'a11y-widget-loader-v1.6.1.js:302',message:'CSS URL construction',data:{CDN_BASE:CDN_BASE,WIDGET_FILES_VERSION:WIDGET_FILES_VERSION,cssUrl:cssUrl,WIDGET_VERSION_TAG:WIDGET_VERSION_TAG},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-    } catch(e) {}
-    // #endregion
     cssLink.href = cssUrl;
     cssLink.crossOrigin = "anonymous";
     
-    // #region agent log
-    debugLog('a11y-widget-loader.js:loadWidget', 'Loading CSS', {cssUrl: cssUrl, timestamp: timestamp}, 'E');
-    // #endregion
-    
     // Track CSS load success
     cssLink.onload = function() {
-      // #region agent log
-      debugLog('a11y-widget-loader.js:cssLink.onload', 'CSS loaded successfully', {cssUrl: cssLink.href}, 'E');
-      // #endregion
       console.log('[A11Y] CSS loaded from:', cssLink.href);
     };
     
     // Fallback to raw GitHub if jsDelivr fails (though it may not work due to content-type)
     cssLink.onerror = function() {
-      // #region agent log
-      debugLog('a11y-widget-loader.js:cssLink.onerror', 'CSS jsDelivr failed - trying raw GitHub (may fail)', {fallbackUrl: GITHUB_RAW_BASE + "a11y-widget.css?v=" + timestamp + "&_=" + random + "&nocache=" + timestamp}, 'A,E');
-      // #endregion
-      cssLink.href = GITHUB_RAW_BASE + "a11y-widget.css?v=" + timestamp + "&_=" + random + "&nocache=" + timestamp;
+      cssLink.href = GITHUB_RAW_BASE + "a11y-widget.css?v=" + timestamp + "&_=" + random1 + "&nocache=" + timestamp;
     };
     
     document.head.appendChild(cssLink);
@@ -343,43 +496,26 @@ try {
     // GitHub raw serves files as text/plain, which browsers reject
     // Use widget files version in URL path to bypass jsDelivr cache (creates new URL)
     var scriptUrl = CDN_BASE + "a11y-widget.js?v=" + WIDGET_FILES_VERSION + "&_=" + timestamp + "&nocache=" + timestamp;
-    // #region agent log
-    try {
-      fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'a11y-widget-loader-v1.6.1.js:334',message:'JS URL construction',data:{CDN_BASE:CDN_BASE,WIDGET_FILES_VERSION:WIDGET_FILES_VERSION,scriptUrl:scriptUrl,WIDGET_VERSION_TAG:WIDGET_VERSION_TAG},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-    } catch(e) {}
-    // #endregion
     script.src = scriptUrl;
     script.defer = true;
     script.crossOrigin = "anonymous";
     
-    // #region agent log
-    debugLog('a11y-widget-loader.js:loadWidget', 'Loading JS', {scriptUrl: scriptUrl, timestamp: timestamp}, 'E');
-    // #endregion
-    
     // Track JS load success
     script.onload = function() {
-      // #region agent log
-      debugLog('a11y-widget-loader.js:script.onload', 'JS loaded successfully', {scriptUrl: script.src}, 'E');
-      // #endregion
       console.log('[A11Y] JS loaded from:', script.src);
       // Check if widget initialized
       setTimeout(function() {
         if (window.__a11yWidget && window.__a11yWidget.__loaded) {
           console.log('[A11Y] Widget initialized successfully');
-          debugLog('a11y-widget-loader.js:script.onload', 'Widget initialized', {widgetLoaded: true}, 'E');
         } else {
           console.warn('[A11Y] Widget JS loaded but widget not initialized yet');
-          debugLog('a11y-widget-loader.js:script.onload', 'Widget not initialized', {widgetLoaded: false, hasWidget: !!window.__a11yWidget}, 'E');
         }
       }, 1000);
     };
     
     // Fallback to raw GitHub if jsDelivr fails (though it may not work due to content-type)
     script.onerror = function() {
-      // #region agent log
-      debugLog('a11y-widget-loader.js:script.onerror', 'JS jsDelivr failed - trying raw GitHub (may fail)', {fallbackUrl: GITHUB_RAW_BASE + "a11y-widget.js?v=" + timestamp + "&_=" + random + "&nocache=" + timestamp}, 'A,E');
-      // #endregion
-      script.src = GITHUB_RAW_BASE + "a11y-widget.js?v=" + timestamp + "&_=" + random + "&nocache=" + timestamp;
+      script.src = GITHUB_RAW_BASE + "a11y-widget.js?v=" + timestamp + "&_=" + random1 + "&nocache=" + timestamp;
     };
     
     // Insert before first script or append to head
@@ -395,15 +531,8 @@ try {
   var currentLoaderVersion = document.currentScript ? document.currentScript.getAttribute("data-version") : null;
   var storedLoaderVersion = localStorage.getItem('__a11y_loader_version');
   
-  // #region agent log
-  debugLog('a11y-widget-loader.js:init', 'Loader script initialized', {currentLoaderVersion: currentLoaderVersion, storedLoaderVersion: storedLoaderVersion, LOADER_VERSION: LOADER_VERSION, scriptSrc: document.currentScript ? document.currentScript.src : 'unknown'}, 'C');
-  // #endregion
-  
   // Force reload if stored version doesn't match (handles cached loader scripts)
   if (storedLoaderVersion !== LOADER_VERSION) {
-    // #region agent log
-    debugLog('a11y-widget-loader.js:init', 'Loader version mismatch - reloading loader', {storedLoaderVersion: storedLoaderVersion, LOADER_VERSION: LOADER_VERSION}, 'C');
-    // #endregion
     localStorage.setItem('__a11y_loader_version', LOADER_VERSION);
     
     // If current script version also doesn't match, reload it using versioned filename with jsDelivr
@@ -418,7 +547,7 @@ try {
     }
   }
   
-  // Always load widget (don't check if already loaded - force fresh load)
+  // Always load widget button (authentication will be checked when button is clicked)
   loadWidget();
   
   // Check for updates immediately and periodically
@@ -432,5 +561,70 @@ try {
       checkForUpdates();
     }
   });
+  
+  // Intercept widget button clicks to check authentication
+  // This will run after widget loads
+  function setupAuthInterceptor() {
+    // Wait for widget to load, then intercept button clicks
+    var checkInterval = setInterval(function() {
+      var toggleButton = document.getElementById("a11y-widget-toggle");
+      if (toggleButton && !toggleButton.hasAttribute("data-auth-intercepted")) {
+        clearInterval(checkInterval);
+        
+        // Mark as intercepted to avoid duplicate handlers
+        toggleButton.setAttribute("data-auth-intercepted", "true");
+        
+        // Use event capture phase to intercept clicks BEFORE widget's handler
+        toggleButton.addEventListener("click", function(e) {
+          // Only check auth when opening (not closing)
+          var expanded = toggleButton.getAttribute("aria-expanded") === "true";
+          if (!expanded) {
+            // Check authentication before opening panel
+            checkAuth().then(function(result) {
+              if (!result.authenticated) {
+                // Not authenticated, prevent widget from opening and show login
+                e.stopImmediatePropagation();
+                e.preventDefault();
+                showLoginModal();
+              }
+              // If authenticated, allow default behavior (widget will handle it)
+            }).catch(function(error) {
+              console.error("[A11Y] Auth check error:", error);
+              e.stopImmediatePropagation();
+              e.preventDefault();
+              showLoginModal();
+            });
+          }
+          // If closing (expanded=true), always allow it
+        }, true); // Use capture phase to run before widget's handler
+      }
+    }, 100);
+    
+    // Timeout after 10 seconds
+    setTimeout(function() {
+      clearInterval(checkInterval);
+    }, 10000);
+  }
+  
+  // Setup auth interceptor after DOM is ready and widget loads
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", function() {
+      setTimeout(setupAuthInterceptor, 1000); // Wait for widget to initialize
+    });
+  } else {
+    setTimeout(setupAuthInterceptor, 1000);
+  }
+  
+  // Also listen for widget initialization
+  var widgetCheckInterval = setInterval(function() {
+    if (window.__a11yWidget && window.__a11yWidget.__loaded) {
+      clearInterval(widgetCheckInterval);
+      setupAuthInterceptor();
+    }
+  }, 200);
+  
+  setTimeout(function() {
+    clearInterval(widgetCheckInterval);
+  }, 10000);
 })();
 

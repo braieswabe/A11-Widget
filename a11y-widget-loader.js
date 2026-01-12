@@ -420,84 +420,30 @@ try {
   
   // Authentication check before loading widget
   function checkAuthAndLoad() {
-    // Check if auth module is available
-    if (window.__a11yAuth) {
-      window.__a11yAuth.checkAuth().then(function(result) {
-        if (result.authenticated) {
-          // User is authenticated, load widget
-          loadWidget();
-          // Check for updates immediately and periodically
-          checkForUpdates();
-          setInterval(checkForUpdates, 60000);
-          // Also check on page visibility change
-          document.addEventListener("visibilitychange", function() {
-            if (!document.hidden) {
-              checkForUpdates();
-            }
-          });
-        } else {
-          // Not authenticated - auth module will show login modal
-          console.log('[A11Y] Authentication required. Login modal will be shown.');
-        }
-      });
-    } else {
-      // Auth module not loaded yet, wait for it or load auth module first
+    // Always load widget button so users can see it and click to login
+    // Authentication will be checked when button is clicked
+    loadWidget();
+    
+    // Check for updates immediately and periodically
+    checkForUpdates();
+    setInterval(checkForUpdates, 60000);
+    // Also check on page visibility change
+    document.addEventListener("visibilitychange", function() {
+      if (!document.hidden) {
+        checkForUpdates();
+      }
+    });
+    
+    // Load auth module if available (for login on button click)
+    if (!window.__a11yAuth) {
+      // Load auth module for login functionality
       var authScript = document.createElement("script");
       authScript.src = CDN_BASE + "a11y-widget-auth.js?v=" + WIDGET_FILES_VERSION + "&_=" + Date.now();
       authScript.onload = function() {
-        // Wait a bit for auth module to initialize
-        setTimeout(function() {
-          if (window.__a11yAuth) {
-            window.__a11yAuth.checkAuth().then(function(result) {
-              if (result.authenticated) {
-                loadWidget();
-                checkForUpdates();
-                setInterval(checkForUpdates, 60000);
-                document.addEventListener("visibilitychange", function() {
-                  if (!document.hidden) {
-                    checkForUpdates();
-                  }
-                });
-              } else {
-                console.log('[A11Y] Authentication required. Login modal will be shown.');
-                // Listen for auth success event
-                window.addEventListener("a11y-auth-success", function() {
-                  loadWidget();
-                  checkForUpdates();
-                  setInterval(checkForUpdates, 60000);
-                  document.addEventListener("visibilitychange", function() {
-                    if (!document.hidden) {
-                      checkForUpdates();
-                    }
-                  });
-                });
-              }
-            });
-          } else {
-            // Fallback: load widget anyway if auth module fails
-            console.warn('[A11Y] Auth module failed to load. Loading widget without authentication.');
-            loadWidget();
-            checkForUpdates();
-            setInterval(checkForUpdates, 60000);
-            document.addEventListener("visibilitychange", function() {
-              if (!document.hidden) {
-                checkForUpdates();
-              }
-            });
-          }
-        }, 100);
+        console.log('[A11Y] Auth module loaded. Widget button will prompt for login when clicked.');
       };
       authScript.onerror = function() {
-        // Fallback: load widget anyway if auth script fails
-        console.warn('[A11Y] Auth script failed to load. Loading widget without authentication.');
-        loadWidget();
-        checkForUpdates();
-        setInterval(checkForUpdates, 60000);
-        document.addEventListener("visibilitychange", function() {
-          if (!document.hidden) {
-            checkForUpdates();
-          }
-        });
+        console.warn('[A11Y] Auth script failed to load. Widget will work without authentication.');
       };
       document.head.appendChild(authScript);
     }
