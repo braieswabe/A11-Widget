@@ -14,7 +14,7 @@ interface Domain {
 }
 
 export default function DomainsManagement() {
-  const { admin, token } = useAuth();
+  const { token } = useAuth();
   const navigate = useNavigate();
   const [domains, setDomains] = useState<Domain[]>([]);
   const [isLoading, setIsLoading] = useState(true);
