@@ -150,7 +150,7 @@
     dictionaryEnabled: false,
     magnifierEnabled: false,
     magnifierZoom: 2.0,              // Zoom level (1.5–5.0)
-    toolbarMode: false               // Toolbar mode (floating bottom toolbar)
+    toolbarMode: true                // Toolbar mode (floating bottom toolbar) - DEFAULT MODE
   };
 
   function normalizePrefs(p) {
@@ -199,6 +199,23 @@
     return out;
   }
 
+  // --- Helper: Get contrasting color for cursor outline ---------------------
+  function getContrastingColor(hexColor) {
+    // Remove # if present
+    hexColor = hexColor.replace('#', '');
+    
+    // Convert hex to RGB
+    var r = parseInt(hexColor.substr(0, 2), 16);
+    var g = parseInt(hexColor.substr(2, 2), 16);
+    var b = parseInt(hexColor.substr(4, 2), 16);
+    
+    // Calculate luminance (relative brightness)
+    var luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    
+    // Return black for light colors, white for dark colors
+    return luminance > 0.5 ? '#000000' : '#ffffff';
+  }
+
   // --- Apply to DOM ---------------------------------------------------------
   function applyPrefs(prefs) {
     var html = document.documentElement;
@@ -228,6 +245,10 @@
     html.style.setProperty("--a11y-margins-size", String(prefs.marginsSize) + "px");
     html.style.setProperty("--a11y-magnifier-zoom", String(prefs.magnifierZoom));
     html.style.setProperty("--a11y-cursor-color", prefs.cursorColor || PREF_DEFAULTS.cursorColor);
+    // Calculate contrasting outline color (opposite of cursor color)
+    var cursorColor = prefs.cursorColor || PREF_DEFAULTS.cursorColor;
+    var outlineColor = getContrastingColor(cursorColor);
+    html.style.setProperty("--a11y-cursor-outline-color", outlineColor);
     
     // Initialize/remove reading aids dynamically
     if (prefs.readingRulerEnabled) {
@@ -2903,6 +2924,80 @@
       }
     }
 
+    // Helper function to create dropdown menu
+    function createDropdown(options, currentValue, onChange, label) {
+      var dropdown = el("div", { class: "a11y-toolbar-dropdown" });
+      var button = el("button", {
+        type: "button",
+        class: "a11y-toolbar-btn a11y-toolbar-dropdown-btn",
+        "aria-label": label,
+        "aria-haspopup": "true",
+        "aria-expanded": "false",
+        html: label + " ▼"
+      });
+      var menu = el("div", {
+        class: "a11y-toolbar-dropdown-menu",
+        role: "menu",
+        style: "display: none;"
+      });
+      
+      var clickHandler = function(e) {
+        e.stopPropagation();
+        var value = e.target.getAttribute("data-value");
+        if (value) {
+          onChange(value);
+          menu.style.display = "none";
+          button.setAttribute("aria-expanded", "false");
+          // Update active state
+          var items = menu.querySelectorAll(".a11y-toolbar-dropdown-item");
+          for (var j = 0; j < items.length; j++) {
+            items[j].classList.remove("active");
+          }
+          e.target.classList.add("active");
+        }
+      };
+      
+      for (var i = 0; i < options.length; i++) {
+        var opt = options[i];
+        var optLabel = opt.label || opt;
+        var optValue = opt.value !== undefined ? opt.value : opt;
+        var option = el("button", {
+          type: "button",
+          class: "a11y-toolbar-dropdown-item",
+          role: "menuitem",
+          text: optLabel,
+          "data-value": optValue
+        });
+        if (optValue === currentValue) {
+          option.classList.add("active");
+        }
+        option.addEventListener("click", clickHandler);
+        menu.appendChild(option);
+      }
+      
+      var toggleHandler = function(e) {
+        e.stopPropagation();
+        var isExpanded = button.getAttribute("aria-expanded") === "true";
+        menu.style.display = isExpanded ? "none" : "block";
+        button.setAttribute("aria-expanded", isExpanded ? "false" : "true");
+      };
+      
+      button.addEventListener("click", toggleHandler);
+      
+      // Close dropdown when clicking outside
+      var closeHandler = function(e) {
+        if (!dropdown.contains(e.target)) {
+          menu.style.display = "none";
+          button.setAttribute("aria-expanded", "false");
+        }
+      };
+      document.addEventListener("click", closeHandler);
+      
+      dropdown.appendChild(button);
+      dropdown.appendChild(menu);
+      return dropdown;
+    }
+
     // Create Toolbar Function
     function createToolbar(cfg, controls, onChange, onReset) {
       var toolbar = el("div", { 
@@ -2910,11 +3005,54 @@
         role: "toolbar",
         "aria-label": "Accessibility toolbar"
       });
-      // Ensure toolbar persists across tab switches
+      // Ensure toolbar persists across tab switches and stays floating
       toolbar.setAttribute("data-persist", "true");
+      toolbar.style.position = "fixed";
+      toolbar.style.zIndex = String(cfg.zIndex + 1);
+
+      // Check authentication status
+      var isAuthenticated = false;
+      var isVercelDemo = false;
+      if (typeof window !== "undefined" && window.location) {
+        var hostname = window.location.hostname;
+        isVercelDemo = hostname === 'a11-widget.vercel.app' || 
+                      hostname.endsWith('.vercel.app') ||
+                      hostname === 'localhost' ||
+                      hostname === '127.0.0.1';
+      }
+      
+      // Check authentication (async, but we'll handle it)
+      var checkAuthSync = function() {
+        if (isVercelDemo) return true;
+        if (window.__a11yAuth && typeof window.__a11yAuth.checkAuth === "function") {
+          // For sync check, we'll assume not authenticated initially
+          // The toolbar will update when auth status is confirmed
+          return false;
+        }
+        return true; // No auth module = authenticated (backward compatibility)
+      };
+      
+      isAuthenticated = checkAuthSync();
 
       // Toolbar buttons with icons
       var toolbarButtons = [];
+      
+      // If not authenticated, show only login button
+      if (!isAuthenticated && !isVercelDemo) {
+        var loginBtn = createToolbarButton("🔐", "Login", function() {
+          if (window.__a11yAuth && typeof window.__a11yAuth.showLoginModal === "function") {
+            window.__a11yAuth.showLoginModal();
+          } else {
+            window.dispatchEvent(new CustomEvent("a11y-auth-required"));
+          }
+        });
+        loginBtn.className = "a11y-toolbar-btn a11y-toolbar-login-btn";
+        toolbarButtons.push(loginBtn);
+        
+        // Append login button and return early
+        toolbar.appendChild(loginBtn);
+        return toolbar;
+      }
 
       // Contrast Mode Button
       if (cfg.features.contrast) {
@@ -2980,12 +3118,26 @@
         toolbarButtons.push(motionBtn);
       }
 
-      // Text-to-Speech Toggle
+      // Text-to-Speech - Read selected text when clicked
       if (cfg.features.textToSpeech) {
         var ttsBtn = createToolbarButton("🔊", "Text-to-Speech", function() {
-          var currentPrefs = Store.get(cfg.storageKey) || {};
-          var normalized = normalizePrefs(assign(assign({}, PREF_DEFAULTS), currentPrefs));
-          onChange({ textToSpeechEnabled: !normalized.textToSpeechEnabled });
+          var selectedText = getSelectedText();
+          if (selectedText && selectedText.trim().length > 0) {
+            // Read selected text
+            var currentPrefs = Store.get(cfg.storageKey) || {};
+            var normalized = normalizePrefs(assign(assign({}, PREF_DEFAULTS), currentPrefs));
+            speakText(selectedText, {
+              voice: normalized.textToSpeechVoice,
+              rate: normalized.textToSpeechRate || 1.0,
+              pitch: normalized.textToSpeechPitch || 1.0,
+              volume: normalized.textToSpeechVolume || 1.0
+            });
+          } else {
+            // No selection, toggle TTS mode
+            var currentPrefs = Store.get(cfg.storageKey) || {};
+            var normalized = normalizePrefs(assign(assign({}, PREF_DEFAULTS), currentPrefs));
+            onChange({ textToSpeechEnabled: !normalized.textToSpeechEnabled });
+          }
         });
         toolbarButtons.push(ttsBtn);
       }
@@ -3040,15 +3192,61 @@
         toolbarButtons.push(marginsBtn);
       }
 
-      // Cursor Options Toggle
+      // Cursor Options Dropdown
       if (cfg.features.cursorOptions) {
-        var cursorBtn = createToolbarButton("🖱️", "Cursor Options", function() {
-          var currentPrefs = Store.get(cfg.storageKey) || {};
-          var normalized = normalizePrefs(assign(assign({}, PREF_DEFAULTS), currentPrefs));
-          onChange({ cursorEnabled: !normalized.cursorEnabled });
-        });
-        toolbarButtons.push(cursorBtn);
+        var currentPrefs = Store.get(cfg.storageKey) || {};
+        var normalized = normalizePrefs(assign(assign({}, PREF_DEFAULTS), currentPrefs));
+        var cursorOptions = [
+          { label: "Small", value: "small" },
+          { label: "Medium", value: "medium" },
+          { label: "Large", value: "large" },
+          { label: "Extra Large", value: "extra-large" }
+        ];
+        var cursorDropdown = createDropdown(
+          cursorOptions,
+          normalized.cursorEnabled ? normalized.cursorSize : "medium",
+          function(value) {
+            onChange({ cursorEnabled: true, cursorSize: value });
+          },
+          "🖱️ Cursor"
+        );
+        toolbarButtons.push(cursorDropdown);
       }
+      
+      // Global Mode Dropdown
+      var currentPrefsGlobal = Store.get(cfg.storageKey) || {};
+      var normalizedGlobal = normalizePrefs(assign(assign({}, PREF_DEFAULTS), currentPrefsGlobal));
+      var globalModeOptions = [
+        { label: "Background: White", value: "bg-white" },
+        { label: "Background: Light Gray", value: "bg-lightgray" },
+        { label: "Background: Beige", value: "bg-beige" },
+        { label: "Font: Arial", value: "font-arial" },
+        { label: "Font: Times", value: "font-times" },
+        { label: "Font: Verdana", value: "font-verdana" }
+      ];
+      var globalModeDropdown = createDropdown(
+        globalModeOptions,
+        normalizedGlobal.globalMode ? "bg-white" : null,
+        function(value) {
+          if (value.startsWith("bg-")) {
+            var bgColors = {
+              "bg-white": "#ffffff",
+              "bg-lightgray": "#f5f5f5",
+              "bg-beige": "#f5f5dc"
+            };
+            onChange({ globalMode: true, globalModeBgColor: bgColors[value] || "#ffffff" });
+          } else if (value.startsWith("font-")) {
+            var fonts = {
+              "font-arial": "arial",
+              "font-times": "times",
+              "font-verdana": "verdana"
+            };
+            onChange({ globalMode: true, globalModeFont: fonts[value] || "system" });
+          }
+        },
+        "🌐 Global"
+      );
+      toolbarButtons.push(globalModeDropdown);
 
       // Dictionary Toggle
       if (cfg.features.dictionary) {
@@ -3116,9 +3314,11 @@
       return btn;
     }
 
-    // Initialize toolbar mode if enabled
+    // Initialize toolbar mode if enabled (default mode)
     if (prefs.toolbarMode) {
       toggleToolbarMode(true, root, controls, cfg, prefs, enhancedOnChange);
+      // Hide toggle button since toolbar is default
+      toggle.style.display = "none";
     }
 
     // Ensure toolbar persists across tab switches and page visibility changes

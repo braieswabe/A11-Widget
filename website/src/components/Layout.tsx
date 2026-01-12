@@ -22,6 +22,16 @@ export default function Layout({ children }: LayoutProps) {
     const loadWidget = () => {
       // Check if widget is already loaded
       if (window.__a11yWidget?.__loaded) {
+        console.log('[A11Y Layout] Widget already loaded')
+        setWidgetLoaded(true)
+        return
+      }
+
+      // Check if widget button already exists (widget might be loaded but flag not set)
+      const existingToggle = document.getElementById('a11y-widget-toggle')
+      const existingRoot = document.getElementById('a11y-widget-root')
+      if (existingToggle || existingRoot) {
+        console.log('[A11Y Layout] Widget elements already exist in DOM')
         setWidgetLoaded(true)
         return
       }
@@ -29,9 +39,10 @@ export default function Layout({ children }: LayoutProps) {
       // Check if widget script already exists
       const existingWidgetScript = document.querySelector('script[src*="a11y-widget"]')
       if (existingWidgetScript) {
+        console.log('[A11Y Layout] Widget script already loading, waiting...')
         // Script already loading, wait for widget to initialize
         const checkWidget = setInterval(() => {
-          if (window.__a11yWidget?.__loaded) {
+          if (window.__a11yWidget?.__loaded || document.getElementById('a11y-widget-toggle')) {
             setWidgetLoaded(true)
             clearInterval(checkWidget)
           }
@@ -40,23 +51,40 @@ export default function Layout({ children }: LayoutProps) {
         // Timeout after 5 seconds
         setTimeout(() => {
           clearInterval(checkWidget)
-          if (!window.__a11yWidget?.__loaded) {
+          if (!window.__a11yWidget?.__loaded && !document.getElementById('a11y-widget-toggle')) {
             setWidgetError('Widget initialization timeout')
+          } else {
+            setWidgetLoaded(true)
           }
         }, 5000)
         return
       }
 
-      // In development, use local files served by Vite dev server
-      // In production, use CDN URLs
+      // Detect environment: development, Vercel deployment, or production
       const isDevelopment = import.meta.env.DEV || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+      const isVercelDeployment = window.location.hostname === 'a11-widget.vercel.app' || window.location.hostname.endsWith('.vercel.app')
+      
+      // On Vercel deployment, always use local files for guaranteed availability (testing/demo)
+      // In development, use local files from Vite dev server
+      // In production (external), use CDN URLs
+      const useLocalFiles = isDevelopment || isVercelDeployment
 
       // Load CSS first
       const cssLink = document.createElement('link')
       cssLink.rel = 'stylesheet'
-      const cssUrl = isDevelopment ? '/a11y-widget.css?v=' + Date.now() : WIDGET_CSS_URL + '?v=' + Date.now()
+      const cssUrl = useLocalFiles 
+        ? '/a11y-widget.css?v=' + Date.now() 
+        : WIDGET_CSS_URL + '?v=' + Date.now()
       cssLink.href = cssUrl
       cssLink.id = 'a11y-widget-stylesheet'
+      
+      // Add fallback for CSS on Vercel
+      if (isVercelDeployment) {
+        cssLink.onerror = function() {
+          // Try fallback to CDN if local file fails
+          cssLink.href = WIDGET_CSS_URL + '?v=' + Date.now()
+        }
+      }
       
       document.head.appendChild(cssLink)
 
@@ -64,69 +92,125 @@ export default function Layout({ children }: LayoutProps) {
       const widgetScript = document.createElement('script')
       widgetScript.id = 'a11y-widget-script'
       
-      // Use local file in development, CDN in production
-      const widgetUrl = isDevelopment 
+      // Use local files on Vercel/devel, CDN in production
+      const widgetUrl = useLocalFiles 
         ? '/a11y-widget-v1.7.0.js?v=' + Date.now()
         : WIDGET_SCRIPT_URL + '?v=' + Date.now()
-      const fallbackUrl = isDevelopment
-        ? '/a11y-widget.js?v=' + Date.now() // Fallback to original in dev
+      const fallbackUrl = useLocalFiles
+        ? '/a11y-widget.js?v=' + Date.now() // Fallback to original in dev/Vercel
         : WIDGET_SCRIPT_URL_FALLBACK + '?v=' + Date.now() // Fallback to original widget file
       
       widgetScript.src = widgetUrl
       widgetScript.defer = true // Defer ensures script runs after DOM is parsed
       
+      // Debug logging for local development
+      if (isDevelopment) {
+        console.log('[A11Y Layout] Loading widget:', {
+          widgetUrl,
+          fallbackUrl,
+          useLocalFiles,
+          isDevelopment,
+          isVercelDeployment
+        })
+      }
+      
       // Track loading state
       widgetScript.onload = () => {
-        // Wait for widget to initialize
-        let attempts = 0
-        const maxAttempts = 60 // 6 seconds max (widget needs time to initialize)
+        if (isDevelopment) {
+          console.log('[A11Y Layout] Widget script loaded, waiting for initialization...')
+        }
         
-        const checkWidget = setInterval(() => {
-          attempts++
+        // Give widget a moment to initialize, then start checking
+        setTimeout(() => {
+          // Wait for widget to initialize
+          let attempts = 0
+          const maxAttempts = 80 // 8 seconds max (widget needs time to initialize)
           
-          // Check if widget is loaded
-          if (window.__a11yWidget?.__loaded) {
-            setWidgetLoaded(true)
-            clearInterval(checkWidget)
-            return
-          }
-          
-          // Also check if widget button exists in DOM (widget might be loaded but __loaded flag not set yet)
-          if (document.getElementById('a11y-widget-toggle') || document.getElementById('a11y-widget-root')) {
-            setWidgetLoaded(true)
-            clearInterval(checkWidget)
-            return
-          }
-          
-          // Timeout check
-          if (attempts >= maxAttempts) {
-            clearInterval(checkWidget)
-            // Check one more time before showing error
-            // Widget button might exist even if __loaded flag isn't set
-            var toggleButton = document.getElementById('a11y-widget-toggle')
-            if (!window.__a11yWidget?.__loaded && !toggleButton) {
-              setWidgetError('Widget failed to initialize. Check browser console for errors.')
-              console.error('Widget initialization timeout. Check if CSS/JS loaded correctly.')
-            } else if (toggleButton && !window.__a11yWidget?.__loaded) {
-              // Button exists but widget not fully initialized - this is OK, widget might be loading
+          const checkWidget = setInterval(() => {
+            attempts++
+            
+            // Check if widget is loaded
+            if (window.__a11yWidget?.__loaded) {
+              if (isDevelopment) {
+                console.log('[A11Y Layout] Widget initialized successfully (__loaded flag)')
+              }
               setWidgetLoaded(true)
+              clearInterval(checkWidget)
+              return
             }
-          }
-        }, 100)
+            
+            // Also check if widget button exists in DOM (widget might be loaded but __loaded flag not set yet)
+            const toggleButton = document.getElementById('a11y-widget-toggle')
+            const widgetRoot = document.getElementById('a11y-widget-root')
+            if (toggleButton || widgetRoot) {
+              if (isDevelopment) {
+                const toggleStyle = toggleButton ? window.getComputedStyle(toggleButton) : null
+                console.log('[A11Y Layout] Widget elements found in DOM:', {
+                  toggleButton: !!toggleButton,
+                  widgetRoot: !!widgetRoot,
+                  toggleDisplay: toggleStyle?.display,
+                  toggleVisibility: toggleStyle?.visibility,
+                  toggleOpacity: toggleStyle?.opacity,
+                  hasWidgetGlobal: !!window.__a11yWidget
+                })
+              }
+              setWidgetLoaded(true)
+              clearInterval(checkWidget)
+              return
+            }
+            
+            // Timeout check
+            if (attempts >= maxAttempts) {
+              clearInterval(checkWidget)
+              // Check one more time before showing error
+              // Widget button might exist even if __loaded flag isn't set
+              const finalToggleButton = document.getElementById('a11y-widget-toggle')
+              const finalWidgetRoot = document.getElementById('a11y-widget-root')
+              if (!window.__a11yWidget?.__loaded && !finalToggleButton && !finalWidgetRoot) {
+                setWidgetError('Widget failed to initialize. Check browser console for errors.')
+                console.error('[A11Y Layout] Widget initialization timeout. Check if CSS/JS loaded correctly.')
+                console.error('[A11Y Layout] Debug info:', {
+                  hasWidgetGlobal: !!window.__a11yWidget,
+                  toggleButton: !!finalToggleButton,
+                  widgetRoot: !!finalWidgetRoot,
+                  scriptSrc: widgetScript.src
+                })
+              } else if ((finalToggleButton || finalWidgetRoot) && !window.__a11yWidget?.__loaded) {
+                // Button exists but widget not fully initialized - this is OK, widget might be loading
+                if (isDevelopment) {
+                  console.log('[A11Y Layout] Widget elements exist but __loaded flag not set - marking as loaded')
+                }
+                setWidgetLoaded(true)
+              }
+            }
+          }, 100)
+        }, 500) // Wait 500ms before starting checks to give widget time to initialize
       }
       
       // Add error handler with fallback
-      widgetScript.onerror = () => {
+      widgetScript.onerror = (error) => {
+        console.error('[A11Y Layout] Widget script load error:', {
+          widgetUrl,
+          error,
+          isDevelopment,
+          useLocalFiles
+        })
         console.warn('Failed to load widget from primary source, trying fallback...')
         // Remove failed script
         if (widgetScript.parentNode) {
           widgetScript.parentNode.removeChild(widgetScript)
         }
         
-        // Try fallback URL (raw GitHub)
+        // On Vercel, try CDN fallback if local file fails
+        // Otherwise, try the configured fallback URL
+        const nextFallbackUrl = isVercelDeployment && useLocalFiles
+          ? WIDGET_SCRIPT_URL + '?v=' + Date.now() // Try CDN on Vercel if local fails
+          : fallbackUrl
+        
+        // Try fallback URL
         const fallbackScript = document.createElement('script')
         fallbackScript.id = 'a11y-widget-script'
-        fallbackScript.src = fallbackUrl
+        fallbackScript.src = nextFallbackUrl
         fallbackScript.defer = true
         
         fallbackScript.onload = () => {

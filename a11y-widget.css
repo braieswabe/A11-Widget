@@ -245,6 +245,19 @@ html[data-a11y][data-a11y-cursor="extra-large"] * {
   filter: drop-shadow(0 0 1px rgba(0,0,0,0.9)) drop-shadow(0 1px 2px rgba(0,0,0,0.35));
 }
 
+/* Add contrasting outline based on cursor color */
+#a11y-custom-cursor::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border: 2px solid;
+  border-color: var(--a11y-cursor-outline-color, #000000);
+  border-radius: 4px;
+  pointer-events: none;
+  clip-path: polygon(0 0, 0 100%, 26% 74%, 40% 96%, 52% 90%, 38% 68%, 68% 68%);
+  opacity: 0.8;
+}
+
 #a11y-custom-cursor.small {
   --a11y-cursor-size: 18px;
 }
@@ -1677,9 +1690,83 @@ html[data-a11y][data-a11y-contrast="dark"] #a11y-widget-toggle:focus-visible{
   background: rgba(220, 53, 69, 0.6) !important;
 }
 
-/* Hide toggle button when toolbar mode is active */
+/* Hide toggle button when toolbar mode is active (toolbar is default) */
 #a11y-widget-root[data-toolbar-mode="true"] #a11y-widget-toggle {
   display: none !important;
+}
+
+/* Toolbar Dropdown Styles */
+.a11y-toolbar-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.a11y-toolbar-dropdown-btn {
+  min-width: auto !important;
+  padding: 0.5rem 0.75rem !important;
+  font-size: 14px !important;
+  white-space: nowrap;
+}
+
+.a11y-toolbar-dropdown-menu {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 0.5rem;
+  background: rgba(19, 75, 95, 0.98);
+  backdrop-filter: blur(10px);
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  min-width: 180px;
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 2147483000;
+  padding: 0.5rem 0;
+}
+
+.a11y-toolbar-dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  text-align: left;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s ease;
+}
+
+.a11y-toolbar-dropdown-item:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.a11y-toolbar-dropdown-item.active {
+  background: rgba(88, 166, 255, 0.3);
+  font-weight: 600;
+}
+
+.a11y-toolbar-dropdown-item:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: -2px;
+}
+
+/* Login button styling */
+.a11y-toolbar-login-btn {
+  background: rgba(40, 167, 69, 0.3) !important;
+}
+
+.a11y-toolbar-login-btn:hover {
+  background: rgba(40, 167, 69, 0.5) !important;
+}
+
+/* Ensure toolbar stays floating even when theme changes */
+#a11y-widget-toolbar {
+  position: fixed !important;
+  z-index: 2147482999 !important;
+  bottom: 0 !important;
 }
 
 /* Responsive toolbar */
