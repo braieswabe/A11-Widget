@@ -48,31 +48,10 @@ export default function Layout({ children }: LayoutProps) {
       const loaderScript = document.createElement('script')
       loaderScript.id = 'a11y-widget-loader'
       
-      // In development, load from local files; in production, use versioned loader
-      const timestamp = Date.now() // Use milliseconds for better cache-busting
-      const isDev = import.meta.env.DEV
-      
-      let loaderUrl: string
-      let fallbackUrl: string
-      
-      if (isDev) {
-        // Development: Load widget files directly from local files
-        // First, load CSS
-        const cssLink = document.createElement('link')
-        cssLink.id = 'a11y-widget-stylesheet'
-        cssLink.rel = 'stylesheet'
-        cssLink.href = '/a11y-widget.css?v=' + timestamp
-        document.head.appendChild(cssLink)
-        
-        // Then load JS directly
-        loaderUrl = '/a11y-widget.js?v=' + timestamp
-        fallbackUrl = loaderUrl // No fallback needed in dev
-      } else {
-        // Production: Use versioned tag for reliable CDN delivery
-        // Version tags bypass jsDelivr cache (branch URLs are cached for 7 days)
-        loaderUrl = WIDGET_LOADER_URL
-        fallbackUrl = `https://raw.githubusercontent.com/braieswabe/A11-Widget/main/a11y-widget-loader.js`
-      }
+      // Always use versioned CDN URL to ensure latest version
+      // Version tags bypass jsDelivr cache (branch URLs are cached for 7 days)
+      const loaderUrl = WIDGET_LOADER_URL
+      const fallbackUrl = `https://raw.githubusercontent.com/braieswabe/A11-Widget/main/a11y-widget-loader.js`
       
       loaderScript.src = loaderUrl
       loaderScript.defer = true // Defer ensures script runs after DOM is parsed
