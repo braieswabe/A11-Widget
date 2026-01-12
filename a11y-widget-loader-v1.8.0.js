@@ -155,14 +155,37 @@ try {
 
   // Show login modal
   function showLoginModal() {
-    var existingModal = document.getElementById(LOGIN_MODAL_ID);
-    if (existingModal) {
-      existingModal.style.display = "flex";
-      return;
-    }
+    try {
+      var existingModal = document.getElementById(LOGIN_MODAL_ID);
+      if (existingModal) {
+        existingModal.style.display = "flex";
+        existingModal.style.zIndex = "2147483647"; // Ensure it's on top
+        return;
+      }
 
-    var modal = createLoginModal();
-    document.body.appendChild(modal);
+      var modal = createLoginModal();
+      if (modal && document.body) {
+        document.body.appendChild(modal);
+        // Ensure modal is visible and on top
+        modal.style.display = "flex";
+        modal.style.zIndex = "2147483647";
+      } else {
+        console.error("[A11Y Auth] Failed to create or append login modal");
+      }
+    } catch (error) {
+      console.error("[A11Y Auth] Error showing login modal:", error);
+      // Fallback: try to create modal again
+      try {
+        var modal = createLoginModal();
+        if (modal && document.body) {
+          document.body.appendChild(modal);
+        }
+      } catch (e) {
+        console.error("[A11Y Auth] Failed to create login modal:", e);
+        // Last resort: alert user
+        alert("Please log in to access the accessibility widget. If you don't have an account, please contact your administrator.");
+      }
+    }
 
     var form = document.getElementById(LOGIN_FORM_ID);
     var errorDiv = document.getElementById("a11y-auth-error");
@@ -581,7 +604,8 @@ try {
     }
   }
   
-  // Always load widget button (authentication will be checked when button is clicked)
+  // Load widget button (authentication will be checked when button is clicked)
+  // For non-trusted domains, we still load the widget but authentication is required to use it
   loadWidget();
   
   // Check for updates immediately and periodically
@@ -615,29 +639,44 @@ try {
         toggleButton.setAttribute("data-auth-intercepted", "true");
         
         // Use event capture phase to intercept clicks BEFORE widget's handler
-        toggleButton.addEventListener("click", function(e) {
+        var clickHandler = function(e) {
           // Only check auth when opening (not closing)
           var expanded = toggleButton.getAttribute("aria-expanded") === "true";
           if (!expanded) {
+            // Stop event immediately to prevent widget from opening
+            e.stopImmediatePropagation();
+            e.preventDefault();
+            
             // Check authentication before opening panel
             checkAuth().then(function(result) {
               if (!result.authenticated) {
-                // Not authenticated, prevent widget from opening and show login modal immediately
-                e.stopImmediatePropagation();
-                e.preventDefault();
+                // Not authenticated, show login modal immediately
                 showLoginModal();
+              } else {
+                // Authenticated, allow widget to open by programmatically clicking
+                // Remove our handler temporarily and trigger click
+                toggleButton.removeEventListener("click", clickHandler, true);
+                var syntheticEvent = new MouseEvent("click", {
+                  bubbles: true,
+                  cancelable: true,
+                  view: window
+                });
+                toggleButton.dispatchEvent(syntheticEvent);
+                // Re-add handler after a short delay
+                setTimeout(function() {
+                  toggleButton.addEventListener("click", clickHandler, true);
+                }, 100);
               }
-              // If authenticated, allow default behavior (widget will handle it)
             }).catch(function(error) {
               // On any error (including 401), show login modal instead of error
-              console.log("[A11Y] Auth check failed, showing login modal:", error);
-              e.stopImmediatePropagation();
-              e.preventDefault();
+              // Silently handle errors - don't log to avoid confusion with other scripts' errors
               showLoginModal();
             });
           }
           // If closing (expanded=true), always allow it
-        }, true); // Use capture phase to run before widget's handler
+        };
+        
+        toggleButton.addEventListener("click", clickHandler, true); // Use capture phase to run before widget's handler
       }
     }, 100);
     
