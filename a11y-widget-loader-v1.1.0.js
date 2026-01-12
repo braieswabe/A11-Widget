@@ -1,27 +1,32 @@
-/*! a11y-widget-loader-v1.8.0.js — Zero-Config Loader v1.8.0
+/*! a11y-widget-loader-v1.1.0.js — Zero-Config Loader v1.1.0
     Just include this single script tag and the widget loads automatically from GitHub!
     
     Usage:
-    <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.8.0/a11y-widget-loader-v1.8.0.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.1.0/a11y-widget-loader-v1.1.0.js" defer></script>
     
     Or use the full widget file:
-    <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.8.0/a11y-widget-v1.8.0.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.1.0/a11y-widget-v1.1.0.js" defer></script>
     
-    Version 1.8.0 Changes:
-    - Loads widget v1.8.0 with enhanced toolbar (default mode), dropdown menus, and automatic text color adjustment
-    - Skip authentication on trusted domains (Vercel demo site, careerdriverhq.com, localhost)
-    - Authentication still required for other external websites
+    Version 1.1.0 Changes:
+    - Fixed cursor visibility with enhanced outline
+    - Improved cursor initialization
+    - Enhanced cursor styling with better contrast
+    - Default cursor color changed to blue for better visibility
     
-    Version 1.7.0 Changes:
+    Version 1.0.0 Changes:
+    - Widget appearance customization (colors, sizes, themes)
+    - Icon customization (position, size, style, custom upload)
+    - Icon upload system with IndexedDB persistence
+    - Toolbar mode improvements (proper removal when disabled)
+    - Enhanced toolbar with dropdown menus
+    - All customization features persist across sessions
     - Skip authentication on trusted domains (Vercel demo site, careerdriverhq.com, localhost)
-    - Authentication still required for other external websites
-    - Loads widget v1.7.0 with toolbar mode and cute logo
 */
 // Immediate console log to verify script is loading
 // This runs BEFORE the IIFE, so it executes even if there's an error later
 // CRITICAL: If you don't see this message, the loader script is cached/old
 try {
-  console.log('[A11Y Loader] ✅ Script file loaded - v1.8.0 -', new Date().toISOString());
+  console.log('[A11Y Loader] ✅ Script file loaded - v1.1.0 -', new Date().toISOString());
   var scriptSrc = 'unknown';
   try {
     if (document.currentScript && document.currentScript.src) {
@@ -32,7 +37,7 @@ try {
     }
   } catch(e) {}
   console.log('[A11Y Loader] Script source:', scriptSrc);
-  console.log('[A11Y Loader] If you see this, the loader script v1.8.0 is executing');
+  console.log('[A11Y Loader] If you see this, the loader script v1.1.0 is executing');
 } catch(e) {
   console.log('[A11Y Loader] Script file parsed but error logging:', e);
 }
@@ -43,10 +48,10 @@ try {
   var GITHUB_REPO = "braieswabe/A11-Widget";
   var GITHUB_BRANCH = "main";
   // Use version tag for CDN to avoid cache issues (jsDelivr caches @main aggressively)
-  var WIDGET_VERSION_TAG = "v1.8.0";
+  var WIDGET_VERSION_TAG = "v1.1.0";
   var CDN_BASE = "https://cdn.jsdelivr.net/gh/" + GITHUB_REPO + "@" + WIDGET_VERSION_TAG + "/";
   var GITHUB_RAW_BASE = "https://raw.githubusercontent.com/" + GITHUB_REPO + "/" + GITHUB_BRANCH + "/";
-  var LOADER_VERSION = "1.8"; // Increment this when loader logic changes
+  var LOADER_VERSION = "1.1"; // Increment this when loader logic changes
   var WIDGET_FILES_VERSION = "20260113"; // Increment this when widget CSS/JS files change (format: YYYYMMDD)
   
   // Debug telemetry removed - was causing connection errors
@@ -419,7 +424,7 @@ try {
     
     // Fetch widget JS to check its version/update time
     var xhr = new XMLHttpRequest();
-    xhr.open('HEAD', GITHUB_RAW_BASE + "a11y-widget-v1.8.0.js?nocache=" + now, true);
+    xhr.open('HEAD', GITHUB_RAW_BASE + "a11y-widget-v1.1.0.js?nocache=" + now, true);
     xhr.onload = function() {
       var lastModified = xhr.getResponseHeader('Last-Modified') || xhr.getResponseHeader('Date');
       var currentVersion = localStorage.getItem(WIDGET_VERSION_KEY);
@@ -443,7 +448,7 @@ try {
     xhr.onerror = function() {
       // If HEAD fails, try GET with small range
       var xhr2 = new XMLHttpRequest();
-      xhr2.open('GET', GITHUB_RAW_BASE + "a11y-widget-v1.8.0.js?nocache=" + now, true);
+      xhr2.open('GET', GITHUB_RAW_BASE + "a11y-widget-v1.1.0.js?nocache=" + now, true);
       xhr2.setRequestHeader('Range', 'bytes=0-100');
       xhr2.onload = function() {
         var lastModified = xhr2.getResponseHeader('Last-Modified') || xhr2.getResponseHeader('Date');
@@ -551,8 +556,8 @@ try {
     // Use jsDelivr CDN first (serves JavaScript with correct application/javascript content-type)
     // GitHub raw serves files as text/plain, which browsers reject
     // Use widget files version in URL path to bypass jsDelivr cache (creates new URL)
-    // Load v1.8.0 widget file with enhanced toolbar, dropdown menus, and automatic text color adjustment
-    var scriptUrl = CDN_BASE + "a11y-widget-v1.8.0.js?v=" + WIDGET_FILES_VERSION + "&_=" + timestamp + "&nocache=" + timestamp;
+    // Load v1.1.0 widget file with widget appearance customization, icon customization, enhanced toolbar, and cursor fixes
+    var scriptUrl = CDN_BASE + "a11y-widget-v1.1.0.js?v=" + WIDGET_FILES_VERSION + "&_=" + timestamp + "&nocache=" + timestamp;
     script.src = scriptUrl;
     script.defer = true;
     script.crossOrigin = "anonymous";
@@ -572,7 +577,7 @@ try {
     
     // Fallback to raw GitHub if jsDelivr fails (though it may not work due to content-type)
     script.onerror = function() {
-      script.src = GITHUB_RAW_BASE + "a11y-widget-v1.8.0.js?v=" + timestamp + "&_=" + random1 + "&nocache=" + timestamp;
+      script.src = GITHUB_RAW_BASE + "a11y-widget-v1.1.0.js?v=" + timestamp + "&_=" + random1 + "&nocache=" + timestamp;
     };
     
     // Insert before first script or append to head

@@ -17,7 +17,7 @@ export default function Layout({ children }: LayoutProps) {
   const [widgetError, setWidgetError] = useState<string | null>(null)
 
   useEffect(() => {
-    // Load widget directly from GitHub CDN (using new versioned file v1.7.0)
+    // Load widget directly from GitHub CDN (using new versioned file v1.0.0)
     // Uses jsDelivr CDN as primary (more reliable than raw GitHub)
     const loadWidget = () => {
       // Check if widget is already loaded
@@ -94,11 +94,11 @@ export default function Layout({ children }: LayoutProps) {
       
       // Use local files on Vercel/devel, CDN in production
       const widgetUrl = useLocalFiles 
-        ? '/a11y-widget-v1.8.0.js?v=' + Date.now()
+        ? '/a11y-widget-v1.1.0.js?v=' + Date.now()
         : WIDGET_SCRIPT_URL + '?v=' + Date.now()
       const fallbackUrl = useLocalFiles
-        ? '/a11y-widget-v1.7.0.js?v=' + Date.now() // Fallback to v1.7.0 in dev/Vercel
-        : WIDGET_SCRIPT_URL_FALLBACK + '?v=' + Date.now() // Fallback to v1.7.0 widget file
+        ? '/a11y-widget-v1.0.0.js?v=' + Date.now() // Fallback to v1.0.0 in dev/Vercel
+        : WIDGET_SCRIPT_URL_FALLBACK + '?v=' + Date.now() // Fallback to v1.0.0 widget file
       
       widgetScript.src = widgetUrl
       widgetScript.defer = true // Defer ensures script runs after DOM is parsed

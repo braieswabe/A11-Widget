@@ -41,16 +41,20 @@
       "destination": "/a11y-widget.js"
     },
     {
-      "source": "/a11y-widget/v1.7.0/a11y-widget-v1.7.0.js",
-      "destination": "/a11y-widget-v1.7.0.js"
+      "source": "/a11y-widget/v1.1.0/a11y-widget-v1.1.0.js",
+      "destination": "/a11y-widget-v1.1.0.js"
     },
     {
-      "source": "/a11y-widget/v1.8.0/a11y-widget-v1.8.0.js",
-      "destination": "/a11y-widget-v1.8.0.js"
+      "source": "/a11y-widget-v1.1.0.js",
+      "destination": "/a11y-widget-v1.1.0.js"
     },
     {
-      "source": "/a11y-widget-v1.8.0.js",
-      "destination": "/a11y-widget-v1.8.0.js"
+      "source": "/a11y-widget/v1.0.0/a11y-widget-v1.0.0.js",
+      "destination": "/a11y-widget-v1.0.0.js"
+    },
+    {
+      "source": "/a11y-widget-v1.0.0.js",
+      "destination": "/a11y-widget-v1.0.0.js"
     },
     {
       "source": "/a11y-widget/v1/a11y-widget.css",

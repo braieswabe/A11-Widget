@@ -1,34 +1,14 @@
-/*! a11y-widget-v1.8.0.js — Accessibility Widget v1.8.0 (IIFE, no deps)
-    Version 1.8.0 Changes:
-    - Toolbar is now the default widget mode (replaces panel as default)
-    - Enhanced toolbar floating: Toolbar always stays fixed at bottom, never gets left behind
-    - Added dropdown menus for Cursor, Global Mode, and Margins with smart options
-    - Cursor dropdown: Off, Small, Medium, Large, Extra Large options
-    - Global Mode dropdown: Background colors (White, Light Gray, Beige) and Font options (Arial, Times, Verdana, System)
-    - Margins dropdown: Off, Small (20px), Medium (50px), Large (100px), Extra Large (150px), Maximum (200px)
-    - Automatic text color adjustment: Global Mode background colors automatically adjust font color for optimal contrast
-    - Improved dropdown positioning: Dropdowns use fixed positioning and appear above toolbar buttons
-    - Enhanced toolbar persistence: Multiple floating checks ensure toolbar never moves (100ms interval, scroll/resize/wheel listeners)
-    - Panel now only accessible via Settings button in toolbar (toggle button hidden when toolbar is active)
-    - Authentication-aware toolbar: Shows only login button when not authenticated, all features after authentication
-    - Text-to-Speech enhancement: Reads selected text when clicked in toolbar, toggles mode if no selection
-    - Cursor outline: Added contrasting outline based on cursor color for better visibility
-    
-    Version 1.7.0 Changes:
-    - Added Toolbar Mode: Floating bottom toolbar with icon-based quick access to all features
-    - Added Keyboard Instructions section in widget panel showing available shortcuts
-    - Updated widget button to use custom logo SVG icon (dark teal badge with accessibility symbols)
-    - Enhanced toolbar with color-coded buttons for different feature types
-    - Improved responsive design for mobile devices
-    - Toolbar mode preference is saved and persists across sessions
-    
+/*! a11y-widget.js — Accessibility Widget v1.1.0 (IIFE, no deps)
     Scope: widget UI + configured surfaces only.
     No claims of full-site ADA compliance.
     
     GitHub Repository: https://github.com/braieswabe/A11-Widget
     CDN: https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/
     
-    Note: For version 1.8.0 with enhanced toolbar and dropdown menus, use a11y-widget-v1.8.0.js
+    Version 1.1.0 Changelog:
+    - Fixed cursor visibility with enhanced outline
+    - Improved cursor initialization
+    - Enhanced cursor styling with better contrast
 */
 (function () {
   "use strict";
@@ -133,6 +113,254 @@
     }
   };
 
+  // --- IndexedDB Icon Storage ------------------------------------------------
+  var IconDB = {
+    db: null,
+    init: function() {
+      return new Promise(function(resolve, reject) {
+        if (IconDB.db) {
+          resolve(IconDB.db);
+          return;
+        }
+        if (typeof indexedDB === "undefined") {
+          reject(new Error("IndexedDB not supported"));
+          return;
+        }
+        var request = indexedDB.open("a11yWidgetIcons", 1);
+        request.onerror = function() { reject(request.error); };
+        request.onsuccess = function() {
+          IconDB.db = request.result;
+          resolve(IconDB.db);
+        };
+        request.onupgradeneeded = function(e) {
+          var db = e.target.result;
+          if (!db.objectStoreNames.contains("userIcons")) {
+            var store = db.createObjectStore("userIcons", { keyPath: "iconId" });
+            store.createIndex("uploadedAt", "uploadedAt", { unique: false });
+          }
+        };
+      });
+    },
+    saveIcon: function(dataUrl, name) {
+      return IconDB.init().then(function(db) {
+        return new Promise(function(resolve, reject) {
+          var iconId = "icon_" + Date.now();
+          var icon = {
+            iconId: iconId,
+            dataUrl: dataUrl,
+            uploadedAt: Date.now(),
+            name: name || "Custom Icon"
+          };
+          var tx = db.transaction(["userIcons"], "readwrite");
+          var store = tx.objectStore("userIcons");
+          var request = store.add(icon);
+          request.onsuccess = function() { resolve(iconId); };
+          request.onerror = function() { reject(request.error); };
+        });
+      });
+    },
+    getIcon: function(iconId) {
+      return IconDB.init().then(function(db) {
+        return new Promise(function(resolve, reject) {
+          var tx = db.transaction(["userIcons"], "readonly");
+          var store = tx.objectStore("userIcons");
+          var request = store.get(iconId);
+          request.onsuccess = function() {
+            resolve(request.result ? request.result.dataUrl : null);
+          };
+          request.onerror = function() { reject(request.error); };
+        });
+      });
+    },
+    listIcons: function() {
+      return IconDB.init().then(function(db) {
+        return new Promise(function(resolve, reject) {
+          var tx = db.transaction(["userIcons"], "readonly");
+          var store = tx.objectStore("userIcons");
+          var index = store.index("uploadedAt");
+          var request = index.openCursor(null, "prev"); // Most recent first
+          var icons = [];
+          request.onsuccess = function(e) {
+            var cursor = e.target.result;
+            if (cursor) {
+              icons.push({
+                iconId: cursor.value.iconId,
+                name: cursor.value.name,
+                uploadedAt: cursor.value.uploadedAt
+              });
+              cursor.continue();
+            } else {
+              resolve(icons);
+            }
+          };
+          request.onerror = function() { reject(request.error); };
+        });
+      });
+    },
+    deleteIcon: function(iconId) {
+      return IconDB.init().then(function(db) {
+        return new Promise(function(resolve, reject) {
+          var tx = db.transaction(["userIcons"], "readwrite");
+          var store = tx.objectStore("userIcons");
+          var request = store.delete(iconId);
+          request.onsuccess = function() { resolve(); };
+          request.onerror = function() { reject(request.error); };
+        });
+      });
+    }
+  };
+
+  // --- Widget Theme Presets -------------------------------------------------
+  var WIDGET_THEMES = {
+    default: { /* no overrides */ },
+    light: {
+      primaryColor: "#111111",
+      secondaryColor: "#007bff",
+      backgroundColor: "#ffffff",
+      textColor: "#111111",
+      borderColor: "rgba(0,0,0,0.12)"
+    },
+    dark: {
+      primaryColor: "#e6edf3",
+      secondaryColor: "#58a6ff",
+      backgroundColor: "#0d1117",
+      textColor: "#e6edf3",
+      borderColor: "rgba(255,255,255,0.2)"
+    },
+    "high-contrast": {
+      primaryColor: "#000000",
+      secondaryColor: "#ffffff",
+      backgroundColor: "#ffffff",
+      textColor: "#000000",
+      borderColor: "#000000",
+      buttonSize: "large"
+    },
+    compact: {
+      buttonSize: "small",
+      panelWidth: 280,
+      spacing: "compact",
+      borderRadius: 6
+    },
+    spacious: {
+      buttonSize: "large",
+      panelWidth: 400,
+      spacing: "comfortable",
+      borderRadius: 12
+    }
+  };
+
+  // --- Icon Designs (SVG Content) -------------------------------------------
+  var ICON_DESIGNS = {
+    default: function() {
+      return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">' +
+        '<circle cx="24" cy="24" r="22" fill="#0066cc" opacity="0.1"/>' +
+        '<path d="M 24 12 L 24 36 M 12 24 L 36 24" stroke="#0066cc" stroke-width="3" stroke-linecap="round"/>' +
+        '<circle cx="24" cy="24" r="8" fill="none" stroke="#0066cc" stroke-width="2"/>' +
+      '</svg>';
+    },
+    circleA: function() {
+      return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">' +
+        '<circle cx="24" cy="24" r="20" fill="#0066cc" stroke="#0052a3" stroke-width="2"/>' +
+        '<text x="24" y="32" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#ffffff" text-anchor="middle">A</text>' +
+      '</svg>';
+    },
+    universal: function() {
+      return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">' +
+        '<circle cx="24" cy="24" r="18" fill="none" stroke="#0066cc" stroke-width="3"/>' +
+        '<circle cx="24" cy="18" r="4" fill="#0066cc"/>' +
+        '<path d="M 18 28 Q 24 22, 30 28" stroke="#0066cc" stroke-width="3" stroke-linecap="round" fill="none"/>' +
+        '<path d="M 20 34 Q 24 30, 28 34" stroke="#0066cc" stroke-width="2" stroke-linecap="round" fill="none"/>' +
+      '</svg>';
+    },
+    eye: function() {
+      return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">' +
+        '<path d="M 24 16 C 16 16, 10 22, 10 24 C 10 26, 16 32, 24 32 C 32 32, 38 26, 38 24 C 38 22, 32 16, 24 16 Z" fill="none" stroke="#0066cc" stroke-width="3"/>' +
+        '<circle cx="24" cy="24" r="4" fill="#0066cc"/>' +
+      '</svg>';
+    },
+    gear: function() {
+      return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">' +
+        '<circle cx="24" cy="24" r="8" fill="none" stroke="#0066cc" stroke-width="2"/>' +
+        '<circle cx="24" cy="24" r="3" fill="#0066cc"/>' +
+        '<path d="M 24 8 L 24 4 M 24 44 L 24 40 M 40 24 L 44 24 M 4 24 L 8 24" stroke="#0066cc" stroke-width="2" stroke-linecap="round"/>' +
+        '<path d="M 35.31 12.69 L 38.14 9.86 M 9.86 38.14 L 12.69 35.31 M 35.31 35.31 L 38.14 38.14 M 9.86 9.86 L 12.69 12.69" stroke="#0066cc" stroke-width="2" stroke-linecap="round"/>' +
+      '</svg>';
+    },
+    heart: function() {
+      return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">' +
+        '<path d="M 24 18 C 20 14, 14 14, 14 20 C 14 24, 24 34, 24 34 C 24 34, 34 24, 34 20 C 34 14, 28 14, 24 18 Z" fill="#0066cc" opacity="0.8"/>' +
+        '<path d="M 24 18 C 20 14, 14 14, 14 20 C 14 24, 24 34, 24 34 C 24 34, 34 24, 34 20 C 34 14, 28 14, 24 18 Z" fill="none" stroke="#0066cc" stroke-width="2"/>' +
+      '</svg>';
+    },
+    shield: function() {
+      return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">' +
+        '<path d="M 24 8 L 12 12 L 12 22 C 12 30, 18 36, 24 40 C 30 36, 36 30, 36 22 L 36 12 Z" fill="none" stroke="#0066cc" stroke-width="3" stroke-linejoin="round"/>' +
+        '<path d="M 20 24 L 24 28 L 28 20" stroke="#0066cc" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>' +
+      '</svg>';
+    },
+    hand: function() {
+      return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">' +
+        '<path d="M 20 16 L 20 28 C 20 32, 24 36, 28 36 C 32 36, 36 32, 36 28 L 36 20" stroke="#0066cc" stroke-width="3" stroke-linecap="round" fill="none"/>' +
+        '<circle cx="16" cy="20" r="3" fill="#0066cc"/>' +
+        '<circle cx="20" cy="12" r="2" fill="#0066cc"/>' +
+        '<circle cx="24" cy="10" r="2" fill="#0066cc"/>' +
+        '<circle cx="28" cy="12" r="2" fill="#0066cc"/>' +
+      '</svg>';
+    },
+    star: function() {
+      return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">' +
+        '<path d="M 24 8 L 28 18 L 38 18 L 30 24 L 32 34 L 24 28 L 16 34 L 18 24 L 10 18 L 20 18 Z" fill="#0066cc" opacity="0.8"/>' +
+        '<path d="M 24 8 L 28 18 L 38 18 L 30 24 L 32 34 L 24 28 L 16 34 L 18 24 L 10 18 L 20 18 Z" fill="none" stroke="#0066cc" stroke-width="2"/>' +
+      '</svg>';
+    },
+    checkmark: function() {
+      return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">' +
+        '<circle cx="24" cy="24" r="18" fill="#0066cc" opacity="0.1"/>' +
+        '<circle cx="24" cy="24" r="18" fill="none" stroke="#0066cc" stroke-width="2"/>' +
+        '<path d="M 16 24 L 22 30 L 32 18" stroke="#0066cc" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>' +
+      '</svg>';
+    }
+  };
+
+  // --- Icon Presets (Styling) ------------------------------------------------
+  var ICON_PRESETS = {
+    default: {
+      backgroundColor: null,
+      borderColor: null,
+      borderWidth: 0,
+      borderRadius: "8px",
+      opacity: 1.0,
+      shadow: "medium"
+    },
+    minimal: {
+      backgroundColor: "transparent",
+      borderColor: "rgba(0,0,0,0.1)",
+      borderWidth: 1,
+      borderRadius: "50%",
+      opacity: 0.9,
+      shadow: "small"
+    },
+    bold: {
+      backgroundColor: "#007bff",
+      borderColor: "#0056b3",
+      borderWidth: 2,
+      borderRadius: "8px",
+      opacity: 1.0,
+      shadow: "large"
+    },
+    outline: {
+      backgroundColor: "transparent",
+      borderColor: "#007bff",
+      borderWidth: 2,
+      borderRadius: "8px",
+      opacity: 1.0,
+      shadow: "none"
+    },
+    custom: {
+      // User-defined values
+    }
+  };
+
   // --- Preferences ----------------------------------------------------------
   var PREF_DEFAULTS = {
     contrast: "default",             // default|high|dark|light
@@ -162,11 +390,39 @@
     marginsSize: 0,                  // Margin size in pixels (0–200)
     cursorEnabled: false,
     cursorSize: "medium",            // small|medium|large|extra-large
-    cursorColor: "#ffffff",          // Cursor color (hex)
+    cursorColor: "#0066cc",          // Cursor color (hex) - blue for better visibility
     dictionaryEnabled: false,
     magnifierEnabled: false,
     magnifierZoom: 2.0,              // Zoom level (1.5–5.0)
-    toolbarMode: true                // Toolbar mode (floating bottom toolbar) - DEFAULT MODE
+    toolbarMode: false,               // Toolbar mode (floating bottom toolbar)
+    // Widget appearance customization
+    widgetTheme: "default",           // default|light|dark|high-contrast|compact|spacious|custom
+    widgetCustomization: {
+      // Colors
+      primaryColor: null,              // null = use default
+      secondaryColor: null,
+      backgroundColor: null,
+      textColor: null,
+      borderColor: null,
+      // Sizes
+      buttonSize: null,                // null = use default, or "small"|"medium"|"large"
+      panelWidth: null,                // null = use default, or number (px)
+      borderRadius: null,              // null = use default, or number (px)
+      spacing: null                    // null = use default, or "compact"|"normal"|"comfortable"
+    },
+    // Icon customization
+    iconSize: 48,                     // 32-80 pixels
+    iconDesign: "default",            // default|circleA|universal|eye|gear|heart|shield|hand|star|checkmark
+    iconStyle: "default",             // default|minimal|bold|outline|custom
+    iconCustomization: {
+      backgroundColor: null,           // null = use default
+      borderColor: null,
+      borderWidth: null,               // 0-4px
+      borderRadius: null,              // 0-50% or pixels
+      opacity: null,                  // 0.5-1.0
+      shadow: null                    // none|small|medium|large
+    },
+    iconId: null                      // null = use default SVG, or IndexedDB icon ID
   };
 
   function normalizePrefs(p) {
@@ -210,12 +466,21 @@
       magnifierEnabled: !!p.magnifierEnabled,
       magnifierZoom: clamp(Number(p.magnifierZoom || 2.0), 1.5, 5.0),
       toolbarMode: !!p.toolbarMode,
-      globalMode: !!p.globalMode
+      globalMode: !!p.globalMode,
+      // Widget appearance customization
+      widgetTheme: (p.widgetTheme && WIDGET_THEMES[p.widgetTheme]) ? p.widgetTheme : "default",
+      widgetCustomization: p.widgetCustomization || {},
+      // Icon customization
+      iconSize: clamp(Number(p.iconSize || 48), 32, 80),
+      iconDesign: (p.iconDesign && ICON_DESIGNS[p.iconDesign]) ? p.iconDesign : "default",
+      iconStyle: (p.iconStyle && ICON_PRESETS[p.iconStyle]) ? p.iconStyle : "default",
+      iconCustomization: p.iconCustomization || {},
+      iconId: p.iconId || null
     };
     return out;
   }
 
-  // --- Helper: Get contrasting color for cursor outline ---------------------
+  // Helper function to get contrasting color (must be top-level for applyPrefs to access)
   function getContrastingColor(hexColor) {
     // Remove # if present
     hexColor = hexColor.replace('#', '');
@@ -253,26 +518,18 @@
     html.setAttribute("data-a11y-translation", prefs.translationEnabled ? prefs.translationLanguage : "0");
     // CSS variables
     html.style.setProperty("--a11y-font-scale", String(prefs.fontScale));
-    var globalBgColor = prefs.globalModeBgColor || "#ffffff";
-    html.style.setProperty("--a11y-global-bg-color", globalBgColor);
-    // Automatically calculate and set contrasting text color for global mode
-    if (prefs.globalMode) {
-      var textColor = getContrastingColor(globalBgColor);
-      html.style.setProperty("--a11y-global-text-color", textColor);
-    } else {
-      // Reset to default when global mode is off
-      html.style.setProperty("--a11y-global-text-color", "#000000");
-    }
+    html.style.setProperty("--a11y-global-bg-color", prefs.globalModeBgColor || "#ffffff");
     html.style.setProperty("--a11y-reading-ruler-height", String(prefs.readingRulerHeight) + "px");
     html.style.setProperty("--a11y-reading-ruler-color", prefs.readingRulerColor);
     html.style.setProperty("--a11y-screen-mask-opacity", String(prefs.screenMaskOpacity));
     html.style.setProperty("--a11y-screen-mask-radius", String(prefs.screenMaskRadius) + "px");
     html.style.setProperty("--a11y-margins-size", String(prefs.marginsSize) + "px");
     html.style.setProperty("--a11y-magnifier-zoom", String(prefs.magnifierZoom));
-    html.style.setProperty("--a11y-cursor-color", prefs.cursorColor || PREF_DEFAULTS.cursorColor);
-    // Calculate contrasting outline color (opposite of cursor color)
     var cursorColor = prefs.cursorColor || PREF_DEFAULTS.cursorColor;
+    html.style.setProperty("--a11y-cursor-color", cursorColor);
+    // Automatically calculate contrasting outline color for better visibility
     var outlineColor = getContrastingColor(cursorColor);
+    // Ensure outline is always visible - use black if cursor is light, white if cursor is dark
     html.style.setProperty("--a11y-cursor-outline-color", outlineColor);
     
     // Initialize/remove reading aids dynamically
@@ -288,31 +545,221 @@
       removeScreenMask();
     }
     
-    if (prefs.magnifierEnabled) {
-      createMagnifier(prefs);
-    } else {
-      removeMagnifier();
-    }
-    
-    // Initialize/remove custom cursor
-    if (prefs.cursorEnabled && prefs.cursorSize) {
+    // Initialize/remove custom cursor dynamically
+    if (prefs.cursorEnabled) {
       createCustomCursor(prefs);
     } else {
       removeCustomCursor();
     }
+  }
+
+  // --- Apply Widget Customization -------------------------------------------
+  function applyWidgetCustomization(prefs, root) {
+    if (!root) root = document.getElementById("a11y-widget-root");
+    if (!root) return;
     
-    // Stop speech if disabled
-    if (!prefs.textToSpeechEnabled) {
-      stopSpeech();
+    var theme = prefs.widgetTheme || "default";
+    var custom = prefs.widgetCustomization || {};
+    
+    // Get preset values
+    var preset = WIDGET_THEMES[theme] || {};
+    
+    // Merge preset + custom overrides
+    var colors = {
+      primary: custom.primaryColor || preset.primaryColor,
+      secondary: custom.secondaryColor || preset.secondaryColor,
+      bg: custom.backgroundColor || preset.backgroundColor,
+      text: custom.textColor || preset.textColor,
+      border: custom.borderColor || preset.borderColor
+    };
+    
+    var sizes = {
+      button: custom.buttonSize || preset.buttonSize,
+      panel: custom.panelWidth || preset.panelWidth,
+      radius: custom.borderRadius !== undefined ? custom.borderRadius : preset.borderRadius,
+      spacing: custom.spacing || preset.spacing
+    };
+    
+    // Apply color overrides via CSS variables
+    if (colors.primary) root.style.setProperty("--a11y-custom-primary", colors.primary);
+    if (colors.secondary) root.style.setProperty("--a11y-custom-secondary", colors.secondary);
+    if (colors.bg) root.style.setProperty("--a11y-custom-bg", colors.bg);
+    if (colors.text) root.style.setProperty("--a11y-custom-text", colors.text);
+    if (colors.border) root.style.setProperty("--a11y-custom-border", colors.border);
+    
+    // Apply size overrides
+    if (sizes.button) {
+      var sizeMap = { small: "40px", medium: "48px", large: "56px" };
+      root.style.setProperty("--a11y-custom-button-size", sizeMap[sizes.button] || sizes.button);
+    }
+    if (sizes.panel) root.style.setProperty("--a11y-custom-panel-width", sizes.panel + "px");
+    if (sizes.radius !== undefined) root.style.setProperty("--a11y-custom-radius", sizes.radius + "px");
+    if (sizes.spacing) {
+      var spacingMap = { compact: "0.5rem", normal: "1rem", comfortable: "1.5rem" };
+      root.style.setProperty("--a11y-custom-spacing", spacingMap[sizes.spacing] || sizes.spacing);
     }
     
-    // Apply or remove translation
-    if (prefs.translationEnabled && prefs.translationLanguage && prefs.translationLanguage !== "en") {
-      applyTranslation(prefs);
-    } else {
-      removeTranslation();
+    // Reset to defaults if no customization
+    if (theme === "default" && !custom.primaryColor && !custom.secondaryColor && !custom.backgroundColor && 
+        !custom.textColor && !custom.borderColor && !custom.buttonSize && !custom.panelWidth && 
+        custom.borderRadius === undefined && !custom.spacing) {
+      root.style.removeProperty("--a11y-custom-primary");
+      root.style.removeProperty("--a11y-custom-secondary");
+      root.style.removeProperty("--a11y-custom-bg");
+      root.style.removeProperty("--a11y-custom-text");
+      root.style.removeProperty("--a11y-custom-border");
+      root.style.removeProperty("--a11y-custom-button-size");
+      root.style.removeProperty("--a11y-custom-panel-width");
+      root.style.removeProperty("--a11y-custom-radius");
+      root.style.removeProperty("--a11y-custom-spacing");
+    }
+    
+    // Also apply to toolbar if it exists
+    var toolbar = document.getElementById("a11y-widget-toolbar");
+    if (toolbar) {
+      // Toolbar inherits CSS variables from root, but we can also set them directly
+      if (colors.bg) toolbar.style.setProperty("--a11y-custom-bg", colors.bg);
+      if (colors.text) toolbar.style.setProperty("--a11y-custom-text", colors.text);
+      if (colors.border) toolbar.style.setProperty("--a11y-custom-border", colors.border);
+      if (sizes.button) {
+        var sizeMap = { small: "40px", medium: "48px", large: "56px" };
+        toolbar.style.setProperty("--a11y-custom-button-size", sizeMap[sizes.button] || sizes.button);
+      }
+      if (sizes.radius !== undefined) toolbar.style.setProperty("--a11y-custom-radius", sizes.radius + "px");
+      if (sizes.spacing) {
+        var spacingMap = { compact: "0.5rem", normal: "1rem", comfortable: "1.5rem" };
+        toolbar.style.setProperty("--a11y-custom-spacing", spacingMap[sizes.spacing] || sizes.spacing);
+      }
     }
   }
+
+  // --- Render Icon -----------------------------------------------------------
+  function getDefaultIconSVG() {
+    // Return the current default SVG logo
+    return '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: 100%;">' +
+      '<defs>' +
+        '<linearGradient id="outerGrad" x1="0%" y1="0%" x2="100%" y2="100%">' +
+          '<stop offset="0%" stop-color="#6B8DD6"/>' +
+          '<stop offset="100%" stop-color="#8B6FD8"/>' +
+        '</linearGradient>' +
+        '<filter id="softShadow">' +
+          '<feGaussianBlur in="SourceAlpha" stdDeviation="2"/>' +
+          '<feOffset dx="0" dy="2" result="offsetblur"/>' +
+          '<feComponentTransfer><feFuncA type="linear" slope="0.3"/></feComponentTransfer>' +
+          '<feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>' +
+        '</filter>' +
+      '</defs>' +
+      '<circle cx="50" cy="50" r="45" fill="url(#outerGrad)" stroke="#5A7BC8" stroke-width="1.5" filter="url(#softShadow)"/>' +
+      '<circle cx="50" cy="50" r="33" fill="#FFFFFF" opacity="0.95"/>' +
+      '<g fill="#6B8DD6" stroke="#6B8DD6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' +
+        '<circle cx="50" cy="36" r="5.5" fill="#FFFFFF" stroke="#6B8DD6" stroke-width="2"/>' +
+        '<path d="M 46 38 Q 50 40, 54 38" stroke="#6B8DD6" stroke-width="2" fill="none" stroke-linecap="round"/>' +
+        '<circle cx="47.5" cy="35" r="1" fill="#6B8DD6"/>' +
+        '<circle cx="52.5" cy="35" r="1" fill="#6B8DD6"/>' +
+        '<line x1="50" y1="41.5" x2="50" y2="52" stroke-width="2.8"/>' +
+        '<line x1="50" y1="44" x2="40" y2="46" stroke-width="3"/>' +
+        '<line x1="50" y1="44" x2="60" y2="46" stroke-width="3"/>' +
+        '<line x1="50" y1="52" x2="44" y2="61" stroke-width="3"/>' +
+        '<line x1="50" y1="52" x2="56" y2="61" stroke-width="3"/>' +
+      '</g>' +
+      '<g fill="#FFD700" opacity="0.8">' +
+        '<circle cx="30" cy="25" r="1.5"/>' +
+        '<path d="M 30 25 L 30 22 M 30 25 L 30 28 M 30 25 L 27 25 M 30 25 L 33 25" stroke="#FFD700" stroke-width="1.5" stroke-linecap="round"/>' +
+        '<circle cx="75" cy="30" r="1.5"/>' +
+        '<path d="M 75 30 L 75 27 M 75 30 L 75 33 M 75 30 L 72 30 M 75 30 L 78 30" stroke="#FFD700" stroke-width="1.5" stroke-linecap="round"/>' +
+      '</g>' +
+      '<path d="M 65 28 Q 70 23, 75 28" stroke="#8B6FD8" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.7"/>' +
+      '<g fill="#6B8DD6" font-family="Arial, sans-serif" font-weight="bold">' +
+        '<text x="30" y="28" font-size="9" text-anchor="middle" fill="#6B8DD6">A</text>' +
+        '<path d="M 30 35 Q 30 32, 32 32 Q 34 32, 34 35 Q 34 32, 36 32 Q 38 32, 38 35 Q 38 38, 34 42 Q 30 38, 30 35" fill="#FF6B9D" opacity="0.8"/>' +
+      '</g>' +
+    '</svg>';
+  }
+
+  function renderIcon(prefs, toggleButton) {
+    if (!toggleButton) toggleButton = document.getElementById("a11y-widget-toggle");
+    if (!toggleButton) return;
+    
+    var iconId = prefs.iconId;
+    var iconDesign = prefs.iconDesign || "default";
+    var style = prefs.iconStyle || "default";
+    var customization = prefs.iconCustomization || {};
+    var preset = ICON_PRESETS[style] || ICON_PRESETS.default;
+    
+    // Merge preset + custom overrides
+    var iconStyle = {
+      backgroundColor: customization.backgroundColor !== undefined ? customization.backgroundColor : preset.backgroundColor,
+      borderColor: customization.borderColor !== undefined ? customization.borderColor : preset.borderColor,
+      borderWidth: customization.borderWidth !== undefined ? customization.borderWidth : preset.borderWidth,
+      borderRadius: customization.borderRadius !== undefined ? customization.borderRadius : preset.borderRadius,
+      opacity: customization.opacity !== undefined ? customization.opacity : preset.opacity,
+      shadow: customization.shadow !== undefined ? customization.shadow : preset.shadow
+    };
+    
+    // Apply styling to button
+    if (iconStyle.backgroundColor !== null && iconStyle.backgroundColor !== undefined) {
+      toggleButton.style.backgroundColor = iconStyle.backgroundColor;
+    } else {
+      toggleButton.style.backgroundColor = "";
+    }
+    if (iconStyle.borderColor !== null && iconStyle.borderColor !== undefined) {
+      toggleButton.style.borderColor = iconStyle.borderColor;
+      toggleButton.style.borderWidth = (iconStyle.borderWidth || 0) + "px";
+      toggleButton.style.borderStyle = "solid";
+    } else {
+      toggleButton.style.borderColor = "";
+      toggleButton.style.borderWidth = "";
+      toggleButton.style.borderStyle = "";
+    }
+    if (iconStyle.borderRadius !== null && iconStyle.borderRadius !== undefined) {
+      toggleButton.style.borderRadius = iconStyle.borderRadius;
+    } else {
+      toggleButton.style.borderRadius = "";
+    }
+    if (iconStyle.opacity !== undefined && iconStyle.opacity !== null) {
+      toggleButton.style.opacity = iconStyle.opacity;
+    } else {
+      toggleButton.style.opacity = "";
+    }
+    
+    // Apply shadow
+    var shadowMap = {
+      none: "none",
+      small: "0 1px 3px rgba(0,0,0,0.12)",
+      medium: "0 2px 8px rgba(0,0,0,0.15)",
+      large: "0 4px 12px rgba(0,0,0,0.2)"
+    };
+    toggleButton.style.boxShadow = shadowMap[iconStyle.shadow] || shadowMap.medium;
+    
+    // Set icon size
+    var iconSize = prefs.iconSize || 48;
+    toggleButton.style.width = iconSize + "px";
+    toggleButton.style.height = iconSize + "px";
+    toggleButton.style.minWidth = iconSize + "px";
+    toggleButton.style.minHeight = iconSize + "px";
+    
+    // Render icon content
+    if (iconId) {
+      // Load custom icon from IndexedDB
+      IconDB.getIcon(iconId).then(function(dataUrl) {
+        if (dataUrl) {
+          toggleButton.innerHTML = '<img src="' + dataUrl + '" alt="" style="width: 100%; height: 100%; object-fit: contain;" />';
+        } else {
+          // Fallback to selected design
+          var designFn = ICON_DESIGNS[iconDesign] || ICON_DESIGNS.default;
+          toggleButton.innerHTML = designFn();
+        }
+      }).catch(function() {
+        var designFn = ICON_DESIGNS[iconDesign] || ICON_DESIGNS.default;
+        toggleButton.innerHTML = designFn();
+      });
+    } else {
+      // Use selected icon design
+      var designFn = ICON_DESIGNS[iconDesign] || ICON_DESIGNS.default;
+      toggleButton.innerHTML = designFn();
+    }
+  }
+
 
   function markSurfaces(selectors, globalMode) {
     // If global mode is enabled, mark all elements
@@ -970,6 +1417,7 @@
     customCursorElement.id = "a11y-custom-cursor";
     customCursorElement.className = cursorSize;
     customCursorElement.setAttribute("aria-hidden", "true");
+    customCursorElement.style.display = "none"; // Hidden until mouse moves
     document.body.appendChild(customCursorElement);
     
     // Track mouse movement
@@ -1756,6 +2204,9 @@
       title: "Accessibility Settings" + shortcutText,
       html: logoSVG
     });
+    
+    // Apply icon customization after button is created
+    renderIcon(prefs, toggle);
 
     var panel = el("div", {
       id: "a11y-widget-panel",
@@ -2699,28 +3150,6 @@
       text: "Check for the latest widget design updates."
     });
     
-    // Check for Updates function
-    function checkForUpdates(cfg, btn, statusEl) {
-      btn.disabled = true;
-      btn.textContent = "⏳ Checking...";
-      statusEl.textContent = "Checking for updates...";
-      
-      // Force reload widget files by clearing cache and reloading
-      setTimeout(function() {
-        // Clear localStorage cache
-        try {
-          localStorage.removeItem(cfg.storageKey + "_version");
-          localStorage.removeItem("__a11y_widget_version");
-        } catch(e) {}
-        
-        // Reload page to get latest version
-        statusEl.textContent = "✓ Update check complete. Reloading page...";
-        setTimeout(function() {
-          window.location.reload();
-        }, 1000);
-      }, 500);
-    }
-    
     updateBtn.addEventListener("click", function () {
       checkForUpdates(cfg, updateBtn, updateStatus);
     });
@@ -2728,6 +3157,516 @@
     updateRow.appendChild(updateBtn);
     updateRow.appendChild(updateStatus);
     content.appendChild(updateRow);
+
+    // Widget Appearance Section
+    content.appendChild(el("div", { class: "a11y-divider" }));
+    var appearanceRow = el("div", { class: "a11y-widget-row" });
+    appearanceRow.appendChild(el("legend", { text: "🎨 Widget Appearance" }));
+
+    var themeSelect = el("select", { 
+      id: "a11y-widget-theme",
+      "aria-label": "Select widget theme"
+    });
+    var themes = [
+      ["default", "Default"],
+      ["light", "Light"],
+      ["dark", "Dark"],
+      ["high-contrast", "High Contrast"],
+      ["compact", "Compact"],
+      ["spacious", "Spacious"],
+      ["custom", "Custom"]
+    ];
+    for (var i = 0; i < themes.length; i++) {
+      var opt = el("option", { value: themes[i][0], text: themes[i][1] });
+      if (prefs.widgetTheme === themes[i][0]) opt.selected = true;
+      themeSelect.appendChild(opt);
+    }
+    themeSelect.addEventListener("change", function() {
+      var theme = themeSelect.value;
+      var updatedPrefs = assign({}, prefs);
+      updatedPrefs.widgetTheme = theme;
+      if (theme !== "custom") {
+        updatedPrefs.widgetCustomization = {};
+      }
+      enhancedOnChange({ 
+        widgetTheme: theme,
+        widgetCustomization: theme === "custom" ? (prefs.widgetCustomization || {}) : {}
+      });
+      var root = document.getElementById("a11y-widget-root");
+      applyWidgetCustomization(updatedPrefs, root);
+      // Show/hide advanced customization section
+      var advancedSection = document.getElementById("a11y-widget-advanced-customization");
+      if (advancedSection) {
+        advancedSection.style.display = theme === "custom" ? "" : "none";
+      }
+    });
+    appearanceRow.appendChild(themeSelect);
+    appearanceRow.appendChild(el("div", { 
+      class: "a11y-widget-help", 
+      text: "Choose a preset theme or customize colors and sizes below." 
+    }));
+    content.appendChild(appearanceRow);
+
+    // Advanced Customization (only show if custom theme selected)
+    var advancedRow = el("div", { 
+      class: "a11y-widget-row",
+      id: "a11y-widget-advanced-customization",
+      style: prefs.widgetTheme === "custom" ? "" : "display: none;"
+    });
+
+    // Color pickers
+    var colorFields = [
+      { key: "primaryColor", label: "Primary Color", default: "#111" },
+      { key: "secondaryColor", label: "Accent Color", default: "#007bff" },
+      { key: "backgroundColor", label: "Background", default: "#fff" },
+      { key: "textColor", label: "Text Color", default: "#111" },
+      { key: "borderColor", label: "Border Color", default: "rgba(0,0,0,0.12)" }
+    ];
+
+    for (var i = 0; i < colorFields.length; i++) {
+      var field = colorFields[i];
+      var fieldRow = el("div", { class: "a11y-widget-field" });
+      fieldRow.appendChild(el("label", { 
+        for: "a11y-custom-" + field.key,
+        text: field.label,
+        style: "min-width: 120px;"
+      }));
+      var colorInput = el("input", {
+        type: "color",
+        id: "a11y-custom-" + field.key,
+        value: (prefs.widgetCustomization && prefs.widgetCustomization[field.key]) || field.default
+      });
+      colorInput.addEventListener("change", function(key, input) {
+        return function() {
+          var custom = assign({}, prefs.widgetCustomization || {});
+          custom[key] = input.value;
+          var updatedPrefs = assign({}, prefs);
+          updatedPrefs.widgetCustomization = custom;
+          enhancedOnChange({ widgetCustomization: custom });
+          var root = document.getElementById("a11y-widget-root");
+          applyWidgetCustomization(updatedPrefs, root);
+        };
+      }(field.key, colorInput));
+      fieldRow.appendChild(colorInput);
+      advancedRow.appendChild(fieldRow);
+    }
+
+    // Size controls
+    var sizeRow = el("div", { class: "a11y-widget-field" });
+    sizeRow.appendChild(el("label", { for: "a11y-custom-button-size", text: "Button Size" }));
+    var buttonSizeSelect = el("select", { id: "a11y-custom-button-size" });
+    ["small", "medium", "large"].forEach(function(size) {
+      var opt = el("option", { value: size, text: size.charAt(0).toUpperCase() + size.slice(1) });
+      if ((prefs.widgetCustomization && prefs.widgetCustomization.buttonSize) === size) opt.selected = true;
+      buttonSizeSelect.appendChild(opt);
+    });
+    buttonSizeSelect.addEventListener("change", function() {
+      var custom = assign({}, prefs.widgetCustomization || {});
+      custom.buttonSize = buttonSizeSelect.value;
+      var updatedPrefs = assign({}, prefs);
+      updatedPrefs.widgetCustomization = custom;
+      enhancedOnChange({ widgetCustomization: custom });
+      var root = document.getElementById("a11y-widget-root");
+      applyWidgetCustomization(updatedPrefs, root);
+    });
+    sizeRow.appendChild(buttonSizeSelect);
+    advancedRow.appendChild(sizeRow);
+
+    content.appendChild(advancedRow);
+
+    // Icon Customization Section
+    content.appendChild(el("div", { class: "a11y-divider" }));
+    var iconRow = el("div", { class: "a11y-widget-row" });
+    iconRow.appendChild(el("legend", { text: "🎯 Icon Customization" }));
+
+    // Size slider
+    var sizeRow = el("div", { class: "a11y-widget-row" });
+    sizeRow.appendChild(el("label", { for: "a11y-icon-size", text: "Icon Size" }));
+    var sizeWrapper = el("div", { class: "a11y-widget-range-wrapper" });
+    var sizeRange = el("input", {
+      type: "range",
+      id: "a11y-icon-size",
+      min: "32",
+      max: "80",
+      step: "4",
+      value: String(prefs.iconSize || 48)
+    });
+    var sizeValue = el("div", { 
+      class: "a11y-widget-font-value",
+      text: (prefs.iconSize || 48) + "px"
+    });
+    sizeRange.addEventListener("input", function() {
+      var size = parseInt(sizeRange.value);
+      sizeValue.textContent = size + "px";
+      var updatedPrefs = assign({}, prefs);
+      updatedPrefs.iconSize = size;
+      enhancedOnChange({ iconSize: size });
+      renderIcon(updatedPrefs, toggle);
+    });
+    sizeWrapper.appendChild(sizeRange);
+    sizeWrapper.appendChild(sizeValue);
+    sizeRow.appendChild(sizeWrapper);
+    iconRow.appendChild(sizeRow);
+
+    // Icon Design Selector with Previews
+    var designRow = el("div", { class: "a11y-widget-field" });
+    designRow.appendChild(el("label", { text: "Icon Design", style: "display: block; margin-bottom: 0.5rem; font-weight: 500;" }));
+    var designGrid = el("div", { 
+      style: "display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.5rem; margin-bottom: 0.5rem;" 
+    });
+    
+    var iconDesignNames = {
+      default: "Default",
+      circleA: "Circle A",
+      universal: "Universal",
+      eye: "Eye",
+      gear: "Gear",
+      heart: "Heart",
+      shield: "Shield",
+      hand: "Hand",
+      star: "Star",
+      checkmark: "Checkmark"
+    };
+    
+    Object.keys(ICON_DESIGNS).forEach(function(designKey) {
+      var designBtn = el("button", {
+        type: "button",
+        class: "a11y-icon-design-btn",
+        "aria-label": iconDesignNames[designKey] || designKey,
+        title: iconDesignNames[designKey] || designKey,
+        style: "width: 100%; aspect-ratio: 1; padding: 0.5rem; border: 2px solid var(--a11y-color-border); border-radius: 6px; background: var(--a11y-color-bg); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;"
+      });
+      
+      if (prefs.iconDesign === designKey) {
+        designBtn.style.borderColor = "var(--a11y-color-secondary)";
+        designBtn.style.backgroundColor = "var(--a11y-color-bg-light)";
+        designBtn.style.boxShadow = "0 2px 4px rgba(0,123,255,0.2)";
+      }
+      
+      // Create preview icon
+      var previewSize = 32;
+      var previewIcon = el("div", {
+        style: "width: " + previewSize + "px; height: " + previewSize + "px; display: flex; align-items: center; justify-content: center;"
+      });
+      var designFn = ICON_DESIGNS[designKey];
+      previewIcon.innerHTML = designFn();
+      designBtn.appendChild(previewIcon);
+      
+      designBtn.addEventListener("click", function() {
+        // Update selected state
+        var allBtns = designGrid.querySelectorAll(".a11y-icon-design-btn");
+        for (var i = 0; i < allBtns.length; i++) {
+          allBtns[i].style.borderColor = "var(--a11y-color-border)";
+          allBtns[i].style.backgroundColor = "var(--a11y-color-bg)";
+          allBtns[i].style.boxShadow = "none";
+        }
+        designBtn.style.borderColor = "var(--a11y-color-secondary)";
+        designBtn.style.backgroundColor = "var(--a11y-color-bg-light)";
+        designBtn.style.boxShadow = "0 2px 4px rgba(0,123,255,0.2)";
+        
+        // Update preferences
+        var updatedPrefs = assign({}, prefs);
+        updatedPrefs.iconDesign = designKey;
+        enhancedOnChange({ iconDesign: designKey });
+        renderIcon(updatedPrefs, toggle);
+      });
+      
+      designBtn.addEventListener("mouseenter", function() {
+        if (prefs.iconDesign !== designKey) {
+          designBtn.style.borderColor = "var(--a11y-color-primary-light)";
+          designBtn.style.backgroundColor = "var(--a11y-color-bg-light)";
+        }
+      });
+      
+      designBtn.addEventListener("mouseleave", function() {
+        if (prefs.iconDesign !== designKey) {
+          designBtn.style.borderColor = "var(--a11y-color-border)";
+          designBtn.style.backgroundColor = "var(--a11y-color-bg)";
+        }
+      });
+      
+      designGrid.appendChild(designBtn);
+    });
+    
+    designRow.appendChild(designGrid);
+    iconRow.appendChild(designRow);
+
+    // Style preset selector
+    var styleRow = el("div", { class: "a11y-widget-field" });
+    styleRow.appendChild(el("label", { for: "a11y-icon-style", text: "Icon Style" }));
+    var styleSelect = el("select", { id: "a11y-icon-style" });
+    ["default", "minimal", "bold", "outline", "custom"].forEach(function(style) {
+      var opt = el("option", { value: style, text: style.charAt(0).toUpperCase() + style.slice(1) });
+      if (prefs.iconStyle === style) opt.selected = true;
+      styleSelect.appendChild(opt);
+    });
+    styleSelect.addEventListener("change", function() {
+      var style = styleSelect.value;
+      var updatedPrefs = assign({}, prefs);
+      updatedPrefs.iconStyle = style;
+      if (style !== "custom") {
+        updatedPrefs.iconCustomization = {};
+      }
+      enhancedOnChange({ 
+        iconStyle: style,
+        iconCustomization: style === "custom" ? (prefs.iconCustomization || {}) : {}
+      });
+      renderIcon(updatedPrefs, toggle);
+      // Show/hide advanced icon customization
+      var advancedIconSection = document.getElementById("a11y-widget-advanced-icon");
+      if (advancedIconSection) {
+        advancedIconSection.style.display = style === "custom" ? "" : "none";
+      }
+    });
+    styleRow.appendChild(styleSelect);
+    iconRow.appendChild(styleRow);
+    iconRow.appendChild(el("div", { 
+      class: "a11y-widget-help", 
+      text: "Customize icon size, design, and style. Upload your own icon below." 
+    }));
+    content.appendChild(iconRow);
+
+    // Advanced Icon Customization (only show if custom style selected)
+    var advancedIconRow = el("div", { 
+      class: "a11y-widget-row",
+      id: "a11y-widget-advanced-icon",
+      style: prefs.iconStyle === "custom" ? "" : "display: none;"
+    });
+    advancedIconRow.appendChild(el("legend", { text: "Advanced Icon Styling" }));
+    
+    // Icon customization color pickers
+    var iconColorFields = [
+      { key: "backgroundColor", label: "Background", default: "#ffffff" },
+      { key: "borderColor", label: "Border Color", default: "#007bff" }
+    ];
+    
+    for (var i = 0; i < iconColorFields.length; i++) {
+      var field = iconColorFields[i];
+      var fieldRow = el("div", { class: "a11y-widget-field" });
+      fieldRow.appendChild(el("label", { 
+        for: "a11y-icon-custom-" + field.key,
+        text: field.label,
+        style: "min-width: 120px;"
+      }));
+      var colorInput = el("input", {
+        type: "color",
+        id: "a11y-icon-custom-" + field.key,
+        value: (prefs.iconCustomization && prefs.iconCustomization[field.key]) || field.default
+      });
+      colorInput.addEventListener("change", function(key, input) {
+        return function() {
+          var custom = assign({}, prefs.iconCustomization || {});
+          custom[key] = input.value;
+          var updatedPrefs = assign({}, prefs);
+          updatedPrefs.iconCustomization = custom;
+          enhancedOnChange({ iconCustomization: custom });
+          renderIcon(updatedPrefs, toggle);
+        };
+      }(field.key, colorInput));
+      fieldRow.appendChild(colorInput);
+      advancedIconRow.appendChild(fieldRow);
+    }
+    
+    // Border width
+    var borderWidthRow = el("div", { class: "a11y-widget-field" });
+    borderWidthRow.appendChild(el("label", { for: "a11y-icon-border-width", text: "Border Width" }));
+    var borderWidthSelect = el("select", { id: "a11y-icon-border-width" });
+    ["0", "1", "2", "3", "4"].forEach(function(width) {
+      var opt = el("option", { value: width, text: width + "px" });
+      if ((prefs.iconCustomization && String(prefs.iconCustomization.borderWidth)) === width) opt.selected = true;
+      borderWidthSelect.appendChild(opt);
+    });
+    borderWidthSelect.addEventListener("change", function() {
+      var custom = assign({}, prefs.iconCustomization || {});
+      custom.borderWidth = parseInt(borderWidthSelect.value);
+      var updatedPrefs = assign({}, prefs);
+      updatedPrefs.iconCustomization = custom;
+      enhancedOnChange({ iconCustomization: custom });
+      renderIcon(updatedPrefs, toggle);
+    });
+    borderWidthRow.appendChild(borderWidthSelect);
+    advancedIconRow.appendChild(borderWidthRow);
+    
+    // Shadow selector
+    var shadowRow = el("div", { class: "a11y-widget-field" });
+    shadowRow.appendChild(el("label", { for: "a11y-icon-shadow", text: "Shadow" }));
+    var shadowSelect = el("select", { id: "a11y-icon-shadow" });
+    ["none", "small", "medium", "large"].forEach(function(shadow) {
+      var opt = el("option", { value: shadow, text: shadow.charAt(0).toUpperCase() + shadow.slice(1) });
+      if ((prefs.iconCustomization && prefs.iconCustomization.shadow) === shadow) opt.selected = true;
+      shadowSelect.appendChild(opt);
+    });
+    shadowSelect.addEventListener("change", function() {
+      var custom = assign({}, prefs.iconCustomization || {});
+      custom.shadow = shadowSelect.value;
+      var updatedPrefs = assign({}, prefs);
+      updatedPrefs.iconCustomization = custom;
+      enhancedOnChange({ iconCustomization: custom });
+      renderIcon(updatedPrefs, toggle);
+    });
+    shadowRow.appendChild(shadowSelect);
+    advancedIconRow.appendChild(shadowRow);
+    
+    content.appendChild(advancedIconRow);
+
+    // Icon Upload Section
+    var uploadRow = el("div", { class: "a11y-widget-row" });
+    uploadRow.appendChild(el("legend", { text: "📤 Upload Custom Icon" }));
+
+    var fileInput = el("input", {
+      type: "file",
+      id: "a11y-icon-upload",
+      accept: "image/png,image/jpeg,image/svg+xml,image/gif,image/webp"
+    });
+    fileInput.style.display = "none";
+
+    var uploadBtn = el("button", {
+      type: "button",
+      class: "a11y-widget-btn",
+      text: "Choose Icon File"
+    });
+    uploadBtn.addEventListener("click", function() {
+      fileInput.click();
+    });
+
+    fileInput.addEventListener("change", function(e) {
+      var file = e.target.files[0];
+      if (!file) return;
+      
+      // Validate file size (max 500KB)
+      if (file.size > 500 * 1024) {
+        alert("Icon file must be smaller than 500KB");
+        return;
+      }
+      
+      // Validate file type
+      if (!file.type.match(/^image\/(png|jpeg|svg\+xml|gif|webp)$/)) {
+        alert("Please select a valid image file (PNG, JPEG, SVG, GIF, or WebP)");
+        return;
+      }
+      
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var dataUrl = e.target.result;
+        IconDB.saveIcon(dataUrl, file.name).then(function(iconId) {
+          var updatedPrefs = assign({}, prefs);
+          updatedPrefs.iconId = iconId;
+          enhancedOnChange({ iconId: iconId });
+          renderIcon(updatedPrefs, toggle);
+          alert("Icon uploaded successfully!");
+          // Reload icons list
+          if (typeof loadUploadedIcons === "function") {
+            loadUploadedIcons();
+          }
+        }).catch(function(err) {
+          console.error("Failed to save icon:", err);
+          alert("Failed to upload icon. Please try again.");
+        });
+      };
+      reader.readAsDataURL(file);
+      // Reset file input
+      fileInput.value = "";
+    });
+
+    uploadRow.appendChild(uploadBtn);
+    uploadRow.appendChild(fileInput);
+    uploadRow.appendChild(el("div", { 
+      class: "a11y-widget-help", 
+      text: "Upload PNG, JPEG, SVG, GIF, or WebP image (max 500KB). Icon will persist across sessions." 
+    }));
+    content.appendChild(uploadRow);
+
+    // Uploaded Icons List
+    var iconsListRow = el("div", { class: "a11y-widget-row", id: "a11y-uploaded-icons" });
+    iconsListRow.appendChild(el("legend", { text: "📋 Your Uploaded Icons" }));
+    var iconsList = el("div", { id: "a11y-icons-list" });
+    iconsListRow.appendChild(iconsList);
+    content.appendChild(iconsListRow);
+
+    // Load and display uploaded icons
+    function loadUploadedIcons() {
+      IconDB.listIcons().then(function(icons) {
+        iconsList.innerHTML = "";
+        if (icons.length === 0) {
+          iconsList.appendChild(el("div", { 
+            class: "a11y-widget-help",
+            text: "No uploaded icons yet. Upload an icon above to get started." 
+          }));
+          return;
+        }
+        icons.forEach(function(icon) {
+          var iconItem = el("div", { 
+            class: "a11y-widget-field",
+            style: "display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; border: 1px solid var(--a11y-color-border); border-radius: var(--a11y-radius); margin-bottom: 0.5rem;"
+          });
+          
+          IconDB.getIcon(icon.iconId).then(function(dataUrl) {
+            if (dataUrl) {
+              var img = el("img", {
+                src: dataUrl,
+                alt: icon.name,
+                style: "width: 32px; height: 32px; object-fit: contain; border-radius: 4px;"
+              });
+              iconItem.appendChild(img);
+            }
+          }).catch(function() {
+            // Ignore errors loading icon preview
+          });
+          
+          var nameSpan = el("span", { text: icon.name, style: "flex: 1;" });
+          iconItem.appendChild(nameSpan);
+          
+          var useBtn = el("button", {
+            type: "button",
+            class: "a11y-widget-btn",
+            text: "Use",
+            style: "padding: 0.25rem 0.5rem; font-size: 12px;"
+          });
+          useBtn.addEventListener("click", function() {
+            var updatedPrefs = assign({}, prefs);
+            updatedPrefs.iconId = icon.iconId;
+            enhancedOnChange({ iconId: icon.iconId });
+            renderIcon(updatedPrefs, toggle);
+          });
+          iconItem.appendChild(useBtn);
+          
+          var deleteBtn = el("button", {
+            type: "button",
+            class: "a11y-widget-btn",
+            text: "Delete",
+            style: "padding: 0.25rem 0.5rem; font-size: 12px; background: #dc3545; color: white;"
+          });
+          deleteBtn.addEventListener("click", function() {
+            if (confirm("Delete this icon?")) {
+              IconDB.deleteIcon(icon.iconId).then(function() {
+                loadUploadedIcons();
+                if (prefs.iconId === icon.iconId) {
+                  var updatedPrefs = assign({}, prefs);
+                  updatedPrefs.iconId = null;
+                  enhancedOnChange({ iconId: null });
+                  renderIcon(updatedPrefs, toggle);
+                }
+              }).catch(function(err) {
+                console.error("Failed to delete icon:", err);
+                alert("Failed to delete icon. Please try again.");
+              });
+            }
+          });
+          iconItem.appendChild(deleteBtn);
+          
+          iconsList.appendChild(iconItem);
+        });
+      }).catch(function(err) {
+        console.error("Failed to load icons:", err);
+        iconsList.innerHTML = "";
+        iconsList.appendChild(el("div", { 
+          class: "a11y-widget-help",
+          text: "Unable to load uploaded icons. IndexedDB may not be available." 
+        }));
+      });
+    }
+
+    loadUploadedIcons();
 
     // Reset
     if (cfg.features.reset) {
@@ -2842,16 +3781,14 @@
     }
 
     toggle.addEventListener("click", function (e) {
-      // Check if we're on a trusted site (skip auth for demo/client domains)
+      // Check if we're on Vercel demo site (skip auth for demo)
       var hostname = window.location.hostname;
       var isVercelDemo = hostname === 'a11-widget.vercel.app' || 
                         hostname.endsWith('.vercel.app') ||
-                        hostname === 'careerdriverhq.com' ||
-                        hostname === 'www.careerdriverhq.com' ||
                         hostname === 'localhost' ||
                         hostname === '127.0.0.1';
       
-      // Skip authentication check on trusted domains (Vercel demo, careerdriverhq.com, localhost)
+      // Skip authentication check on Vercel demo site
       if (isVercelDemo) {
         var expanded = toggle.getAttribute("aria-expanded") === "true";
         if (expanded) closePanel(); else openPanel();
@@ -2866,7 +3803,7 @@
             var expanded = toggle.getAttribute("aria-expanded") === "true";
             if (expanded) closePanel(); else openPanel();
           } else {
-            // Not authenticated, show login modal immediately
+            // Not authenticated, show login modal
             if (window.__a11yAuth && typeof window.__a11yAuth.showLoginModal === "function") {
               window.__a11yAuth.showLoginModal();
             } else {
@@ -2875,13 +3812,10 @@
             }
           }
         }).catch(function(error) {
-          // On any error (including 401), show login modal instead of error
-          console.log("[A11Y Widget] Auth check failed, showing login modal:", error);
+          console.error("[A11Y Widget] Auth check error:", error);
+          // On error, show login modal as fallback
           if (window.__a11yAuth && typeof window.__a11yAuth.showLoginModal === "function") {
             window.__a11yAuth.showLoginModal();
-          } else {
-            // Fallback: dispatch event to trigger login
-            window.dispatchEvent(new CustomEvent("a11y-auth-required"));
           }
         });
       } else {
@@ -2938,78 +3872,23 @@
           document.body.appendChild(controls.toolbar);
         }
         // Always show toolbar when enabled (persists across tab switches)
-        // Ensure toolbar always stays floating
         controls.toolbar.style.display = "flex";
         controls.toolbar.style.visibility = "visible";
-        controls.toolbar.style.position = "fixed";
-        controls.toolbar.style.bottom = "0";
-        controls.toolbar.style.left = "0";
-        controls.toolbar.style.right = "0";
-        controls.toolbar.style.zIndex = String(cfg.zIndex + 1);
-        controls.toolbar.style.width = "100%";
         root.setAttribute("data-toolbar-mode", "true");
         // Hide toggle button when toolbar is active
         toggle.style.display = "none";
-        
-        // Monitor and ensure toolbar stays floating - Enhanced version
-        var ensureFloating = function() {
-          if (controls.toolbar && controls.toolbar.parentNode) {
-            var toolbar = controls.toolbar;
-            // Force all floating properties
-            toolbar.style.position = "fixed";
-            toolbar.style.bottom = "0px";
-            toolbar.style.left = "0px";
-            toolbar.style.right = "0px";
-            toolbar.style.top = "auto";
-            toolbar.style.width = "100%";
-            toolbar.style.zIndex = String(cfg.zIndex + 1);
-            toolbar.style.display = "flex";
-            toolbar.style.visibility = "visible";
-            
-            // Ensure toolbar is in body (not moved elsewhere)
-            if (toolbar.parentNode !== document.body) {
-              document.body.appendChild(toolbar);
-            }
-            
-            // Check computed style to ensure it's actually fixed
-            var computedStyle = window.getComputedStyle(toolbar);
-            if (computedStyle.position !== "fixed") {
-              toolbar.style.setProperty("position", "fixed", "important");
-            }
-            if (computedStyle.bottom !== "0px" && computedStyle.bottom !== "0") {
-              toolbar.style.setProperty("bottom", "0px", "important");
-            }
-          }
-        };
-        
-        // Check more frequently and on more events
-        var floatingCheck = setInterval(ensureFloating, 100); // Check every 100ms
-        window.addEventListener("scroll", ensureFloating, true);
-        window.addEventListener("resize", ensureFloating);
-        window.addEventListener("wheel", ensureFloating, true);
-        document.addEventListener("scroll", ensureFloating, true);
-        
-        // Also check when dropdowns open/close
-        var originalCloseDropdown = closeActiveDropdown;
-        closeActiveDropdown = function() {
-          originalCloseDropdown();
-          setTimeout(ensureFloating, 10);
-        };
-        
-        // Store interval ID and ensure function for cleanup
-        if (!controls.toolbarFloatingCheck) {
-          controls.toolbarFloatingCheck = floatingCheck;
-        }
-        controls.toolbarEnsureFloating = ensureFloating;
       } else {
+        // Remove toolbar from DOM completely when disabled
         if (controls.toolbar) {
-          controls.toolbar.style.display = "none";
-          controls.toolbar.style.visibility = "hidden";
-          // Cleanup floating check
-          if (controls.toolbarFloatingCheck) {
-            clearInterval(controls.toolbarFloatingCheck);
-            controls.toolbarFloatingCheck = null;
+          if (controls.toolbar.parentNode) {
+            controls.toolbar.parentNode.removeChild(controls.toolbar);
           }
+          controls.toolbar = null;
+        }
+        // Also remove any existing toolbar in DOM (safety check)
+        var existingToolbar = document.getElementById("a11y-widget-toolbar");
+        if (existingToolbar && existingToolbar.parentNode) {
+          existingToolbar.parentNode.removeChild(existingToolbar);
         }
         root.removeAttribute("data-toolbar-mode");
         // Show toggle button when toolbar is disabled
@@ -3017,9 +3896,8 @@
       }
     }
 
-    // Global dropdown manager to handle multiple dropdowns
+    // Dropdown management
     var activeDropdown = null;
-    
     function closeActiveDropdown() {
       if (activeDropdown) {
         activeDropdown.menu.style.display = "none";
@@ -3027,15 +3905,15 @@
         activeDropdown = null;
       }
     }
-    
-    // Close dropdown on outside click
+
+    // Close dropdown when clicking outside
     document.addEventListener("click", function(e) {
-      if (activeDropdown && !activeDropdown.dropdown.contains(e.target)) {
+      if (activeDropdown && !activeDropdown.dropdown.contains(e.target) && !activeDropdown.menu.contains(e.target)) {
         closeActiveDropdown();
       }
     });
-    
-    // Helper function to create dropdown menu with better positioning
+
+    // Create Dropdown Function
     function createDropdown(options, currentValue, onChange, label, getCurrentLabel) {
       var dropdown = el("div", { class: "a11y-toolbar-dropdown" });
       var button = el("button", {
@@ -3085,13 +3963,6 @@
           currentValue = value;
           updateButtonText();
           closeActiveDropdown();
-          
-          // Ensure toolbar stays floating after selection
-          setTimeout(function() {
-            if (controls && controls.toolbarEnsureFloating) {
-              controls.toolbarEnsureFloating();
-            }
-          }, 10);
         }
       };
       
@@ -3117,11 +3988,6 @@
         e.stopPropagation();
         e.preventDefault();
         
-        // Ensure toolbar stays floating before opening dropdown
-        if (controls && controls.toolbarEnsureFloating) {
-          controls.toolbarEnsureFloating();
-        }
-        
         // Close other dropdowns first
         if (activeDropdown && activeDropdown !== dropdown) {
           closeActiveDropdown();
@@ -3141,13 +4007,6 @@
           menu.style.zIndex = String(cfg.zIndex + 2);
           button.setAttribute("aria-expanded", "true");
           activeDropdown = { dropdown: dropdown, menu: menu, button: button };
-          
-          // Ensure toolbar stays floating after opening dropdown
-          setTimeout(function() {
-            if (controls && controls.toolbarEnsureFloating) {
-              controls.toolbarEnsureFloating();
-            }
-          }, 10);
         }
       };
       
@@ -3166,56 +4025,11 @@
         role: "toolbar",
         "aria-label": "Accessibility toolbar"
       });
-      // Ensure toolbar persists across tab switches and stays floating
+      // Ensure toolbar persists across tab switches
       toolbar.setAttribute("data-persist", "true");
-      toolbar.style.position = "fixed";
-      toolbar.style.zIndex = String(cfg.zIndex + 1);
-
-      // Check authentication status
-      var isAuthenticated = false;
-      var isVercelDemo = false;
-      if (typeof window !== "undefined" && window.location) {
-        var hostname = window.location.hostname;
-        isVercelDemo = hostname === 'a11-widget.vercel.app' || 
-                      hostname.endsWith('.vercel.app') ||
-                      hostname === 'careerdriverhq.com' ||
-                      hostname === 'www.careerdriverhq.com' ||
-                      hostname === 'localhost' ||
-                      hostname === '127.0.0.1';
-      }
-      
-      // Check authentication (async, but we'll handle it)
-      var checkAuthSync = function() {
-        if (isVercelDemo) return true;
-        if (window.__a11yAuth && typeof window.__a11yAuth.checkAuth === "function") {
-          // For sync check, we'll assume not authenticated initially
-          // The toolbar will update when auth status is confirmed
-          return false;
-        }
-        return true; // No auth module = authenticated (backward compatibility)
-      };
-      
-      isAuthenticated = checkAuthSync();
 
       // Toolbar buttons with icons
       var toolbarButtons = [];
-      
-      // If not authenticated, show only login button
-      if (!isAuthenticated && !isVercelDemo) {
-        var loginBtn = createToolbarButton("🔐", "Login", function() {
-          if (window.__a11yAuth && typeof window.__a11yAuth.showLoginModal === "function") {
-            window.__a11yAuth.showLoginModal();
-          } else {
-            window.dispatchEvent(new CustomEvent("a11y-auth-required"));
-          }
-        });
-        loginBtn.className = "a11y-toolbar-btn a11y-toolbar-login-btn";
-        toolbarButtons.push(loginBtn);
-        
-        // Append login button and return early
-        toolbar.appendChild(loginBtn);
-        return toolbar;
-      }
 
       // Contrast Mode Button
       if (cfg.features.contrast) {
@@ -3297,9 +4111,9 @@
             });
           } else {
             // No selection, toggle TTS mode
-            var currentPrefs = Store.get(cfg.storageKey) || {};
-            var normalized = normalizePrefs(assign(assign({}, PREF_DEFAULTS), currentPrefs));
-            onChange({ textToSpeechEnabled: !normalized.textToSpeechEnabled });
+          var currentPrefs = Store.get(cfg.storageKey) || {};
+          var normalized = normalizePrefs(assign(assign({}, PREF_DEFAULTS), currentPrefs));
+          onChange({ textToSpeechEnabled: !normalized.textToSpeechEnabled });
           }
         });
         toolbarButtons.push(ttsBtn);
@@ -3366,8 +4180,8 @@
           },
           "📐 Margins",
           function() {
-            var currentPrefs = Store.get(cfg.storageKey) || {};
-            var normalized = normalizePrefs(assign(assign({}, PREF_DEFAULTS), currentPrefs));
+          var currentPrefs = Store.get(cfg.storageKey) || {};
+          var normalized = normalizePrefs(assign(assign({}, PREF_DEFAULTS), currentPrefs));
             if (!normalized.marginsEnabled) return "Off";
             return normalized.marginsSize + "px";
           }
@@ -3398,15 +4212,15 @@
           },
           "🖱️ Cursor",
           function() {
-            var currentPrefs = Store.get(cfg.storageKey) || {};
-            var normalized = normalizePrefs(assign(assign({}, PREF_DEFAULTS), currentPrefs));
+          var currentPrefs = Store.get(cfg.storageKey) || {};
+          var normalized = normalizePrefs(assign(assign({}, PREF_DEFAULTS), currentPrefs));
             if (!normalized.cursorEnabled) return "Off";
             return normalized.cursorSize.charAt(0).toUpperCase() + normalized.cursorSize.slice(1);
           }
         );
         toolbarButtons.push(cursorDropdown);
       }
-      
+
       // Global Mode Dropdown
       var currentPrefsGlobal = Store.get(cfg.storageKey) || {};
       var normalizedGlobal = normalizePrefs(assign(assign({}, PREF_DEFAULTS), currentPrefsGlobal));
@@ -3415,6 +4229,12 @@
         { label: "Background: White", value: "bg-white" },
         { label: "Background: Light Gray", value: "bg-lightgray" },
         { label: "Background: Beige", value: "bg-beige" },
+        { label: "Background: Cream", value: "bg-cream" },
+        { label: "Background: Light Blue", value: "bg-lightblue" },
+        { label: "Background: Soft Green", value: "bg-softgreen" },
+        { label: "Background: Lavender", value: "bg-lavender" },
+        { label: "Background: Peach", value: "bg-peach" },
+        { label: "Background: Mint", value: "bg-mint" },
         { label: "Font: Arial", value: "font-arial" },
         { label: "Font: Times", value: "font-times" },
         { label: "Font: Verdana", value: "font-verdana" },
@@ -3424,6 +4244,12 @@
         globalModeOptions,
         normalizedGlobal.globalMode ? (normalizedGlobal.globalModeBgColor === "#f5f5f5" ? "bg-lightgray" : 
                                        normalizedGlobal.globalModeBgColor === "#f5f5dc" ? "bg-beige" :
+                                       normalizedGlobal.globalModeBgColor === "#fff8e7" ? "bg-cream" :
+                                       normalizedGlobal.globalModeBgColor === "#e3f2fd" ? "bg-lightblue" :
+                                       normalizedGlobal.globalModeBgColor === "#e8f5e9" ? "bg-softgreen" :
+                                       normalizedGlobal.globalModeBgColor === "#f3e5f5" ? "bg-lavender" :
+                                       normalizedGlobal.globalModeBgColor === "#ffe0b2" ? "bg-peach" :
+                                       normalizedGlobal.globalModeBgColor === "#e0f2f1" ? "bg-mint" :
                                        normalizedGlobal.globalModeFont === "arial" ? "font-arial" :
                                        normalizedGlobal.globalModeFont === "times" ? "font-times" :
                                        normalizedGlobal.globalModeFont === "verdana" ? "font-verdana" :
@@ -3435,7 +4261,13 @@
             var bgColors = {
               "bg-white": "#ffffff",
               "bg-lightgray": "#f5f5f5",
-              "bg-beige": "#f5f5dc"
+              "bg-beige": "#f5f5dc",
+              "bg-cream": "#fff8e7",
+              "bg-lightblue": "#e3f2fd",
+              "bg-softgreen": "#e8f5e9",
+              "bg-lavender": "#f3e5f5",
+              "bg-peach": "#ffe0b2",
+              "bg-mint": "#e0f2f1"
             };
             var bgColor = bgColors[value] || "#ffffff";
             // Automatically calculate contrasting text color
@@ -3455,7 +4287,7 @@
               "font-system": "system"
             };
             onChange({ globalMode: true, globalModeFont: fonts[value] || "system" });
-            // Ensure text color is set when changing font (in case background was already set)
+            // If background color is set, ensure text color contrasts
             var currentPrefs = Store.get(cfg.storageKey) || {};
             var normalized = normalizePrefs(assign(assign({}, PREF_DEFAULTS), currentPrefs));
             if (normalized.globalModeBgColor) {
@@ -3472,6 +4304,12 @@
           if (!normalized.globalMode) return "Off";
           if (normalized.globalModeBgColor === "#f5f5f5") return "Light Gray";
           if (normalized.globalModeBgColor === "#f5f5dc") return "Beige";
+          if (normalized.globalModeBgColor === "#fff8e7") return "Cream";
+          if (normalized.globalModeBgColor === "#e3f2fd") return "Light Blue";
+          if (normalized.globalModeBgColor === "#e8f5e9") return "Soft Green";
+          if (normalized.globalModeBgColor === "#f3e5f5") return "Lavender";
+          if (normalized.globalModeBgColor === "#ffe0b2") return "Peach";
+          if (normalized.globalModeBgColor === "#e0f2f1") return "Mint";
           if (normalized.globalModeFont === "arial") return "Arial";
           if (normalized.globalModeFont === "times") return "Times";
           if (normalized.globalModeFont === "verdana") return "Verdana";
@@ -3547,30 +4385,9 @@
       return btn;
     }
 
-    // Initialize toolbar mode if enabled (default mode)
+    // Initialize toolbar mode if enabled
     if (prefs.toolbarMode) {
       toggleToolbarMode(true, root, controls, cfg, prefs, enhancedOnChange);
-      // Hide toggle button since toolbar is default
-      toggle.style.display = "none";
-      
-      // Ensure toolbar stays floating on initialization
-      setTimeout(function() {
-        if (controls.toolbar) {
-          controls.toolbar.style.setProperty("position", "fixed", "important");
-          controls.toolbar.style.setProperty("bottom", "0px", "important");
-          controls.toolbar.style.setProperty("left", "0px", "important");
-          controls.toolbar.style.setProperty("right", "0px", "important");
-          controls.toolbar.style.setProperty("top", "auto", "important");
-          controls.toolbar.style.setProperty("width", "100%", "important");
-          controls.toolbar.style.setProperty("z-index", String(cfg.zIndex + 1), "important");
-          controls.toolbar.style.setProperty("display", "flex", "important");
-          controls.toolbar.style.setProperty("visibility", "visible", "important");
-        }
-        // Also call ensure floating function if available
-        if (controls.toolbarEnsureFloating) {
-          controls.toolbarEnsureFloating();
-        }
-      }, 100);
     }
 
     // Ensure toolbar persists across tab switches and page visibility changes
@@ -3583,45 +4400,29 @@
           // Check if toolbar exists in DOM
           var existingToolbar = document.getElementById("a11y-widget-toolbar");
           if (existingToolbar) {
-            // Toolbar exists, ensure it's visible and floating with force
-            existingToolbar.style.setProperty("position", "fixed", "important");
-            existingToolbar.style.setProperty("bottom", "0px", "important");
-            existingToolbar.style.setProperty("left", "0px", "important");
-            existingToolbar.style.setProperty("right", "0px", "important");
-            existingToolbar.style.setProperty("top", "auto", "important");
-            existingToolbar.style.setProperty("width", "100%", "important");
-            existingToolbar.style.setProperty("z-index", String(cfg.zIndex + 1), "important");
-            existingToolbar.style.setProperty("display", "flex", "important");
-            existingToolbar.style.setProperty("visibility", "visible", "important");
-            
-            // Ensure toolbar is in body
-            if (existingToolbar.parentNode !== document.body) {
-              document.body.appendChild(existingToolbar);
-            }
-            
+            // Toolbar exists, ensure it's visible
+            existingToolbar.style.display = "flex";
+            existingToolbar.style.visibility = "visible";
             controls.toolbar = existingToolbar;
           } else if (controls.toolbar) {
             // Controls reference exists but DOM element is missing, re-append
             if (controls.toolbar.parentNode !== document.body) {
               document.body.appendChild(controls.toolbar);
             }
-            controls.toolbar.style.setProperty("position", "fixed", "important");
-            controls.toolbar.style.setProperty("bottom", "0px", "important");
-            controls.toolbar.style.setProperty("left", "0px", "important");
-            controls.toolbar.style.setProperty("right", "0px", "important");
-            controls.toolbar.style.setProperty("top", "auto", "important");
-            controls.toolbar.style.setProperty("width", "100%", "important");
-            controls.toolbar.style.setProperty("z-index", String(cfg.zIndex + 1), "important");
-            controls.toolbar.style.setProperty("display", "flex", "important");
-            controls.toolbar.style.setProperty("visibility", "visible", "important");
+            controls.toolbar.style.display = "flex";
+            controls.toolbar.style.visibility = "visible";
           } else {
             // Toolbar doesn't exist, recreate it
             toggleToolbarMode(true, root, controls, cfg, normalized, enhancedOnChange);
           }
-          
-          // Call ensure floating function if available
-          if (controls.toolbarEnsureFloating) {
-            controls.toolbarEnsureFloating();
+        } else {
+          // Toolbar mode is disabled - ensure toolbar is removed
+          var existingToolbar = document.getElementById("a11y-widget-toolbar");
+          if (existingToolbar && existingToolbar.parentNode) {
+            existingToolbar.parentNode.removeChild(existingToolbar);
+          }
+          if (controls.toolbar) {
+            controls.toolbar = null;
           }
         }
       }
@@ -3750,6 +4551,31 @@
     // Check if globalMode is enabled in config or preferences
     var useGlobalMode = cfg.globalMode || prefs.globalMode || false;
     markSurfaces(cfg.surfaces, useGlobalMode);
+    
+    // Apply widget customization after DOM is ready
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", function() {
+        var root = document.getElementById("a11y-widget-root");
+        if (root) {
+          applyWidgetCustomization(prefs, root);
+        }
+        // Apply icon rendering after widget is built
+        setTimeout(function() {
+          var toggle = document.getElementById("a11y-widget-toggle");
+          if (toggle) renderIcon(prefs, toggle);
+        }, 100);
+      });
+    } else {
+      var root = document.getElementById("a11y-widget-root");
+      if (root) {
+        applyWidgetCustomization(prefs, root);
+      }
+      // Apply icon rendering after widget is built
+      setTimeout(function() {
+        var toggle = document.getElementById("a11y-widget-toggle");
+        if (toggle) renderIcon(prefs, toggle);
+      }, 100);
+    }
 
     // Build UI after DOM ready
     function mount() {
@@ -3765,6 +4591,17 @@
           if (delta.globalMode !== undefined) {
             markSurfaces(cfg.surfaces, prefs.globalMode || cfg.globalMode || false);
           }
+          // Apply widget customization if appearance settings changed
+          if (delta.widgetTheme !== undefined || delta.widgetCustomization !== undefined) {
+            var root = document.getElementById("a11y-widget-root");
+            if (root) applyWidgetCustomization(prefs, root);
+          }
+          // Apply icon customization if icon settings changed
+          if (delta.iconSize !== undefined || delta.iconDesign !== undefined || delta.iconStyle !== undefined || delta.iconCustomization !== undefined || delta.iconId !== undefined) {
+            var root = document.getElementById("a11y-widget-root");
+            var toggle = document.getElementById("a11y-widget-toggle");
+            if (toggle) renderIcon(prefs, toggle);
+          }
           Store.set(cfg.storageKey, prefs);
           emit(cfg, "setting_change", { keys: Object.keys(delta) });
           // Update UI controls after preferences change
@@ -3775,6 +4612,13 @@
         function () {
           prefs = normalizePrefs(assign({}, PREF_DEFAULTS));
           applyPrefs(prefs);
+          // Reset widget customization
+          var root = document.getElementById("a11y-widget-root");
+          var toggle = document.getElementById("a11y-widget-toggle");
+          if (root) {
+            applyWidgetCustomization(prefs, root);
+          }
+          if (toggle) renderIcon(prefs, toggle);
           Store.clear(cfg.storageKey);
           emit(cfg, "reset", {});
           // Update UI controls after reset
@@ -3798,11 +4642,28 @@
         setPrefs: function (next) {
           prefs = normalizePrefs(assign(prefs, next || {}));
           applyPrefs(prefs);
+          // Apply widget customization if appearance settings changed
+          if (next && (next.widgetTheme !== undefined || next.widgetCustomization !== undefined)) {
+            var root = document.getElementById("a11y-widget-root");
+            if (root) applyWidgetCustomization(prefs, root);
+          }
+          // Apply icon customization if icon settings changed
+          if (next && (next.iconSize !== undefined || next.iconDesign !== undefined || next.iconStyle !== undefined || next.iconCustomization !== undefined || next.iconId !== undefined)) {
+            var root = document.getElementById("a11y-widget-root");
+            var toggle = document.getElementById("a11y-widget-toggle");
+            if (toggle) renderIcon(prefs, toggle);
+          }
           Store.set(cfg.storageKey, prefs);
         },
         reset: function () {
           prefs = normalizePrefs(assign({}, PREF_DEFAULTS));
           applyPrefs(prefs);
+          var root = document.getElementById("a11y-widget-root");
+          var toggle = document.getElementById("a11y-widget-toggle");
+          if (root) {
+            applyWidgetCustomization(prefs, root);
+          }
+          if (toggle) renderIcon(prefs, toggle);
           Store.clear(cfg.storageKey);
         }
       };
