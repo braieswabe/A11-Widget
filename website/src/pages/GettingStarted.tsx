@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom'
 import CodeBlock from '../components/CodeBlock'
+import { WIDGET_LOADER_URL } from '../constants'
 import './Pages.css'
 
 export default function GettingStarted() {
-  const canonicalCode = `<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.1/a11y-widget-loader.js" defer></script>`
+  const canonicalCode = `<script src="${WIDGET_LOADER_URL}" defer></script>`
 
   const testCode = `<!DOCTYPE html>
 <html lang="en">
@@ -11,7 +12,7 @@ export default function GettingStarted() {
   <meta charset="UTF-8">
   <title>Test Page</title>
   <!-- Just one line - loads everything from GitHub automatically! -->
-  <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.1/a11y-widget-loader.js" defer></script>
+  <script src="${WIDGET_LOADER_URL}" defer></script>
 </head>
 <body>
   <h1>Test Page</h1>
@@ -46,7 +47,7 @@ export default function GettingStarted() {
     surfaces: ["body", "main"]     // CSS selectors
   };
 </script>
-<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.1/a11y-widget-loader.js" defer></script>`} />
+<script src="${WIDGET_LOADER_URL}" defer></script>`} />
         </div>
 
         <h2>Test It</h2>

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import CodeBlock from '../components/CodeBlock'
+import { WIDGET_LOADER_URL } from '../constants'
 import './Pages.css'
 
 interface Tutorial {
@@ -21,7 +22,7 @@ const tutorials: Tutorial[] = [
       {
         title: 'Add Widget Loader Script',
         content: 'Add this single line before </head> or before </body>:',
-        code: `<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.1/a11y-widget-loader.js" defer></script>`
+        code: `<script src="${WIDGET_LOADER_URL}" defer></script>`
       },
       {
         title: 'That\'s It!',
@@ -89,7 +90,7 @@ export default function RootLayout({ children }) {
       <head>
         {/* Just one line - widget loads automatically! */}
         <Script 
-          src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.1/a11y-widget-loader.js" 
+          src="${WIDGET_LOADER_URL}" 
           strategy="afterInteractive"
         />
       </head>
@@ -109,7 +110,7 @@ export default function RootLayout({ children }) {
       {
         title: 'Add Loader Script',
         content: 'Add to public/index.html (simplest method):',
-        code: `<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.1/a11y-widget-loader.js" defer></script>`
+        code: `<script src="${WIDGET_LOADER_URL}" defer></script>`
       },
       {
         title: 'Optional: Custom Button Control',
@@ -139,7 +140,7 @@ const toggleWidget = () => {
         title: 'Edit theme.liquid',
         content: 'Add before </head> in theme.liquid:',
         code: `<!-- Just one line - widget loads automatically! -->
-<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.1/a11y-widget-loader.js" defer></script>`
+<script src="${WIDGET_LOADER_URL}" defer></script>`
       },
       {
         title: 'Optional: Customize Settings',
@@ -150,7 +151,7 @@ const toggleWidget = () => {
     surfaces: ["body", "main"]
   };
 </script>
-<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.1/a11y-widget-loader.js" defer></script>`
+<script src="${WIDGET_LOADER_URL}" defer></script>`
       }
     ]
   },

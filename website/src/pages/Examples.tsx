@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom'
 import CodeBlock from '../components/CodeBlock'
+import { WIDGET_LOADER_URL } from '../constants'
 import './Pages.css'
 
 export default function Examples() {
-  const basicCode = `<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.1/a11y-widget-loader.js" defer></script>`
+  const basicCode = `<script src="${WIDGET_LOADER_URL}" defer></script>`
 
   const advancedCode = `<script>
   window.__A11Y_WIDGET__ = {

@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom'
 import CodeBlock from '../components/CodeBlock'
+import { WIDGET_VERSION, WIDGET_LOADER_URL } from '../constants'
 import './Pages.css'
 
 export default function Home() {
-  const quickStartCode = `<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.1/a11y-widget-loader.js" defer></script>`
+  const quickStartCode = `<script src="${WIDGET_LOADER_URL}" defer></script>`
 
   return (
     <>
@@ -11,6 +12,27 @@ export default function Home() {
         <div className="container">
           <h1>Accessibility Widget v1</h1>
           <p>WCAG 2.1 AA–aligned enhancements for your website. One line to install.</p>
+          <div style={{ 
+            marginTop: '1rem', 
+            marginBottom: '1.5rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '0.5rem'
+          }}>
+            <span style={{
+              display: 'inline-block',
+              padding: '0.25rem 0.75rem',
+              background: 'var(--color-secondary, #007bff)',
+              color: '#fff',
+              borderRadius: '12px',
+              fontSize: '0.875rem',
+              fontWeight: '600',
+              fontFamily: 'system-ui, -apple-system, sans-serif'
+            }}>
+              Current Version: {WIDGET_VERSION}
+            </span>
+          </div>
           <div className="hero-cta">
             <Link to="/download" className="btn btn-primary">Download Example</Link>
             <Link to="/getting-started" className="btn btn-secondary">Installation Guide</Link>

@@ -1,5 +1,6 @@
 import { ReactNode, useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
+import { WIDGET_VERSION, WIDGET_LOADER_URL } from '../constants'
 import './Layout.css'
 
 interface LayoutProps {
@@ -69,7 +70,7 @@ export default function Layout({ children }: LayoutProps) {
       } else {
         // Production: Use versioned tag for reliable CDN delivery
         // Version tags bypass jsDelivr cache (branch URLs are cached for 7 days)
-        loaderUrl = `https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.1/a11y-widget-loader.js`
+        loaderUrl = WIDGET_LOADER_URL
         fallbackUrl = `https://raw.githubusercontent.com/braieswabe/A11-Widget/main/a11y-widget-loader.js`
       }
       
@@ -182,7 +183,7 @@ export default function Layout({ children }: LayoutProps) {
           // Try fallback URL (jsDelivr CDN)
           const fallbackScript = document.createElement('script')
           fallbackScript.id = 'a11y-widget-loader'
-          fallbackScript.src = `https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.1/a11y-widget-loader.js`
+          fallbackScript.src = WIDGET_LOADER_URL
           fallbackScript.defer = true
           
           fallbackScript.onload = () => {
@@ -262,7 +263,7 @@ export default function Layout({ children }: LayoutProps) {
     <>
       <header className="header">
         <nav className="nav">
-          <Link to="/" className="nav-logo">Accessibility Widget v1</Link>
+          <Link to="/" className="nav-logo">Accessibility Widget <span style={{ fontSize: '0.875rem', opacity: 0.8 }}>{WIDGET_VERSION}</span></Link>
           <button 
             className="mobile-menu-toggle" 
             aria-label="Toggle menu" 
@@ -317,7 +318,7 @@ export default function Layout({ children }: LayoutProps) {
             <Link to="/getting-started">Installation</Link>
             <Link to="/download">Download</Link>
           </div>
-          <p>Accessibility Widget v1 — WCAG 2.1 AA-aligned enhancements for supported surfaces only.</p>
+          <p>Accessibility Widget {WIDGET_VERSION} — WCAG 2.1 AA-aligned enhancements for supported surfaces only.</p>
         </div>
       </footer>
     </>
