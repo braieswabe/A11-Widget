@@ -1,5 +1,5 @@
 import { extractToken, hashToken } from '../utils/auth.js';
-import { neon } from '@neondatabase/serverless';
+import { getDb } from '../utils/db.js';
 
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') {
@@ -21,7 +21,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const sql = neon(process.env.NEON_DATABASE_URL);
+    const sql = getDb();
     const tokenHash = hashToken(token);
 
     // Delete token from database

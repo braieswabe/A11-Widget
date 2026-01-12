@@ -1,5 +1,6 @@
-import { neon } from '@neondatabase/serverless';
+import { getDb } from '../utils/db.js';
 import { authenticateAdmin } from '../utils/middleware.js';
+import { invalidateAllowedDomainsCache } from '../utils/domainCheck.js';
 
 // Helper function to validate domain format
 function isValidDomain(domain) {
@@ -30,7 +31,7 @@ function normalizeDomain(domain) {
 // GET /api/admin/domains - List all allowed domains
 async function listDomains(req, res) {
   try {
-    const sql = neon(process.env.NEON_DATABASE_URL);
+    const sql = getDb();
     const { isActive } = req.query;
 
     let query = sql`
@@ -112,7 +113,7 @@ async function createDomain(req, res) {
   }
 
   try {
-    const sql = neon(process.env.NEON_DATABASE_URL);
+    const sql = getDb();
 
     // Check if domain already exists
     const existing = await sql`
@@ -135,6 +136,9 @@ async function createDomain(req, res) {
     `;
 
     const newDomain = result[0];
+
+    // Invalidate cache
+    invalidateAllowedDomainsCache();
 
     return res.status(201).json({
       success: true,

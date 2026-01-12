@@ -1,4 +1,4 @@
-import { neon } from '@neondatabase/serverless';
+import { getDb } from './utils/db.js';
 
 export default async function handler(req, res) {
   // Handle CORS preflight
@@ -29,7 +29,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const sql = neon(process.env.NEON_DATABASE_URL);
+    const sql = getDb();
     await sql`
       INSERT INTO telemetry_events (site_id, event_type, event_data, url, user_agent)
       VALUES (${siteId}, ${event}, ${JSON.stringify(payload || {})}, ${url || null}, ${userAgent || null})

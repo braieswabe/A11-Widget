@@ -1,11 +1,12 @@
-import { neon } from '@neondatabase/serverless';
+import { getDb } from '../utils/db.js';
 import { authenticateAdmin } from '../utils/middleware.js';
 import { hashPassword, generateApiKey, isValidEmail, validatePassword } from '../utils/auth.js';
+import { del } from '../utils/cache.js';
 
 // GET /api/admin/clients - List all clients
 async function listClients(req, res) {
   try {
-    const sql = neon(process.env.NEON_DATABASE_URL);
+    const sql = getDb();
     const { search, isActive } = req.query;
 
     let query = sql`
@@ -107,7 +108,7 @@ async function createClient(req, res) {
   }
 
   try {
-    const sql = neon(process.env.NEON_DATABASE_URL);
+    const sql = getDb();
 
     // Check if email already exists
     const existing = await sql`
@@ -137,6 +138,8 @@ async function createClient(req, res) {
     `;
 
     const client = result[0];
+
+    // Cache will be populated on first access, no need to invalidate here
 
     return res.status(201).json({
       success: true,

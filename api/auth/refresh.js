@@ -1,4 +1,4 @@
-import { neon } from '@neondatabase/serverless';
+import { getDb } from '../utils/db.js';
 import jwt from 'jsonwebtoken';
 import { extractToken, generateToken, hashToken, getClientIp, getUserAgent } from '../utils/auth.js';
 
@@ -22,7 +22,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const sql = neon(process.env.NEON_DATABASE_URL);
+    const sql = getDb();
     
     // Verify old token (allow expired tokens for refresh)
     let decoded;

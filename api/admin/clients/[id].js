@@ -1,13 +1,14 @@
-import { neon } from '@neondatabase/serverless';
+import { getDb } from '../../utils/db.js';
 import { authenticateAdmin } from '../../utils/middleware.js';
 import { hashPassword, generateApiKey, isValidEmail, validatePassword } from '../../utils/auth.js';
+import { del } from '../../utils/cache.js';
 
 // GET /api/admin/clients/:id - Get client details
 async function getClient(req, res) {
   const { id } = req.query;
 
   try {
-    const sql = neon(process.env.NEON_DATABASE_URL);
+    const sql = getDb();
     const result = await sql`
       SELECT 
         c.id,
@@ -57,7 +58,7 @@ async function updateClient(req, res) {
   const { email, password, companyName, siteIds, isActive } = req.body;
 
   try {
-    const sql = neon(process.env.NEON_DATABASE_URL);
+    const sql = getDb();
 
     // Get current client
     const current = await sql`
@@ -129,6 +130,9 @@ async function updateClient(req, res) {
       RETURNING id, email, company_name, site_ids, api_key, is_active, updated_at
     `;
 
+    // Invalidate client cache if client data changed
+    del(`client:${id}`);
+
     return res.status(200).json({
       success: true,
       client: {
@@ -152,7 +156,7 @@ async function deleteClient(req, res) {
   const { id } = req.query;
 
   try {
-    const sql = neon(process.env.NEON_DATABASE_URL);
+    const sql = getDb();
 
     const result = await sql`
       UPDATE clients
@@ -164,6 +168,9 @@ async function deleteClient(req, res) {
     if (result.length === 0) {
       return res.status(404).json({ error: 'Client not found' });
     }
+
+    // Invalidate client cache
+    del(`client:${id}`);
 
     return res.status(200).json({
       success: true,

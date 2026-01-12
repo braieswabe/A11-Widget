@@ -1,11 +1,14 @@
-import { neon } from '@neondatabase/serverless';
+import { getDb, checkDbHealth } from './utils/db.js';
 
 export default async function handler(req, res) {
   try {
     if (process.env.NEON_DATABASE_URL) {
-      const sql = neon(process.env.NEON_DATABASE_URL);
-      await sql`SELECT 1`;
-      return res.status(200).json({ status: 'ok', database: 'connected' });
+      const health = await checkDbHealth();
+      if (health.healthy) {
+        return res.status(200).json({ status: 'ok', database: 'connected' });
+      } else {
+        return res.status(500).json({ status: 'error', database: 'disconnected', error: health.error });
+      }
     }
     return res.status(200).json({ status: 'ok', database: 'not_configured' });
   } catch (error) {

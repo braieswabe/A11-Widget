@@ -1,5 +1,6 @@
-import { neon } from '@neondatabase/serverless';
+import { getDb } from '../utils/db.js';
 import { comparePassword, generateToken, hashToken, getClientIp, getUserAgent, isValidEmail } from '../utils/auth.js';
+import { set } from '../utils/cache.js';
 
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') {
@@ -25,7 +26,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const sql = neon(process.env.NEON_DATABASE_URL);
+    const sql = getDb();
 
     const result = await sql`
       SELECT id, email, password_hash, role, is_active
@@ -38,6 +39,14 @@ export default async function handler(req, res) {
     }
 
     const user = result[0];
+    
+    // Cache the admin user data
+    set(`admin:${user.id}`, {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      is_active: user.is_active
+    });
 
     // Verify password
     const passwordMatch = await comparePassword(password, user.password_hash);

@@ -1,4 +1,4 @@
-import { neon } from '@neondatabase/serverless';
+import { getDb } from '../utils/db.js';
 
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') {
@@ -16,7 +16,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const sql = neon(process.env.NEON_DATABASE_URL);
+    const sql = getDb();
     const result = await sql`
       SELECT config FROM site_configs WHERE site_id = ${siteId}
     `;

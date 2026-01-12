@@ -1,4 +1,7 @@
-import { neon } from '@neondatabase/serverless';
+import { getDb } from './db.js';
+import { get, set, del } from './cache.js';
+
+const CACHE_KEY_ALLOWED_DOMAINS = 'allowed_domains';
 
 /**
  * Middleware to check if the request origin/referer is in the allowed domains list
@@ -7,12 +10,36 @@ import { neon } from '@neondatabase/serverless';
  */
 export async function checkAllowedDomain(req) {
   try {
-    const sql = neon(process.env.NEON_DATABASE_URL);
+    // Try to get from cache first (allow stale cache)
+    let allowedDomains = get(CACHE_KEY_ALLOWED_DOMAINS, true);
     
-    // Get all active allowed domains
-    const allowedDomains = await sql`
-      SELECT domain FROM allowed_domains WHERE is_active = true
-    `;
+    if (!allowedDomains) {
+      // Cache miss, fetch from database
+      try {
+        const sql = getDb();
+        const result = await sql`
+          SELECT domain FROM allowed_domains WHERE is_active = true
+        `;
+        
+        allowedDomains = result;
+        
+        // Cache the result for 5 minutes
+        set(CACHE_KEY_ALLOWED_DOMAINS, allowedDomains);
+      } catch (dbError) {
+        console.error('Database error fetching allowed domains:', dbError);
+        
+        // Try to use stale cache if available
+        allowedDomains = get(CACHE_KEY_ALLOWED_DOMAINS, true);
+        
+        if (!allowedDomains) {
+          // No cache available, fail open (allow all) for availability
+          console.warn('No cached domains available, allowing access');
+          return { allowed: true, reason: 'Database unavailable, no cache available - allowing access' };
+        }
+        
+        console.log('Using stale cache for allowed domains');
+      }
+    }
 
     // If no domains are configured, allow all (backward compatibility)
     if (allowedDomains.length === 0) {
@@ -66,6 +93,14 @@ export async function checkAllowedDomain(req) {
     // On error, allow access (fail open for availability)
     return { allowed: true, reason: 'Error checking domain, allowing access' };
   }
+}
+
+/**
+ * Invalidate the allowed domains cache
+ * Call this when domains are created, updated, or deleted
+ */
+export function invalidateAllowedDomainsCache() {
+  del(CACHE_KEY_ALLOWED_DOMAINS);
 }
 
 /**

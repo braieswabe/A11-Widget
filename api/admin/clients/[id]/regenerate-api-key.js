@@ -1,6 +1,7 @@
-import { neon } from '@neondatabase/serverless';
+import { getDb } from '../../../utils/db.js';
 import { authenticateAdmin } from '../../../utils/middleware.js';
 import { generateApiKey } from '../../../utils/auth.js';
+import { del } from '../../../utils/cache.js';
 
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') {
@@ -20,7 +21,7 @@ export default async function handler(req, res) {
     }
 
     try {
-      const sql = neon(process.env.NEON_DATABASE_URL);
+      const sql = getDb();
 
       // Check if client exists
       const existing = await sql`

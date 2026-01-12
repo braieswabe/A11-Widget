@@ -1,5 +1,6 @@
-import { neon } from '@neondatabase/serverless';
+import { getDb } from '../../utils/db.js';
 import { authenticateAdmin } from '../../utils/middleware.js';
+import { invalidateAllowedDomainsCache } from '../../utils/domainCheck.js';
 
 // Helper function to validate domain format
 function isValidDomain(domain) {
@@ -29,7 +30,7 @@ async function getDomain(req, res) {
   const { id } = req.query;
 
   try {
-    const sql = neon(process.env.NEON_DATABASE_URL);
+    const sql = getDb();
     const result = await sql`
       SELECT 
         d.id,
@@ -73,7 +74,7 @@ async function updateDomain(req, res) {
   const { domain, description, isActive } = req.body;
 
   try {
-    const sql = neon(process.env.NEON_DATABASE_URL);
+    const sql = getDb();
 
     // Get current domain
     const current = await sql`
@@ -128,6 +129,11 @@ async function updateDomain(req, res) {
       RETURNING id, domain, description, is_active, updated_at
     `;
 
+    // Invalidate cache if domain status or domain name changed
+    if (updates.is_active !== undefined || updates.domain) {
+      invalidateAllowedDomainsCache();
+    }
+
     return res.status(200).json({
       success: true,
       domain: {
@@ -149,7 +155,7 @@ async function deleteDomain(req, res) {
   const { id } = req.query;
 
   try {
-    const sql = neon(process.env.NEON_DATABASE_URL);
+    const sql = getDb();
 
     const result = await sql`
       DELETE FROM allowed_domains
@@ -160,6 +166,9 @@ async function deleteDomain(req, res) {
     if (result.length === 0) {
       return res.status(404).json({ error: 'Domain not found' });
     }
+
+    // Invalidate cache
+    invalidateAllowedDomainsCache();
 
     return res.status(200).json({
       success: true,
