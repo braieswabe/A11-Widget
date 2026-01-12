@@ -2796,7 +2796,21 @@
     }
 
     toggle.addEventListener("click", function (e) {
-      // Check authentication before opening panel
+      // Check if we're on Vercel demo site (skip auth for demo)
+      var hostname = window.location.hostname;
+      var isVercelDemo = hostname === 'a11-widget.vercel.app' || 
+                        hostname.endsWith('.vercel.app') ||
+                        hostname === 'localhost' ||
+                        hostname === '127.0.0.1';
+      
+      // Skip authentication check on Vercel demo site
+      if (isVercelDemo) {
+        var expanded = toggle.getAttribute("aria-expanded") === "true";
+        if (expanded) closePanel(); else openPanel();
+        return;
+      }
+      
+      // Check authentication before opening panel (for external websites)
       if (window.__a11yAuth && typeof window.__a11yAuth.checkAuth === "function") {
         window.__a11yAuth.checkAuth().then(function(result) {
           if (result.authenticated) {

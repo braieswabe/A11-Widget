@@ -228,8 +228,23 @@ try {
     }
   }
 
+  // Check if we're on the Vercel trial/demo site (skip auth for demo)
+  function isVercelDemoSite() {
+    var hostname = window.location.hostname;
+    // Skip authentication on Vercel deployment (trial/demo site)
+    return hostname === 'a11-widget.vercel.app' || 
+           hostname.endsWith('.vercel.app') ||
+           hostname === 'localhost' ||
+           hostname === '127.0.0.1';
+  }
+
   // Check authentication status
   function checkAuth() {
+    // Skip authentication check on Vercel demo site
+    if (isVercelDemoSite()) {
+      return Promise.resolve({ authenticated: true, client: { demo: true } });
+    }
+    
     var token = getStoredToken();
     
     if (!token) {
@@ -565,6 +580,12 @@ try {
   // Intercept widget button clicks to check authentication
   // This will run after widget loads
   function setupAuthInterceptor() {
+    // Skip auth interceptor on Vercel demo site (no authentication required)
+    if (isVercelDemoSite()) {
+      console.log('[A11Y] Demo site detected - authentication disabled');
+      return;
+    }
+    
     // Wait for widget to load, then intercept button clicks
     var checkInterval = setInterval(function() {
       var toggleButton = document.getElementById("a11y-widget-toggle");
