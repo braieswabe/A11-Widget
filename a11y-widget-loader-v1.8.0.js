@@ -110,7 +110,7 @@ try {
       return null;
     })
     .catch(function(error) {
-      console.error("[A11Y Auth] Token validation error:", error);
+      // Silently handle network errors - don't log to avoid confusion
       return null;
     });
   }
