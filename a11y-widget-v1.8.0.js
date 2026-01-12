@@ -2866,7 +2866,7 @@
             var expanded = toggle.getAttribute("aria-expanded") === "true";
             if (expanded) closePanel(); else openPanel();
           } else {
-            // Not authenticated, show login modal
+            // Not authenticated, show login modal immediately
             if (window.__a11yAuth && typeof window.__a11yAuth.showLoginModal === "function") {
               window.__a11yAuth.showLoginModal();
             } else {
@@ -2875,10 +2875,13 @@
             }
           }
         }).catch(function(error) {
-          console.error("[A11Y Widget] Auth check error:", error);
-          // On error, show login modal as fallback
+          // On any error (including 401), show login modal instead of error
+          console.log("[A11Y Widget] Auth check failed, showing login modal:", error);
           if (window.__a11yAuth && typeof window.__a11yAuth.showLoginModal === "function") {
             window.__a11yAuth.showLoginModal();
+          } else {
+            // Fallback: dispatch event to trigger login
+            window.dispatchEvent(new CustomEvent("a11y-auth-required"));
           }
         });
       } else {

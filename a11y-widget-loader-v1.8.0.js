@@ -252,7 +252,7 @@ try {
 
   // Check authentication status
   function checkAuth() {
-    // Skip authentication check on Vercel demo site
+    // Skip authentication check on trusted domains
     if (isVercelDemoSite()) {
       return Promise.resolve({ authenticated: true, client: { demo: true } });
     }
@@ -267,6 +267,12 @@ try {
       if (result && result.valid) {
         return { authenticated: true, client: result.client };
       }
+      // Token invalid or expired, remove it
+      removeToken();
+      return { authenticated: false };
+    }).catch(function(error) {
+      // On any error (including 401), treat as not authenticated and prompt for login
+      console.log("[A11Y Auth] Auth check failed, will prompt for login:", error);
       removeToken();
       return { authenticated: false };
     });
@@ -616,14 +622,15 @@ try {
             // Check authentication before opening panel
             checkAuth().then(function(result) {
               if (!result.authenticated) {
-                // Not authenticated, prevent widget from opening and show login
+                // Not authenticated, prevent widget from opening and show login modal immediately
                 e.stopImmediatePropagation();
                 e.preventDefault();
                 showLoginModal();
               }
               // If authenticated, allow default behavior (widget will handle it)
             }).catch(function(error) {
-              console.error("[A11Y] Auth check error:", error);
+              // On any error (including 401), show login modal instead of error
+              console.log("[A11Y] Auth check failed, showing login modal:", error);
               e.stopImmediatePropagation();
               e.preventDefault();
               showLoginModal();
