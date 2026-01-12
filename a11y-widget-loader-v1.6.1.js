@@ -1,8 +1,8 @@
-/*! a11y-widget-loader.js — Zero-Config Loader v1.6
+/*! a11y-widget-loader-v1.6.1.js — Zero-Config Loader v1.6.1
     Just include this single script tag and the widget loads automatically from GitHub!
     
     Usage:
-    <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.1/a11y-widget-loader.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.1/a11y-widget-loader-v1.6.1.js" defer></script>
     
     Or use the full widget file:
     <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.1/a11y-widget.js" defer></script>

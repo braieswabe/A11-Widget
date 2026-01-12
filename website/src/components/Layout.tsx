@@ -51,7 +51,7 @@ export default function Layout({ children }: LayoutProps) {
       // Always use versioned CDN URL to ensure latest version
       // Version tags bypass jsDelivr cache (branch URLs are cached for 7 days)
       const loaderUrl = WIDGET_LOADER_URL
-      const fallbackUrl = `https://raw.githubusercontent.com/braieswabe/A11-Widget/main/a11y-widget-loader.js`
+      const fallbackUrl = `https://raw.githubusercontent.com/braieswabe/A11-Widget/main/a11y-widget-loader-v1.6.1.js`
       
       loaderScript.src = loaderUrl
       loaderScript.defer = true // Defer ensures script runs after DOM is parsed

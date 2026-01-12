@@ -19,7 +19,7 @@ export default function Examples() {
     telemetryEndpoint: "/api/telemetry"
   };
 </script>
-<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.1/a11y-widget-loader.js" defer></script>`
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.1/a11y-widget-loader-v1.6.1.js" defer></script>`
 
   const blogSurfaces = `surfaces: [
   "body",
