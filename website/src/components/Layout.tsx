@@ -150,66 +150,61 @@ export default function Layout({ children }: LayoutProps) {
       }
       
       loaderScript.onerror = () => {
-        // Try fallback to jsDelivr CDN if raw GitHub fails
-        if (!isDev) {
-          console.warn('Failed to load widget loader from raw GitHub, trying jsDelivr CDN fallback...')
+        // Try fallback to raw GitHub if jsDelivr CDN fails
+        console.warn('Failed to load widget loader from jsDelivr CDN, trying GitHub raw fallback...')
+        
+        // Remove failed script
+        if (loaderScript.parentNode) {
+          loaderScript.parentNode.removeChild(loaderScript)
+        }
+        
+        // Try fallback URL (raw GitHub)
+        const fallbackScript = document.createElement('script')
+        fallbackScript.id = 'a11y-widget-loader'
+        fallbackScript.src = fallbackUrl
+        fallbackScript.defer = true
+        
+        fallbackScript.onload = () => {
+          // Use the same loading logic as the main script
+          let attempts = 0
+          const maxAttempts = 60
           
-          // Remove failed script
-          if (loaderScript.parentNode) {
-            loaderScript.parentNode.removeChild(loaderScript)
-          }
-          
-          // Try fallback URL (jsDelivr CDN)
-          const fallbackScript = document.createElement('script')
-          fallbackScript.id = 'a11y-widget-loader'
-          fallbackScript.src = WIDGET_LOADER_URL
-          fallbackScript.defer = true
-          
-          fallbackScript.onload = () => {
-            // Use the same loading logic as the main script
-            let attempts = 0
-            const maxAttempts = 60
+          const checkWidget = setInterval(() => {
+            attempts++
             
-            const checkWidget = setInterval(() => {
-              attempts++
-              
-              if (window.__a11yWidget?.__loaded) {
-                setWidgetLoaded(true)
-                clearInterval(checkWidget)
-                return
+            if (window.__a11yWidget?.__loaded) {
+              setWidgetLoaded(true)
+              clearInterval(checkWidget)
+              return
+            }
+            
+            if (document.getElementById('a11y-widget-toggle') || document.getElementById('a11y-widget-root')) {
+              setWidgetLoaded(true)
+              clearInterval(checkWidget)
+              return
+            }
+            
+            if (attempts >= maxAttempts) {
+              clearInterval(checkWidget)
+              if (!window.__a11yWidget?.__loaded && !document.getElementById('a11y-widget-toggle')) {
+                setWidgetError('Widget failed to initialize. Check browser console for errors.')
+                console.error('Widget initialization timeout. Check if CSS/JS loaded correctly.')
               }
-              
-              if (document.getElementById('a11y-widget-toggle') || document.getElementById('a11y-widget-root')) {
-                setWidgetLoaded(true)
-                clearInterval(checkWidget)
-                return
-              }
-              
-              if (attempts >= maxAttempts) {
-                clearInterval(checkWidget)
-                if (!window.__a11yWidget?.__loaded && !document.getElementById('a11y-widget-toggle')) {
-                  setWidgetError('Widget failed to initialize. Check browser console for errors.')
-                  console.error('Widget initialization timeout. Check if CSS/JS loaded correctly.')
-                }
-              }
-            }, 100)
-          }
-          
-          fallbackScript.onerror = () => {
-            setWidgetError('Failed to load widget loader script from both sources')
-            console.error('Failed to load accessibility widget loader from both raw GitHub and jsDelivr CDN')
-          }
-          
-          // Insert fallback script
-          const firstScript = document.getElementsByTagName('script')[0]
-          if (firstScript?.parentNode) {
-            firstScript.parentNode.insertBefore(fallbackScript, firstScript)
-          } else {
-            document.head.appendChild(fallbackScript)
-          }
+            }
+          }, 100)
+        }
+        
+        fallbackScript.onerror = () => {
+          setWidgetError('Failed to load widget loader script from both sources')
+          console.error('Failed to load accessibility widget loader from both:', loaderUrl, 'and', fallbackUrl)
+        }
+        
+        // Insert fallback script
+        const firstScript = document.getElementsByTagName('script')[0]
+        if (firstScript?.parentNode) {
+          firstScript.parentNode.insertBefore(fallbackScript, firstScript)
         } else {
-          setWidgetError('Failed to load widget loader script')
-          console.error('Failed to load accessibility widget loader from:', loaderUrl)
+          document.head.appendChild(fallbackScript)
         }
       }
       
