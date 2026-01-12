@@ -94,11 +94,11 @@ export default function Layout({ children }: LayoutProps) {
       
       // Use local files on Vercel/devel, CDN in production
       const widgetUrl = useLocalFiles 
-        ? '/a11y-widget-v1.7.0.js?v=' + Date.now()
+        ? '/a11y-widget-v1.8.0.js?v=' + Date.now()
         : WIDGET_SCRIPT_URL + '?v=' + Date.now()
       const fallbackUrl = useLocalFiles
-        ? '/a11y-widget.js?v=' + Date.now() // Fallback to original in dev/Vercel
-        : WIDGET_SCRIPT_URL_FALLBACK + '?v=' + Date.now() // Fallback to original widget file
+        ? '/a11y-widget-v1.7.0.js?v=' + Date.now() // Fallback to v1.7.0 in dev/Vercel
+        : WIDGET_SCRIPT_URL_FALLBACK + '?v=' + Date.now() // Fallback to v1.7.0 widget file
       
       widgetScript.src = widgetUrl
       widgetScript.defer = true // Defer ensures script runs after DOM is parsed

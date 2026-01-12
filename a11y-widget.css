@@ -72,6 +72,8 @@ html[data-a11y][data-a11y-global-mode="1"] {
   font-family: var(--a11y-global-font-family, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Noto Sans", "Liberation Sans", sans-serif) !important;
   /* Override background color globally */
   background-color: var(--a11y-global-bg-color, #ffffff) !important;
+  /* Override text color globally (automatically calculated for contrast) */
+  color: var(--a11y-global-text-color, #000000) !important;
 }
 
 /* Global Mode Font Families */
@@ -115,6 +117,44 @@ html[data-a11y][data-a11y-global-mode="1"] * {
   line-height: var(--a11y-line-height, 1.4) !important;
   /* Global background color (can be overridden by contrast modes) */
   background-color: var(--a11y-global-bg-color, var(--a11y-color-bg)) !important;
+  /* Global text color (automatically calculated for contrast) */
+  color: var(--a11y-global-text-color, #000000) !important;
+}
+
+/* Ensure links remain visible with appropriate contrast */
+html[data-a11y][data-a11y-global-mode="1"] a {
+  color: var(--a11y-global-text-color, #000000) !important;
+  text-decoration: underline;
+  text-decoration-color: var(--a11y-global-text-color, #000000);
+  opacity: 0.8;
+}
+
+html[data-a11y][data-a11y-global-mode="1"] a:hover,
+html[data-a11y][data-a11y-global-mode="1"] a:focus {
+  opacity: 1;
+  text-decoration-thickness: 2px;
+}
+
+/* Ensure buttons and inputs have proper contrast */
+html[data-a11y][data-a11y-global-mode="1"] button,
+html[data-a11y][data-a11y-global-mode="1"] input,
+html[data-a11y][data-a11y-global-mode="1"] select,
+html[data-a11y][data-a11y-global-mode="1"] textarea {
+  color: var(--a11y-global-text-color, #000000) !important;
+  border-color: var(--a11y-global-text-color, #000000) !important;
+  opacity: 0.7;
+}
+
+html[data-a11y][data-a11y-global-mode="1"] button:hover,
+html[data-a11y][data-a11y-global-mode="1"] button:focus,
+html[data-a11y][data-a11y-global-mode="1"] input:hover,
+html[data-a11y][data-a11y-global-mode="1"] input:focus,
+html[data-a11y][data-a11y-global-mode="1"] select:hover,
+html[data-a11y][data-a11y-global-mode="1"] select:focus,
+html[data-a11y][data-a11y-global-mode="1"] textarea:hover,
+html[data-a11y][data-a11y-global-mode="1"] textarea:focus {
+  opacity: 1;
+  border-color: var(--a11y-global-text-color, #000000) !important;
 }
 
 html[data-a11y][data-a11y-global-mode="1"][data-a11y-readable-font="1"] * {
@@ -1525,11 +1565,13 @@ html[data-a11y][data-a11y-contrast="dark"] #a11y-widget-toggle:focus-visible{
 
 /* Toolbar Mode - Floating Bottom Toolbar */
 #a11y-widget-toolbar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  display: flex;
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  top: auto !important;
+  width: 100% !important;
+  display: flex !important;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
@@ -1537,16 +1579,19 @@ html[data-a11y][data-a11y-contrast="dark"] #a11y-widget-toggle:focus-visible{
   background: linear-gradient(180deg, rgba(19, 75, 95, 0.98) 0%, rgba(15, 62, 85, 0.98) 100%);
   backdrop-filter: blur(10px);
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3), 0 -2px 8px rgba(0, 0, 0, 0.2);
-  z-index: 2147482999;
+  z-index: 2147482999 !important;
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   visibility: visible !important;
-  /* Ensure toolbar persists across tab switches */
+  /* Ensure toolbar persists across tab switches and always stays floating */
   will-change: transform;
   transform: translateZ(0);
+  /* Prevent any layout shifts */
+  margin: 0 !important;
+  box-sizing: border-box !important;
 }
 
 #a11y-widget-toolbar::-webkit-scrollbar {
@@ -1767,6 +1812,20 @@ html[data-a11y][data-a11y-contrast="dark"] #a11y-widget-toggle:focus-visible{
   position: fixed !important;
   z-index: 2147482999 !important;
   bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  display: flex !important;
+  visibility: visible !important;
+}
+
+/* Ensure dropdown menus are properly positioned */
+.a11y-toolbar-dropdown-menu {
+  position: fixed !important;
+  z-index: 2147483000 !important;
+  max-height: 300px;
+  overflow-y: auto;
+  min-width: 180px;
 }
 
 /* Responsive toolbar */

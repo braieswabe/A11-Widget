@@ -19,8 +19,8 @@ export default function Examples() {
     telemetryEndpoint: "/api/telemetry"
   };
 </script>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.7.0/a11y-widget.css">
-<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.7.0/a11y-widget-v1.7.0.js" defer></script>`
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.8.0/a11y-widget.css">
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.8.0/a11y-widget-v1.8.0.js" defer></script>`
 
   const blogSurfaces = `surfaces: [
   "body",

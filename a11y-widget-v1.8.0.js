@@ -1,4 +1,19 @@
-/*! a11y-widget-v1.7.0.js — Accessibility Widget v1.7.0 (IIFE, no deps)
+/*! a11y-widget-v1.8.0.js — Accessibility Widget v1.8.0 (IIFE, no deps)
+    Version 1.8.0 Changes:
+    - Toolbar is now the default widget mode (replaces panel as default)
+    - Enhanced toolbar floating: Toolbar always stays fixed at bottom, never gets left behind
+    - Added dropdown menus for Cursor, Global Mode, and Margins with smart options
+    - Cursor dropdown: Off, Small, Medium, Large, Extra Large options
+    - Global Mode dropdown: Background colors (White, Light Gray, Beige) and Font options (Arial, Times, Verdana, System)
+    - Margins dropdown: Off, Small (20px), Medium (50px), Large (100px), Extra Large (150px), Maximum (200px)
+    - Automatic text color adjustment: Global Mode background colors automatically adjust font color for optimal contrast
+    - Improved dropdown positioning: Dropdowns use fixed positioning and appear above toolbar buttons
+    - Enhanced toolbar persistence: Multiple floating checks ensure toolbar never moves (100ms interval, scroll/resize/wheel listeners)
+    - Panel now only accessible via Settings button in toolbar (toggle button hidden when toolbar is active)
+    - Authentication-aware toolbar: Shows only login button when not authenticated, all features after authentication
+    - Text-to-Speech enhancement: Reads selected text when clicked in toolbar, toggles mode if no selection
+    - Cursor outline: Added contrasting outline based on cursor color for better visibility
+    
     Version 1.7.0 Changes:
     - Added Toolbar Mode: Floating bottom toolbar with icon-based quick access to all features
     - Added Keyboard Instructions section in widget panel showing available shortcuts
@@ -6,13 +21,14 @@
     - Enhanced toolbar with color-coded buttons for different feature types
     - Improved responsive design for mobile devices
     - Toolbar mode preference is saved and persists across sessions
+    
     Scope: widget UI + configured surfaces only.
     No claims of full-site ADA compliance.
     
     GitHub Repository: https://github.com/braieswabe/A11-Widget
     CDN: https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/
     
-    Note: For version 1.7.0 with toolbar mode and keyboard instructions, use a11y-widget-v1.7.0.js
+    Note: For version 1.8.0 with enhanced toolbar and dropdown menus, use a11y-widget-v1.8.0.js
 */
 (function () {
   "use strict";
