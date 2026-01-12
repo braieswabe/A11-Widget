@@ -66,6 +66,12 @@
     return Math.max(min, Math.min(max, n));
   }
 
+  function normalizeHexColor(value, fallback) {
+    if (typeof value !== "string") return fallback;
+    var v = value.trim();
+    return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(v) ? v : fallback;
+  }
+
   function safeJSONParse(v) {
     try { return JSON.parse(v); } catch (e) { return null; }
   }
@@ -130,7 +136,8 @@
     marginsEnabled: false,
     marginsSize: 0,                  // Margin size in pixels (0–200)
     cursorEnabled: false,
-    cursorSize: "normal",            // normal|large|extra-large
+    cursorSize: "medium",            // small|medium|large|extra-large
+    cursorColor: "#ffffff",          // Cursor color (hex)
     dictionaryEnabled: false,
     magnifierEnabled: false,
     magnifierZoom: 2.0               // Zoom level (1.5–5.0)
@@ -138,6 +145,12 @@
 
   function normalizePrefs(p) {
     p = p || {};
+    var cursorSize = (p.cursorSize === "small" || p.cursorSize === "medium" || p.cursorSize === "large" || p.cursorSize === "extra-large")
+      ? p.cursorSize
+      : "medium";
+    if (!!p.cursorEnabled && !cursorSize) {
+      cursorSize = "medium";
+    }
     var out = {
       contrast: (p.contrast === "high" || p.contrast === "dark" || p.contrast === "light") ? p.contrast : "default",
       fontScale: clamp(Number(p.fontScale || 1.0), 1.0, 1.6),
@@ -165,7 +178,8 @@
       marginsEnabled: !!p.marginsEnabled,
       marginsSize: clamp(Number(p.marginsSize || 0), 0, 200),
       cursorEnabled: !!p.cursorEnabled,
-      cursorSize: (p.cursorSize === "large" || p.cursorSize === "extra-large") ? p.cursorSize : "normal",
+      cursorSize: cursorSize,
+      cursorColor: normalizeHexColor(p.cursorColor, PREF_DEFAULTS.cursorColor),
       dictionaryEnabled: !!p.dictionaryEnabled,
       magnifierEnabled: !!p.magnifierEnabled,
       magnifierZoom: clamp(Number(p.magnifierZoom || 2.0), 1.5, 5.0),
@@ -202,6 +216,7 @@
     html.style.setProperty("--a11y-screen-mask-radius", String(prefs.screenMaskRadius) + "px");
     html.style.setProperty("--a11y-margins-size", String(prefs.marginsSize) + "px");
     html.style.setProperty("--a11y-magnifier-zoom", String(prefs.magnifierZoom));
+    html.style.setProperty("--a11y-cursor-color", prefs.cursorColor || PREF_DEFAULTS.cursorColor);
     
     // Initialize/remove reading aids dynamically
     if (prefs.readingRulerEnabled) {
@@ -223,7 +238,7 @@
     }
     
     // Initialize/remove custom cursor
-    if (prefs.cursorEnabled && prefs.cursorSize && prefs.cursorSize !== "normal") {
+    if (prefs.cursorEnabled && prefs.cursorSize) {
       createCustomCursor(prefs);
     } else {
       removeCustomCursor();
@@ -638,11 +653,12 @@
     // Create content container that holds the cloned/transformed content
     magnifierContent = document.createElement("div");
     magnifierContent.style.cssText = 
-      "width: " + (size * 3) + "px; " +
-      "height: " + (size * 3) + "px; " +
+      "width: " + size + "px; " +
+      "height: " + size + "px; " +
       "position: absolute; " +
       "top: 50%; " +
       "left: 50%; " +
+      "transform: translate(-50%, -50%); " +
       "transform-origin: center center; " +
       "pointer-events: none; " +
       "background: #fff;";
@@ -769,20 +785,21 @@
     
     // Create a viewport for the magnified content
     var viewport = document.createElement("div");
+    var targetX = mouseX + scrollX;
+    var targetY = mouseY + scrollY;
     viewport.style.cssText = 
       "position: absolute; " +
       "width: " + document.documentElement.scrollWidth + "px; " +
       "height: " + document.documentElement.scrollHeight + "px; " +
-      "transform: scale(" + zoomLevel + "); " +
-      "transform-origin: " + (mouseX + scrollX) + "px " + (mouseY + scrollY) + "px; " +
-      "left: " + (size/2 - (mouseX + scrollX) * zoomLevel) + "px; " +
-      "top: " + (size/2 - (mouseY + scrollY) * zoomLevel) + "px; " +
+      "transform-origin: 0 0; " +
+      "transform: translate(" + (size / 2 - targetX * zoomLevel) + "px, " + (size / 2 - targetY * zoomLevel) + "px) scale(" + zoomLevel + "); " +
+      "left: 0; " +
+      "top: 0; " +
       "pointer-events: none; " +
       "background: #fff;";
     
     // Clone visible elements near the mouse cursor
-    var radius = Math.max(size / zoomLevel, 150);
-    var elementsInArea = getElementsInArea(mouseX + scrollX, mouseY + scrollY, radius);
+    var elementsInArea = getElementsInArea(mouseX + scrollX, mouseY + scrollY, areaWidth, areaHeight);
     
     elementsInArea.forEach(function(el) {
       try {
@@ -828,9 +845,13 @@
     magnifierContent.appendChild(viewport);
   }
   
-  function getElementsInArea(centerX, centerY, radius) {
+  function getElementsInArea(centerX, centerY, areaWidth, areaHeight) {
     var elements = [];
     var allElements = document.body.querySelectorAll("*");
+    var leftBound = centerX - areaWidth / 2;
+    var rightBound = centerX + areaWidth / 2;
+    var topBound = centerY - areaHeight / 2;
+    var bottomBound = centerY + areaHeight / 2;
     
     for (var i = 0; i < allElements.length; i++) {
       var el = allElements[i];
@@ -842,13 +863,13 @@
       var scrollX = window.pageXOffset || document.documentElement.scrollLeft;
       var scrollY = window.pageYOffset || document.documentElement.scrollTop;
       
-      var elCenterX = rect.left + scrollX + rect.width / 2;
-      var elCenterY = rect.top + scrollY + rect.height / 2;
+      var elLeft = rect.left + scrollX;
+      var elRight = rect.right + scrollX;
+      var elTop = rect.top + scrollY;
+      var elBottom = rect.bottom + scrollY;
       
-      // Check if element is within the radius
-      var distance = Math.sqrt(Math.pow(centerX - elCenterX, 2) + Math.pow(centerY - elCenterY, 2));
-      
-      if (distance < radius + Math.max(rect.width, rect.height) / 2) {
+      // Check if element intersects the magnified area
+      if (elRight >= leftBound && elLeft <= rightBound && elBottom >= topBound && elTop <= bottomBound) {
         // Only include leaf nodes or elements with direct text
         if (el.children.length === 0 || el.textContent.trim().length < 200) {
           elements.push(el);
@@ -885,7 +906,7 @@
   function createCustomCursor(prefs) {
     removeCustomCursor(); // Clean up any existing cursor
     
-    var cursorSize = prefs.cursorSize || "large";
+    var cursorSize = prefs.cursorSize || "medium";
     
     // Create custom cursor element
     customCursorElement = document.createElement("div");
@@ -1465,11 +1486,9 @@
       }
     }
     
-    // Update spacing radios
-    if (controls.spacingRadios) {
-      for (var i = 0; i < controls.spacingRadios.length; i++) {
-        controls.spacingRadios[i].checked = (controls.spacingRadios[i].value === prefs.spacing);
-      }
+    // Update spacing select
+    if (controls.spacingSelect) {
+      controls.spacingSelect.value = prefs.spacing || "normal";
     }
     
     // Update readable font checkbox
@@ -1500,6 +1519,18 @@
     }
     if (controls.cursorCheckbox !== undefined) {
       controls.cursorCheckbox.checked = !!prefs.cursorEnabled;
+    }
+    if (controls.cursorSizeSelect) {
+      controls.cursorSizeSelect.value = prefs.cursorSize || "medium";
+    }
+    if (controls.cursorColorInput !== undefined) {
+      controls.cursorColorInput.value = prefs.cursorColor || PREF_DEFAULTS.cursorColor;
+    }
+    if (controls.cursorColorTextInput !== undefined) {
+      controls.cursorColorTextInput.value = prefs.cursorColor || PREF_DEFAULTS.cursorColor;
+    }
+    if (controls.updateCursorSizeControls && controls.cursorCheckbox) {
+      controls.updateCursorSizeControls(controls.cursorCheckbox.checked);
     }
     if (controls.magnifierCheckbox !== undefined) {
       controls.magnifierCheckbox.checked = !!prefs.magnifierEnabled;
@@ -1557,7 +1588,7 @@
       contrastSelect: null,
       fontRange: null,
       fontValue: null,
-      spacingRadios: [],
+      spacingSelect: null,
       readableFontCheckbox: null,
       reduceMotionCheckbox: null,
       // Advanced features
@@ -1567,6 +1598,11 @@
       textOnlyModeCheckbox: null,
       marginsCheckbox: null,
       cursorCheckbox: null,
+      cursorSizeSelect: null,
+      cursorSizeControlsContainer: null,
+      updateCursorSizeControls: null,
+      cursorColorInput: null,
+      cursorColorTextInput: null,
       magnifierCheckbox: null,
       magnifierZoomSlider: null,
       magnifierControlsContainer: null,
@@ -1703,39 +1739,31 @@
       content.appendChild(sizeRow);
     }
 
-    // Spacing preset radios
+    // Spacing preset dropdown
     if (cfg.features.spacing) {
       var spacingRow = el("div", { class: "a11y-widget-row" });
-      var fs = el("fieldset", { class: "a11y-widget-fieldset" });
-      fs.appendChild(el("legend", { class: "a11y-widget-label", text: "📐 Text Spacing" }));
-      var group = el("div", { class: "a11y-widget-radio-group" });
+      spacingRow.appendChild(el("label", { for: "a11y-spacing", text: "📐 Text Spacing" }));
+      var spacingSelect = el("select", { 
+        id: "a11y-spacing", 
+        name: "spacing", 
+        class: "a11y-widget-select",
+        "aria-label": "Select text spacing mode"
+      });
+      controls.spacingSelect = spacingSelect;
       var spacingOpts = [
         ["normal", "Normal"],
         ["comfortable", "Comfortable"],
         ["max", "Max"]
       ];
       for (var s = 0; s < spacingOpts.length; s++) {
-        var id = "a11y-spacing-" + spacingOpts[s][0];
-        var radioWrapper = el("div", { class: "a11y-widget-radio-wrapper" });
-        var r = el("input", { 
-          id: id, 
-          type: "radio", 
-          name: "a11y-spacing", 
-          value: spacingOpts[s][0],
-          class: "a11y-widget-radio"
-        });
-        if (prefs.spacing === spacingOpts[s][0]) r.checked = true;
-        controls.spacingRadios.push(r);
-        r.addEventListener("change", function (ev) {
-          if (ev.target && ev.target.checked) onChange({ spacing: ev.target.value });
-        });
-        var l = el("label", { for: id, class: "a11y-widget-radio-label", text: spacingOpts[s][1] });
-        radioWrapper.appendChild(r);
-        radioWrapper.appendChild(l);
-        group.appendChild(radioWrapper);
+        var opt = el("option", { value: spacingOpts[s][0], text: spacingOpts[s][1] });
+        if (prefs.spacing === spacingOpts[s][0]) opt.selected = true;
+        spacingSelect.appendChild(opt);
       }
-      fs.appendChild(group);
-      spacingRow.appendChild(fs);
+      spacingSelect.addEventListener("change", function () {
+        onChange({ spacing: spacingSelect.value });
+      });
+      spacingRow.appendChild(spacingSelect);
       spacingRow.appendChild(el("div", { 
         class: "a11y-widget-help", 
         text: "Adjust line height, letter spacing, word spacing, and paragraph spacing for easier reading." 
@@ -2122,11 +2150,109 @@
         "a11y-cursor",
         "🖱️ Large Cursor",
         prefs.cursorEnabled,
-        function (v) { onChange({ cursorEnabled: v }); },
+        function (v) {
+          onChange({ cursorEnabled: v });
+          updateCursorSizeControls(v);
+        },
         "Increase cursor size for better visibility."
       );
       controls.cursorCheckbox = cursorRow.checkbox;
       content.appendChild(cursorRow.row);
+
+      var cursorSizeControlsContainer = el("div", { 
+        id: "a11y-cursor-size-controls",
+        class: "a11y-widget-row",
+        style: "margin-top: 0.5rem; padding-left: 1.5rem; display: " + (prefs.cursorEnabled ? "block" : "none") + ";"
+      });
+      var cursorSizeRow = el("div", { class: "a11y-widget-row", style: "margin-bottom: 0.75rem;" });
+      cursorSizeRow.appendChild(el("label", { 
+        for: "a11y-cursor-size", 
+        text: "Cursor Size", 
+        style: "font-size: 12px; display: block; margin-bottom: 0.4rem;" 
+      }));
+      var cursorSizeSelect = el("select", {
+        id: "a11y-cursor-size",
+        name: "cursor-size",
+        class: "a11y-widget-select",
+        style: "width: 100%;",
+        "aria-label": "Select cursor size"
+      });
+      controls.cursorSizeSelect = cursorSizeSelect;
+      var cursorSizes = [
+        ["small", "Small"],
+        ["medium", "Medium"],
+        ["large", "Large"],
+        ["extra-large", "Extra Large"]
+      ];
+      for (var c = 0; c < cursorSizes.length; c++) {
+        var opt = el("option", { value: cursorSizes[c][0], text: cursorSizes[c][1] });
+        if (prefs.cursorSize === cursorSizes[c][0]) opt.selected = true;
+        cursorSizeSelect.appendChild(opt);
+      }
+      cursorSizeSelect.addEventListener("change", function () {
+        onChange({ cursorSize: cursorSizeSelect.value, cursorEnabled: true });
+      });
+      cursorSizeRow.appendChild(cursorSizeSelect);
+      cursorSizeControlsContainer.appendChild(cursorSizeRow);
+
+      var cursorColorRow = el("div", { class: "a11y-widget-row", style: "margin-top: 0.5rem;" });
+      cursorColorRow.appendChild(el("label", { 
+        for: "a11y-cursor-color", 
+        text: "🎨 Cursor Color", 
+        style: "font-size: 12px; display: block; margin-bottom: 0.4rem;" 
+      }));
+      var cursorColorWrap = el("div", { style: "display: flex; gap: 0.5rem; align-items: center;" });
+      var cursorColorInput = el("input", {
+        id: "a11y-cursor-color",
+        type: "color",
+        value: prefs.cursorColor || PREF_DEFAULTS.cursorColor,
+        style: "width: 60px; height: 40px; border: 1px solid var(--a11y-color-border); border-radius: 4px; cursor: pointer;",
+        "aria-label": "Select cursor color"
+      });
+      controls.cursorColorInput = cursorColorInput;
+      var cursorColorTextInput = el("input", {
+        id: "a11y-cursor-color-text",
+        type: "text",
+        value: prefs.cursorColor || PREF_DEFAULTS.cursorColor,
+        placeholder: "#ffffff",
+        style: "flex: 1; padding: 0.5rem; font-size: 12px; border: 1px solid var(--a11y-color-border); border-radius: 4px; font-family: monospace;",
+        "aria-label": "Cursor color hex code"
+      });
+      controls.cursorColorTextInput = cursorColorTextInput;
+      var updateCursorColor = function(color) {
+        var normalized = normalizeHexColor(color, PREF_DEFAULTS.cursorColor);
+        cursorColorInput.value = normalized;
+        cursorColorTextInput.value = normalized;
+        onChange({ cursorColor: normalized, cursorEnabled: true });
+      };
+      cursorColorInput.addEventListener("input", function() {
+        updateCursorColor(cursorColorInput.value);
+      });
+      cursorColorTextInput.addEventListener("change", function() {
+        updateCursorColor(cursorColorTextInput.value);
+      });
+      cursorColorWrap.appendChild(cursorColorInput);
+      cursorColorWrap.appendChild(cursorColorTextInput);
+      cursorColorRow.appendChild(cursorColorWrap);
+      cursorColorRow.appendChild(el("div", { 
+        class: "a11y-widget-help", 
+        text: "Set a high-contrast cursor color for visibility." 
+      }));
+      cursorSizeControlsContainer.appendChild(cursorColorRow);
+
+      cursorSizeControlsContainer.appendChild(el("div", { 
+        class: "a11y-widget-help", 
+        text: "Pick a cursor size that is easy to track." 
+      }));
+      content.appendChild(cursorSizeControlsContainer);
+      controls.cursorSizeControlsContainer = cursorSizeControlsContainer;
+
+      function updateCursorSizeControls(enabled) {
+        if (controls.cursorSizeControlsContainer) {
+          controls.cursorSizeControlsContainer.style.display = enabled ? "block" : "none";
+        }
+      }
+      controls.updateCursorSizeControls = updateCursorSizeControls;
     }
 
     // Magnifier
@@ -2731,4 +2857,3 @@
 
   init();
 })();
-

@@ -2,16 +2,16 @@
     Just include this single script tag and the widget loads automatically from GitHub!
     
     Usage:
-    <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.0/a11y-widget-loader.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.1/a11y-widget-loader.js" defer></script>
     
     Or use the full widget file:
-    <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.0/a11y-widget.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.1/a11y-widget.js" defer></script>
 */
 // Immediate console log to verify script is loading
 // This runs BEFORE the IIFE, so it executes even if there's an error later
 // CRITICAL: If you don't see this message, the loader script is cached/old
 try {
-  console.log('[A11Y Loader] ✅ Script file loaded - v1.6 -', new Date().toISOString());
+  console.log('[A11Y Loader] ✅ Script file loaded - v1.6.1 -', new Date().toISOString());
   var scriptSrc = 'unknown';
   try {
     if (document.currentScript && document.currentScript.src) {
@@ -22,7 +22,7 @@ try {
     }
   } catch(e) {}
   console.log('[A11Y Loader] Script source:', scriptSrc);
-  console.log('[A11Y Loader] If you see this, the loader script v1.6 is executing');
+  console.log('[A11Y Loader] If you see this, the loader script v1.6.1 is executing');
 } catch(e) {
   console.log('[A11Y Loader] Script file parsed but error logging:', e);
 }
@@ -33,11 +33,11 @@ try {
   var GITHUB_REPO = "braieswabe/A11-Widget";
   var GITHUB_BRANCH = "main";
   // Use version tag for CDN to avoid cache issues (jsDelivr caches @main aggressively)
-  var WIDGET_VERSION_TAG = "v1.6.0";
+  var WIDGET_VERSION_TAG = "v1.6.1";
   var CDN_BASE = "https://cdn.jsdelivr.net/gh/" + GITHUB_REPO + "@" + WIDGET_VERSION_TAG + "/";
   var GITHUB_RAW_BASE = "https://raw.githubusercontent.com/" + GITHUB_REPO + "/" + GITHUB_BRANCH + "/";
   var LOADER_VERSION = "1.6"; // Increment this when loader logic changes
-  var WIDGET_FILES_VERSION = "20260110"; // Increment this when widget CSS/JS files change (format: YYYYMMDD)
+  var WIDGET_FILES_VERSION = "20250110"; // Increment this when widget CSS/JS files change (format: YYYYMMDD)
   var LOADER_VERSION_KEY = "__a11y_loader_version";
   var WIDGET_VERSION_KEY = "__a11y_widget_version";
   var LAST_UPDATE_CHECK_KEY = "__a11y_widget_last_check";

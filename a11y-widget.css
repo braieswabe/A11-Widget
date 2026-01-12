@@ -145,16 +145,16 @@ html[data-a11y][data-a11y-spacing="normal"]{
   --a11y-paragraph-spacing: 0.75em;
 }
 html[data-a11y][data-a11y-spacing="comfortable"]{
-  --a11y-line-height: 1.7;
-  --a11y-letter-spacing: 0.02em;
-  --a11y-word-spacing: 0.06em;
-  --a11y-paragraph-spacing: 1em;
+  --a11y-line-height: 1.6;
+  --a11y-letter-spacing: 0.015em;
+  --a11y-word-spacing: 0.05em;
+  --a11y-paragraph-spacing: 0.9em;
 }
 html[data-a11y][data-a11y-spacing="max"]{
-  --a11y-line-height: 2.0;
-  --a11y-letter-spacing: 0.05em;
-  --a11y-word-spacing: 0.12em;
-  --a11y-paragraph-spacing: 1.25em;
+  --a11y-line-height: 1.8;
+  --a11y-letter-spacing: 0.03em;
+  --a11y-word-spacing: 0.08em;
+  --a11y-paragraph-spacing: 1.1em;
 }
 
 [data-a11y-surface="true"] p{
@@ -212,6 +212,10 @@ html[data-a11y][data-a11y-margins="1"] [data-a11y-surface="true"] {
 
 /* Cursor Options - Custom cursor overlay handled by JavaScript for reliability */
 /* Hide default cursor when large cursor is enabled */
+html[data-a11y][data-a11y-cursor="small"],
+html[data-a11y][data-a11y-cursor="small"] *,
+html[data-a11y][data-a11y-cursor="medium"],
+html[data-a11y][data-a11y-cursor="medium"] *,
 html[data-a11y][data-a11y-cursor="large"],
 html[data-a11y][data-a11y-cursor="large"] *,
 html[data-a11y][data-a11y-cursor="extra-large"],
@@ -224,33 +228,45 @@ html[data-a11y][data-a11y-cursor="extra-large"] * {
   position: fixed;
   pointer-events: none;
   z-index: 2147483001;
-  border-radius: 50%;
+  width: var(--a11y-cursor-size, 24px);
+  height: var(--a11y-cursor-size, 24px);
+  background: transparent;
+  border-radius: 4px;
   transform: translate(-50%, -50%);
-  transition: width 0.15s ease, height 0.15s ease, background-color 0.15s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), 0 0 0 2px rgba(255, 255, 255, 0.9);
+  transition: width 0.15s ease, height 0.15s ease, transform 0.1s ease;
+}
+
+#a11y-custom-cursor::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--a11y-cursor-color, #ffffff);
+  clip-path: polygon(0 0, 0 100%, 26% 74%, 40% 96%, 52% 90%, 38% 68%, 68% 68%);
+  filter: drop-shadow(0 0 1px rgba(0,0,0,0.9)) drop-shadow(0 1px 2px rgba(0,0,0,0.35));
+}
+
+#a11y-custom-cursor.small {
+  --a11y-cursor-size: 18px;
+}
+
+#a11y-custom-cursor.medium {
+  --a11y-cursor-size: 24px;
 }
 
 #a11y-custom-cursor.large {
-  width: 32px;
-  height: 32px;
-  background: radial-gradient(circle, #fff 20%, #333 25%, #333 60%, transparent 65%);
-  border: 3px solid #fff;
+  --a11y-cursor-size: 32px;
 }
 
 #a11y-custom-cursor.extra-large {
-  width: 48px;
-  height: 48px;
-  background: radial-gradient(circle, #fff 20%, #333 25%, #333 55%, transparent 60%);
-  border: 4px solid #fff;
+  --a11y-cursor-size: 40px;
 }
 
 #a11y-custom-cursor.clicking {
-  background: radial-gradient(circle, #fff 20%, #0066cc 25%, #0066cc 55%, transparent 60%) !important;
-  transform: translate(-50%, -50%) scale(0.9);
+  transform: translate(-50%, -50%) scale(0.92);
 }
 
 #a11y-custom-cursor.hovering {
-  background: radial-gradient(circle, #fff 20%, #0066cc 25%, #0066cc 55%, transparent 60%);
+  transform: translate(-50%, -50%) scale(1.05);
 }
 
 /* Magnifier - handled by JavaScript overlay */
@@ -294,9 +310,15 @@ html[data-a11y][data-a11y-global-mode="1"][data-a11y-contrast="high"] * {
 }
 
 /* Global Mode: Dark Theme applied globally */
+html[data-a11y][data-a11y-global-mode="1"][data-a11y-contrast="dark"] {
+  background-color: #0d1117 !important;
+  color: #e6edf3 !important;
+}
+
 html[data-a11y][data-a11y-global-mode="1"][data-a11y-contrast="dark"] * {
   background: #0d1117 !important;
   color: #e6edf3 !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
 }
 
 html[data-a11y][data-a11y-global-mode="1"][data-a11y-contrast="dark"] h1,
@@ -305,7 +327,7 @@ html[data-a11y][data-a11y-global-mode="1"][data-a11y-contrast="dark"] h3,
 html[data-a11y][data-a11y-global-mode="1"][data-a11y-contrast="dark"] h4,
 html[data-a11y][data-a11y-global-mode="1"][data-a11y-contrast="dark"] h5,
 html[data-a11y][data-a11y-global-mode="1"][data-a11y-contrast="dark"] h6 {
-  color: #ffffff !important;
+  color: #f0f6fc !important;
 }
 
 html[data-a11y][data-a11y-global-mode="1"][data-a11y-contrast="dark"] a {
@@ -317,8 +339,45 @@ html[data-a11y][data-a11y-global-mode="1"][data-a11y-contrast="dark"] input,
 html[data-a11y][data-a11y-global-mode="1"][data-a11y-contrast="dark"] select,
 html[data-a11y][data-a11y-global-mode="1"][data-a11y-contrast="dark"] textarea {
   background: #21262d !important;
-  color: #ffffff !important;
-  border-color: rgba(255, 255, 255, 0.2) !important;
+  color: #e6edf3 !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
+}
+
+/* Non-global surfaces: Dark Theme applied to declared surfaces */
+html[data-a11y][data-a11y-contrast="dark"] [data-a11y-surface="true"] {
+  background-color: #0d1117 !important;
+  color: #e6edf3 !important;
+}
+
+html[data-a11y][data-a11y-contrast="dark"] [data-a11y-surface="true"] p,
+html[data-a11y][data-a11y-contrast="dark"] [data-a11y-surface="true"] li,
+html[data-a11y][data-a11y-contrast="dark"] [data-a11y-surface="true"] span,
+html[data-a11y][data-a11y-contrast="dark"] [data-a11y-surface="true"] div,
+html[data-a11y][data-a11y-contrast="dark"] [data-a11y-surface="true"] section,
+html[data-a11y][data-a11y-contrast="dark"] [data-a11y-surface="true"] article {
+  color: #e6edf3 !important;
+}
+
+html[data-a11y][data-a11y-contrast="dark"] [data-a11y-surface="true"] h1,
+html[data-a11y][data-a11y-contrast="dark"] [data-a11y-surface="true"] h2,
+html[data-a11y][data-a11y-contrast="dark"] [data-a11y-surface="true"] h3,
+html[data-a11y][data-a11y-contrast="dark"] [data-a11y-surface="true"] h4,
+html[data-a11y][data-a11y-contrast="dark"] [data-a11y-surface="true"] h5,
+html[data-a11y][data-a11y-contrast="dark"] [data-a11y-surface="true"] h6 {
+  color: #f0f6fc !important;
+}
+
+html[data-a11y][data-a11y-contrast="dark"] [data-a11y-surface="true"] a {
+  color: #58a6ff !important;
+}
+
+html[data-a11y][data-a11y-contrast="dark"] [data-a11y-surface="true"] button,
+html[data-a11y][data-a11y-contrast="dark"] [data-a11y-surface="true"] input,
+html[data-a11y][data-a11y-contrast="dark"] [data-a11y-surface="true"] select,
+html[data-a11y][data-a11y-contrast="dark"] [data-a11y-surface="true"] textarea {
+  background: #161b22 !important;
+  color: #e6edf3 !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
 }
 
 /* Global Mode: Light Theme applied globally */
@@ -964,6 +1023,11 @@ html.a11y-widget-hidden .accessibility-widget {
   gap: 0.5rem;
   flex: 1;
   min-width: 0;
+  border: 1px solid var(--a11y-color-border);
+  border-radius: var(--a11y-radius);
+  padding: 0.35rem 0.5rem;
+  background: var(--a11y-color-bg);
+  transition: border-color 0.2s ease, background-color 0.2s ease;
 }
 .a11y-widget-radio-label{
   font-weight: 500;
@@ -974,6 +1038,17 @@ html.a11y-widget-hidden .accessibility-widget {
   gap: 0.5rem;
   font-size: 14px;
   flex: 1;
+  padding: 0.15rem 0.2rem;
+  border-radius: calc(var(--a11y-radius) - 2px);
+  transition: color 0.2s ease, background-color 0.2s ease;
+}
+.a11y-widget-radio-wrapper:hover{
+  border-color: var(--a11y-color-border-dark);
+  background: var(--a11y-color-bg-light);
+}
+.a11y-widget-radio:checked + .a11y-widget-radio-label{
+  background: var(--a11y-color-secondary);
+  color: #fff;
 }
 
 /* Checkbox wrapper */
@@ -1306,31 +1381,38 @@ html[data-a11y][data-a11y-contrast="dark"] .a11y-widget-btn:hover{
   background: #30363d !important;
 }
 html[data-a11y][data-a11y-contrast="dark"] #a11y-widget-panel select{
-  background: #ffffff !important;
-  color: #111111 !important;
-  border-color: rgba(0,0,0,0.2) !important;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23333' d='M6 9L1 4h10z'/%3E%3C/svg%3E") !important;
+  background: #161b22 !important;
+  color: #e6edf3 !important;
+  border-color: rgba(255,255,255,0.25) !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23e6edf3' d='M6 9L1 4h10z'/%3E%3C/svg%3E") !important;
 }
 
 html[data-a11y][data-a11y-contrast="dark"] #a11y-widget-panel select:hover{
-  background-color: #f5f5f5 !important;
-  border-color: rgba(0,0,0,0.3) !important;
+  background-color: #21262d !important;
+  border-color: rgba(255,255,255,0.35) !important;
 }
 
 html[data-a11y][data-a11y-contrast="dark"] #a11y-widget-panel select:focus{
   border-color: #0066cc !important;
   outline-color: #0066cc !important;
-  background-color: #ffffff !important;
+  background-color: #161b22 !important;
 }
 
 /* Ensure select dropdown options are visible in dark theme */
 html[data-a11y][data-a11y-contrast="dark"] #a11y-widget-panel select option{
-  background: #ffffff !important;
-  color: #111111 !important;
+  background: #161b22 !important;
+  color: #e6edf3 !important;
 }
 
 html[data-a11y][data-a11y-contrast="dark"] #a11y-widget-panel input[type="range"]{
   background: #161b22 !important;
+}
+
+html[data-a11y][data-a11y-contrast="dark"] #a11y-widget-panel input[type="text"],
+html[data-a11y][data-a11y-contrast="dark"] #a11y-widget-panel input[type="color"]{
+  background: #161b22 !important;
+  color: #e6edf3 !important;
+  border-color: rgba(255,255,255,0.25) !important;
 }
 
 html[data-a11y][data-a11y-contrast="dark"] #a11y-widget-panel input[type="range"]::-webkit-slider-thumb{
@@ -1346,6 +1428,21 @@ html[data-a11y][data-a11y-contrast="dark"] #a11y-widget-panel input[type="range"
 html[data-a11y][data-a11y-contrast="dark"] #a11y-widget-panel input[type="checkbox"],
 html[data-a11y][data-a11y-contrast="dark"] #a11y-widget-panel input[type="radio"]{
   accent-color: #58a6ff !important;
+}
+
+html[data-a11y][data-a11y-contrast="dark"] .a11y-widget-radio-wrapper{
+  background: #161b22 !important;
+  border-color: rgba(255,255,255,0.2) !important;
+}
+
+html[data-a11y][data-a11y-contrast="dark"] .a11y-widget-radio-wrapper:hover{
+  background: #21262d !important;
+  border-color: rgba(255,255,255,0.35) !important;
+}
+
+html[data-a11y][data-a11y-contrast="dark"] .a11y-widget-radio:checked + .a11y-widget-radio-label{
+  background: #58a6ff !important;
+  color: #0d1117 !important;
 }
 
 html[data-a11y][data-a11y-contrast="dark"] .a11y-widget-row label,
