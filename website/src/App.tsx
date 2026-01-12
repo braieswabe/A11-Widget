@@ -9,6 +9,7 @@ import Features from './pages/Features'
 import AdminLogin from './pages/admin/AdminLogin'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import ClientForm from './pages/admin/ClientForm'
+import DomainsManagement from './pages/admin/DomainsManagement'
 
 function App() {
   return (
@@ -44,6 +45,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Layout><ClientForm /></Layout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/domains" 
+            element={
+              <ProtectedRoute>
+                <Layout><DomainsManagement /></Layout>
               </ProtectedRoute>
             } 
           />

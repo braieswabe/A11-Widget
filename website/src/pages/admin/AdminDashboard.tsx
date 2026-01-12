@@ -129,21 +129,38 @@ export default function AdminDashboard() {
             width: '300px'
           }}
         />
-        <button
-          onClick={() => navigate('/admin/clients/new')}
-          style={{
-            padding: '10px 20px',
-            backgroundColor: '#0066cc',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            fontSize: '16px',
-            fontWeight: 500
-          }}
-        >
-          Create New Client
-        </button>
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <button
+            onClick={() => navigate('/admin/domains')}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: '#28a745',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '16px',
+              fontWeight: 500
+            }}
+          >
+            Manage Domains
+          </button>
+          <button
+            onClick={() => navigate('/admin/clients/new')}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: '#0066cc',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '16px',
+              fontWeight: 500
+            }}
+          >
+            Create New Client
+          </button>
+        </div>
       </div>
 
       {error && (
