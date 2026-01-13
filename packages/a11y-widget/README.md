@@ -5,7 +5,7 @@ WCAG 2.1 AA-aligned accessibility widget support layer.
 ## Installation
 
 ```bash
-npm install @careerdriver-ai/a11y-widget
+npm install @careerdriver/a11y-widget
 ```
 
 ## Usage
@@ -13,8 +13,8 @@ npm install @careerdriver-ai/a11y-widget
 ### NPM (ES Modules)
 
 ```javascript
-import { initA11yWidget } from "@careerdriver-ai/a11y-widget";
-import "@careerdriver-ai/a11y-widget/styles.css";
+import { initA11yWidget } from "@careerdriver/a11y-widget";
+import "@careerdriver/a11y-widget/styles.css";
 
 initA11yWidget({ 
   siteId: "example.com",

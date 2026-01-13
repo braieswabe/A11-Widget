@@ -24,7 +24,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/braieswabe/A11-Widget.git"
+    "url": "git+https://github.com/braieswabe/A11-Widget.git"
   },
   "sideEffects": [
     "./vendor/a11y-widget.core.js",

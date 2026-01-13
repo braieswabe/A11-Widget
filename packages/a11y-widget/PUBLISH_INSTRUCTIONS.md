@@ -3,7 +3,7 @@
 ## Pre-Publish Checklist
 
 ### ✅ Package Configuration
-- [x] Package name: `@careerdriver-ai/a11y-widget`
+- [x] Package name: `@careerdriver/a11y-widget`
 - [x] Version: `1.1.0`
 - [x] All exports configured correctly
 - [x] Side effects declared
@@ -46,13 +46,13 @@ npm pack --dry-run
 npm pack
 ```
 
-**Expected output**: `careerdriver-ai-a11y-widget-1.1.0.tgz`
+**Expected output**: `careerdriver-a11y-widget-1.1.0.tgz`
 
 ### 2. Verify Package Contents
 
 ```bash
 # Extract and inspect
-tar -tzf careerdriver-ai-a11y-widget-1.1.0.tgz | sort
+tar -tzf careerdriver-a11y-widget-1.1.0.tgz | sort
 ```
 
 **Expected files** (7 total):
@@ -66,7 +66,7 @@ tar -tzf careerdriver-ai-a11y-widget-1.1.0.tgz | sort
 
 ### 3. NPM Authentication
 
-Ensure you're logged in to npm with access to `@careerdriver-ai` scope:
+Ensure you're logged in to npm with access to `@careerdriver` scope:
 
 ```bash
 # Check current user
@@ -76,7 +76,7 @@ npm whoami
 npm login
 
 # Verify scope access
-npm access ls-packages @careerdriver-ai
+npm access ls-packages @careerdriver
 ```
 
 ### 4. Publish to npm
@@ -97,16 +97,16 @@ npm publish --access public
 
 ```bash
 # Check package on npm
-npm view @careerdriver-ai/a11y-widget
+npm view @careerdriver/a11y-widget
 
 # Test installation in clean directory
 cd /tmp
 mkdir test-install && cd test-install
 npm init -y
-npm install @careerdriver-ai/a11y-widget
+npm install @careerdriver/a11y-widget
 
 # Verify it works
-node -e "import('@careerdriver-ai/a11y-widget').then(m => console.log('✅ Import successful:', Object.keys(m)))"
+node -e "import('@careerdriver/a11y-widget').then(m => console.log('✅ Import successful:', Object.keys(m)))"
 ```
 
 ---
@@ -132,7 +132,7 @@ For future updates:
 
 **Important**: CDN usage remains unchanged and independent:
 - CDN users continue using: `https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.1.0/...`
-- npm users use: `@careerdriver-ai/a11y-widget`
+- npm users use: `@careerdriver/a11y-widget`
 - Both methods work independently
 - No breaking changes to CDN behavior
 
@@ -140,7 +140,7 @@ For future updates:
 
 ## Package Information
 
-**Package Name**: `@careerdriver-ai/a11y-widget`  
+**Package Name**: `@careerdriver/a11y-widget`  
 **Version**: `1.1.0`  
 **License**: MIT  
 **Type**: ESM Module  
@@ -151,8 +151,8 @@ For future updates:
 
 **Usage**:
 ```javascript
-import { initA11yWidget } from "@careerdriver-ai/a11y-widget";
-import "@careerdriver-ai/a11y-widget/styles.css";
+import { initA11yWidget } from "@careerdriver/a11y-widget";
+import "@careerdriver/a11y-widget/styles.css";
 
 initA11yWidget({ siteId: "example.com" });
 ```
@@ -164,7 +164,7 @@ initA11yWidget({ siteId: "example.com" });
 ### If publish fails with scope access error:
 ```bash
 # Verify you have access to the scope
-npm access ls-packages @careerdriver-ai
+npm access ls-packages @careerdriver
 
 # Request access if needed (contact npm org admin)
 ```
@@ -173,7 +173,7 @@ npm access ls-packages @careerdriver-ai
 ```bash
 # Wait a few minutes for npm registry propagation
 # Then verify:
-npm view @careerdriver-ai/a11y-widget
+npm view @careerdriver/a11y-widget
 ```
 
 ### If TypeScript types not found:
