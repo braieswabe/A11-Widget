@@ -1,0 +1,29 @@
+{
+  "name": "@REPLACE_ME/a11y-widget",
+  "version": "1.1.0",
+  "description": "Accessibility Widget - WCAG 2.1 AA-aligned support layer",
+  "type": "module",
+  "main": "./src/index.js",
+  "types": "./src/types.d.ts",
+  "exports": {
+    ".": "./src/index.js",
+    "./styles.css": "./assets/a11y-widget.css"
+  },
+  "files": [
+    "src",
+    "vendor",
+    "assets"
+  ],
+  "keywords": [
+    "accessibility",
+    "a11y",
+    "wcag",
+    "widget"
+  ],
+  "author": "",
+  "license": "MIT",
+  "sideEffects": [
+    "./vendor/a11y-widget.core.js",
+    "./assets/a11y-widget.css"
+  ]
+}

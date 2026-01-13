@@ -4531,7 +4531,15 @@
     document.head.appendChild(link);
   }
 
-  function init() {
+  function init(userConfig) {
+    // Merge userConfig into window.__A11Y_WIDGET__ if provided
+    if (userConfig && typeof userConfig === "object") {
+      if (!window.__A11Y_WIDGET__) {
+        window.__A11Y_WIDGET__ = {};
+      }
+      window.__A11Y_WIDGET__ = assign(window.__A11Y_WIDGET__, userConfig);
+    }
+    
     var cfg = getConfig();
 
     // Namespace guard
@@ -4676,5 +4684,6 @@
     }
   }
 
-  init();
+  // Expose init function for manual initialization (CDN loader or npm)
+  window.__a11yWidgetInit = init;
 })();

@@ -22,37 +22,83 @@ This widget is a **support layer** + **render-time accessibility controls** — 
 
 ## Quick Start
 
-### Simple Installation (Recommended)
+### Installation Options
+
+Choose one of two installation methods:
+
+#### Option 1: CDN (Recommended for Simple Sites)
 
 Just add this single line to your HTML:
 
 ```html
 <!-- Use versioned tag to ensure you get the latest stable version -->
-<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.1/a11y-widget-loader-v1.6.1.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.1.0/a11y-widget-loader-v1.1.0.js" defer></script>
 ```
 
-**Note:** We use version tags (`@v1.6.1`) instead of branch names (`@main`) because jsDelivr CDN aggressively caches branch URLs for up to 7 days. Version tags are served immediately and ensure you always get the exact version you specify.
+**Note:** We use version tags (`@v1.1.0`) instead of branch names (`@main`) because jsDelivr CDN aggressively caches branch URLs for up to 7 days. Version tags are served immediately and ensure you always get the exact version you specify.
 
 That's it! The widget loads automatically from GitHub. No configuration needed.
 
-**✨ Version Updates**: When a new version is released, update the version tag in your script tag (e.g., `@v1.6.1` → `@v1.7.0`). This ensures you get the latest features and fixes immediately.
+#### Option 2: NPM (Recommended for Bundled Apps)
+
+Install via npm:
+
+```bash
+npm install @careerdriver-ai/a11y-widget
+```
+
+Then import and initialize in your code:
+
+```javascript
+import { initA11yWidget } from "@careerdriver-ai/a11y-widget";
+import "@careerdriver-ai/a11y-widget/styles.css";
+
+initA11yWidget({ 
+  siteId: "example.com",
+  position: "right"
+});
+```
+
+**✨ Version Updates**: 
+- **CDN**: Update the version tag in your script tag (e.g., `@v1.1.0` → `@v1.2.0`)
+- **NPM**: Run `npm update @careerdriver-ai/a11y-widget` to get the latest version
 
 **⌨️ Keyboard Shortcut**: Press **Alt+A** (Option+A on Mac) from anywhere on the page to quickly open/close the accessibility widget. The shortcut doesn't interfere with typing in input fields.
 
 ### Optional: Customize Settings
+
+#### CDN Method
 
 If you want to customize the widget, add configuration before the loader script:
 
 ```html
 <script>
   window.__A11Y_WIDGET__ = {
+    siteId: "example.com",
     position: "right",  // Optional: "left" or "right"
     keyboardShortcut: "Alt+A",  // Optional: "Alt+A", "Ctrl+Alt+A", or null to disable
     globalMode: false,  // Optional: If true, applies transformations to entire website (fonts, colors, sizes)
     surfaces: ["body", "main"]  // Optional: CSS selectors (ignored if globalMode is true)
   };
 </script>
-<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.1/a11y-widget-loader-v1.6.1.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.1.0/a11y-widget-loader-v1.1.0.js" defer></script>
+```
+
+#### NPM Method
+
+Pass configuration directly to `initA11yWidget()`:
+
+```javascript
+import { initA11yWidget } from "@careerdriver-ai/a11y-widget";
+import "@careerdriver-ai/a11y-widget/styles.css";
+
+initA11yWidget({
+  siteId: "example.com",
+  position: "right",
+  keyboardShortcut: "Alt+A",
+  globalMode: false,
+  surfaces: ["body", "main"]
+});
 ```
 
 **Global Mode**: When enabled, the widget applies transformations (fonts, font sizes, colors, spacing) to the entire website, completely overhauling the user interface. When disabled (default), transformations only apply to declared surfaces.
@@ -63,7 +109,11 @@ To hide the default button and control it with your own header button, see [Cust
 
 ## Configuration Options
 
-All configuration is via `window.__A11Y_WIDGET__` object or data attributes:
+**CDN Method**: Configuration is via `window.__A11Y_WIDGET__` object or data attributes (set before script loads).
+
+**NPM Method**: Configuration is passed directly to `initA11yWidget(config)` function.
+
+Both methods support the same configuration options:
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|

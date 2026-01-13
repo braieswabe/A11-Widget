@@ -12,6 +12,14 @@
 */
 (function () {
   "use strict";
+  
+  // SSR guard - only execute in browser
+  if (typeof window === "undefined" || typeof document === "undefined") {
+    // In SSR environment, expose a no-op init function on global (Node.js) or window (browser)
+    var globalObj = typeof global !== "undefined" ? global : (typeof window !== "undefined" ? window : {});
+    globalObj.__a11yWidgetInit = function() {};
+    return;
+  }
 
   // GitHub repository configuration
   var GITHUB_REPO = "braieswabe/A11-Widget";

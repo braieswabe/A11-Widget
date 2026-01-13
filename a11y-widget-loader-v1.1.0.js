@@ -648,14 +648,13 @@ try {
     // Track JS load success
     script.onload = function() {
       console.log('[A11Y] JS loaded from:', script.src);
-      // Check if widget initialized
-      setTimeout(function() {
-        if (window.__a11yWidget && window.__a11yWidget.__loaded) {
-          console.log('[A11Y] Widget initialized successfully');
-        } else {
-          console.warn('[A11Y] Widget JS loaded but widget not initialized yet');
-        }
-      }, 1000);
+      // Initialize widget using exposed init function
+      if (window.__a11yWidgetInit) {
+        window.__a11yWidgetInit(window.__A11Y_WIDGET__);
+        console.log('[A11Y] Widget initialized via CDN loader');
+      } else {
+        console.warn('[A11Y] Widget init function not found after script load');
+      }
     };
     
     // Fallback to raw GitHub if jsDelivr fails (though it may not work due to content-type)
