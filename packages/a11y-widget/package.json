@@ -1,5 +1,5 @@
 {
-  "name": "@REPLACE_ME/a11y-widget",
+  "name": "@mcelestino-conversion/a11y-widget",
   "version": "1.1.0",
   "description": "Accessibility Widget - WCAG 2.1 AA-aligned support layer",
   "type": "module",
