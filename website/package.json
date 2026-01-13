@@ -4,12 +4,14 @@
   "description": "Documentation website for Accessibility Widget v1",
   "private": true,
   "scripts": {
+    "prebuild": "npm install && npm run sync-widget --prefix ..",
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
   },
   "dependencies": {
+    "@careerdriver/a11y-widget": "file:../packages/a11y-widget",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.20.0"

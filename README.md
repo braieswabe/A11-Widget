@@ -44,14 +44,14 @@ That's it! The widget loads automatically from GitHub. No configuration needed.
 Install via npm:
 
 ```bash
-npm install @mcelestino-conversion/a11y-widget
+npm install @careerdriver/a11y-widget
 ```
 
 Then import and initialize in your code:
 
 ```javascript
-import { initA11yWidget } from "@mcelestino-conversion/a11y-widget";
-import "@mcelestino-conversion/a11y-widget/styles.css";
+import { initA11yWidget } from "@careerdriver/a11y-widget";
+import "@careerdriver/a11y-widget/styles.css";
 
 initA11yWidget({ 
   siteId: "example.com",
@@ -61,7 +61,7 @@ initA11yWidget({
 
 **✨ Version Updates**: 
 - **CDN**: Update the version tag in your script tag (e.g., `@v1.1.0` → `@v1.2.0`)
-- **NPM**: Run `npm update @mcelestino-conversion/a11y-widget` to get the latest version
+- **NPM**: Run `npm update @careerdriver/a11y-widget` to get the latest version
 
 **⌨️ Keyboard Shortcut**: Press **Alt+A** (Option+A on Mac) from anywhere on the page to quickly open/close the accessibility widget. The shortcut doesn't interfere with typing in input fields.
 
@@ -89,8 +89,8 @@ If you want to customize the widget, add configuration before the loader script:
 Pass configuration directly to `initA11yWidget()`:
 
 ```javascript
-import { initA11yWidget } from "@mcelestino-conversion/a11y-widget";
-import "@mcelestino-conversion/a11y-widget/styles.css";
+import { initA11yWidget } from "@careerdriver/a11y-widget";
+import "@careerdriver/a11y-widget/styles.css";
 
 initA11yWidget({
   siteId: "example.com",

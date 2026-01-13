@@ -5,11 +5,20 @@
   "type": "module",
   "main": "a11y-widget.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "preinstall": "npm install --prefix website || true",
+    "sync-widget": "node scripts/sync-widget-to-npm.js",
+    "install:all": "npm install && npm install --prefix website",
+    "build": "npm run sync-widget && npm run install:all && npm run build --prefix website",
+    "prebuild": "npm run sync-widget",
+    "start": "node server.js",
+    "dev": "node server.js"
   },
   "dependencies": {
+    "@careerdriver/a11y-widget": "file:./packages/a11y-widget",
     "@neondatabase/serverless": "^0.9.0",
     "bcryptjs": "^2.4.3",
+    "express": "^4.18.2",
     "jsonwebtoken": "^9.0.2"
   },
   "engines": {
@@ -24,4 +33,3 @@
   "author": "",
   "license": "MIT"
 }
-

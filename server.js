@@ -1,7 +1,7 @@
 import express from 'express';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { readdirSync, statSync } from 'fs';
+import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -44,7 +44,6 @@ function createVercelHandler(handler) {
     };
     console.log('[DEBUG]', JSON.stringify(logData));
     try {
-      const fs = require('fs');
       const logPath = '/Users/braiebook/a11y_widget_v1/.cursor/debug.log';
       fs.appendFileSync(logPath, JSON.stringify(logData) + '\n');
     } catch (e) {}
@@ -369,62 +368,179 @@ async function loadApiRoutes() {
   }
 }
 
-// Serve static files from website/dist
-const distPath = join(__dirname, 'website', 'dist');
-const fs = require('fs');
-
-if (fs.existsSync(distPath)) {
-  app.use(express.static(distPath));
-  
-  // Apply domain check middleware to website routes (not API routes or static assets)
-  app.get('*', async (req, res, next) => {
-    // Skip domain check for API routes, static assets, and widget files
-    if (req.path.startsWith('/api/') || 
-        req.path.startsWith('/assets/') || 
-        req.path.startsWith('/a11y-widget') ||
-        req.path.startsWith('/downloads/')) {
-      return next();
-    }
-    
-    // Apply domain check middleware
-    try {
-      const { domainCheckMiddleware } = await import('./api/utils/domainCheck.js');
-      return domainCheckMiddleware(req, res, next);
-    } catch (e) {
-      // If domain check fails to load, allow access (fail open)
-      console.warn('Domain check middleware not available:', e.message);
-      return next();
-    }
-  });
-  
-  // Fallback to index.html for client-side routing
-  app.get('*', (req, res) => {
-    // Don't serve index.html for API routes
-    if (req.path.startsWith('/api/')) {
-      return res.status(404).json({ error: 'API route not found' });
-    }
-    const indexPath = join(distPath, 'index.html');
-    if (fs.existsSync(indexPath)) {
-      res.sendFile(indexPath);
-    } else {
-      res.status(404).send('Website not built. Please run: cd website && npm install && npm run build');
-    }
-  });
-} else {
-  console.warn(`Warning: ${distPath} does not exist. Static files will not be served.`);
-  console.warn('Please run: cd website && npm install && npm run build');
-  
-  // Still handle API routes even if dist doesn't exist
-  app.get('*', (req, res) => {
-    if (req.path.startsWith('/api/')) {
-      return res.status(404).json({ error: 'API route not found' });
-    }
-    res.status(503).send('Website not built. Please run: cd website && npm install && npm run build');
-  });
-}
-
-// Load API routes and start server
+// Load API routes first, then set up static files and catch-all routes
 loadApiRoutes().then(() => {
+  // Serve widget files directly from root (before static files)
+  // This ensures local widget files are always served, not CDN
+  app.get('/a11y-widget-v1.1.0.js', (req, res) => {
+    // #region agent log
+    const logData = {
+      location: 'server.js:/a11y-widget-v1.1.0.js',
+      message: 'Widget file request received',
+      data: {
+        url: req.url,
+        path: req.path,
+        query: req.query,
+        timestamp: Date.now()
+      },
+      timestamp: Date.now(),
+      sessionId: 'debug-session',
+      runId: 'run1',
+      hypothesisId: 'C'
+    };
+    fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(logData)}).catch(()=>{});
+    // #endregion
+    
+    const npmCoreJs = join(__dirname, 'packages', 'a11y-widget', 'vendor', 'a11y-widget.core.js');
+    const widgetJsV110 = join(__dirname, 'a11y-widget-v1.1.0.js');
+    const widgetJs = fs.existsSync(npmCoreJs) ? npmCoreJs : widgetJsV110;
+    
+    // #region agent log
+    const logData2 = {
+      location: 'server.js:/a11y-widget-v1.1.0.js',
+      message: 'File path resolution',
+      data: {
+        npmCoreJsExists: fs.existsSync(npmCoreJs),
+        widgetJsV110Exists: fs.existsSync(widgetJsV110),
+        selectedPath: widgetJs,
+        npmCoreJsPath: npmCoreJs,
+        widgetJsV110Path: widgetJsV110
+      },
+      timestamp: Date.now(),
+      sessionId: 'debug-session',
+      runId: 'run1',
+      hypothesisId: 'C'
+    };
+    fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(logData2)}).catch(()=>{});
+    // #endregion
+    
+    if (fs.existsSync(widgetJs)) {
+      // #region agent log
+      const fileContent = fs.readFileSync(widgetJs, 'utf8');
+      const hasRemovedSections = fileContent.includes('Widget Appearance and Icon Customization sections removed');
+      const fileSize = fileContent.length;
+      const logData3 = {
+        location: 'server.js:/a11y-widget-v1.1.0.js',
+        message: 'File content verification',
+        data: {
+          filePath: widgetJs,
+          fileSize: fileSize,
+          hasRemovedSectionsMarker: hasRemovedSections,
+          first500Chars: fileContent.substring(0, 500)
+        },
+        timestamp: Date.now(),
+        sessionId: 'debug-session',
+        runId: 'run1',
+        hypothesisId: 'E'
+      };
+      fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(logData3)}).catch(()=>{});
+      // #endregion
+      
+      res.setHeader('Content-Type', 'application/javascript');
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.sendFile(widgetJs);
+    } else {
+      // #region agent log
+      const logData4 = {
+        location: 'server.js:/a11y-widget-v1.1.0.js',
+        message: 'Widget file not found',
+        data: {
+          npmCoreJsExists: fs.existsSync(npmCoreJs),
+          widgetJsV110Exists: fs.existsSync(widgetJsV110),
+          npmCoreJsPath: npmCoreJs,
+          widgetJsV110Path: widgetJsV110
+        },
+        timestamp: Date.now(),
+        sessionId: 'debug-session',
+        runId: 'run1',
+        hypothesisId: 'C'
+      };
+      fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(logData4)}).catch(()=>{});
+      // #endregion
+      
+      res.status(404).send('Widget file not found');
+    }
+  });
+
+  app.get('/a11y-widget.js', (req, res) => {
+    const widgetJs = join(__dirname, 'a11y-widget.js');
+    if (fs.existsSync(widgetJs)) {
+      res.setHeader('Content-Type', 'application/javascript');
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.sendFile(widgetJs);
+    } else {
+      res.status(404).send('Widget file not found');
+    }
+  });
+
+  app.get('/a11y-widget.css', (req, res) => {
+    const npmCss = join(__dirname, 'packages', 'a11y-widget', 'assets', 'a11y-widget.css');
+    const widgetCss = join(__dirname, 'a11y-widget.css');
+    const cssFile = fs.existsSync(npmCss) ? npmCss : widgetCss;
+    
+    if (fs.existsSync(cssFile)) {
+      res.setHeader('Content-Type', 'text/css');
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.sendFile(cssFile);
+    } else {
+      res.status(404).send('Widget CSS not found');
+    }
+  });
+
+  // Serve static files from website/dist
+  const distPath = join(__dirname, 'website', 'dist');
+
+  if (fs.existsSync(distPath)) {
+    app.use(express.static(distPath));
+    
+    // Apply domain check middleware to website routes (not API routes or static assets)
+    app.get('*', async (req, res, next) => {
+      // Skip domain check for API routes, static assets, and widget files
+      if (req.path.startsWith('/api/') || 
+          req.path.startsWith('/assets/') || 
+          req.path.startsWith('/a11y-widget') ||
+          req.path.startsWith('/downloads/')) {
+        return next();
+      }
+      
+      // Apply domain check middleware
+      try {
+        const { domainCheckMiddleware } = await import('./api/utils/domainCheck.js');
+        return domainCheckMiddleware(req, res, next);
+      } catch (e) {
+        // If domain check fails to load, allow access (fail open)
+        console.warn('Domain check middleware not available:', e.message);
+        return next();
+      }
+    });
+    
+    // Fallback to index.html for client-side routing
+    app.get('*', (req, res) => {
+      // Don't serve index.html for API routes
+      if (req.path.startsWith('/api/')) {
+        return res.status(404).json({ error: 'API route not found' });
+      }
+      const indexPath = join(distPath, 'index.html');
+      if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+      } else {
+        res.status(404).send('Website not built. Please run: cd website && npm install && npm run build');
+      }
+    });
+  } else {
+    console.warn(`Warning: ${distPath} does not exist. Static files will not be served.`);
+    console.warn('Please run: cd website && npm install && npm run build');
+    
+    // Still handle API routes even if dist doesn't exist
+    app.get('*', (req, res) => {
+      if (req.path.startsWith('/api/')) {
+        return res.status(404).json({ error: 'API route not found' });
+      }
+      res.status(503).send('Website not built. Please run: cd website && npm install && npm run build');
+    });
+  }
+
+  // Start server after all routes are registered
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
     console.log(`API routes available at http://localhost:${PORT}/api/`);

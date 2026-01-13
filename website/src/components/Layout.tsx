@@ -64,10 +64,10 @@ export default function Layout({ children }: LayoutProps) {
       const isDevelopment = import.meta.env.DEV || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
       const isVercelDeployment = window.location.hostname === 'a11-widget.vercel.app' || window.location.hostname.endsWith('.vercel.app')
       
+      // Always use local files when on localhost (for local development)
       // On Vercel deployment, always use local files for guaranteed availability (testing/demo)
-      // In development, use local files from Vite dev server
       // In production (external), use CDN URLs
-      const useLocalFiles = isDevelopment || isVercelDeployment
+      const useLocalFiles = isDevelopment || isVercelDeployment || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
 
       // Load CSS first
       const cssLink = document.createElement('link')
@@ -112,13 +112,158 @@ export default function Layout({ children }: LayoutProps) {
           isDevelopment,
           isVercelDeployment
         })
+        // #region agent log
+        const logData = {
+          location: 'Layout.tsx:loadWidget',
+          message: 'Widget loading initiated',
+          data: {
+            widgetUrl,
+            fallbackUrl,
+            useLocalFiles,
+            isDevelopment,
+            isVercelDeployment,
+            hostname: window.location.hostname
+          },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'run1',
+          hypothesisId: 'A'
+        };
+        fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(logData)}).catch(()=>{});
+        // #endregion
       }
       
       // Track loading state
       widgetScript.onload = () => {
+        // #region agent log
+        const logData = {
+          location: 'Layout.tsx:widgetScript.onload',
+          message: 'Widget script loaded',
+          data: {
+            scriptSrc: widgetScript.src,
+            scriptId: widgetScript.id,
+            hasInitFunction: typeof window.__a11yWidgetInit === 'function'
+          },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'run1',
+          hypothesisId: 'D'
+        };
+        fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(logData)}).catch(()=>{});
+        // #endregion
+        
         if (isDevelopment) {
-          console.log('[A11Y Layout] Widget script loaded, waiting for initialization...')
+          console.log('[A11Y Layout] Widget script loaded, initializing...')
         }
+        
+        // Initialize widget immediately after script loads
+        // The widget exposes __a11yWidgetInit but doesn't auto-initialize
+        // Wait a tiny bit to ensure the script has fully executed
+        setTimeout(() => {
+          // #region agent log
+          const checkLog = {
+            location: 'Layout.tsx:widgetScript.onload:setTimeout',
+            message: 'Checking for init function after delay',
+            data: {
+              hasInitFunction: typeof window.__a11yWidgetInit === 'function',
+              hasWidgetConfig: typeof window.__A11Y_WIDGET__ !== 'undefined',
+              widgetConfig: window.__A11Y_WIDGET__ || null,
+              windowKeys: Object.keys(window).filter(k => k.includes('a11y') || k.includes('A11Y') || k.includes('widget') || k.includes('Widget'))
+            },
+            timestamp: Date.now(),
+            sessionId: 'debug-session',
+            runId: 'run1',
+            hypothesisId: 'D'
+          };
+          fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(checkLog)}).catch(()=>{});
+          // #endregion
+          
+          if (typeof window.__a11yWidgetInit === 'function') {
+            try {
+              // #region agent log
+              const logData2 = {
+                location: 'Layout.tsx:widgetScript.onload:setTimeout',
+                message: 'Calling widget init function',
+                data: {
+                  hasInitFunction: true,
+                  hasWidgetConfig: typeof window.__A11Y_WIDGET__ !== 'undefined',
+                  widgetConfig: window.__A11Y_WIDGET__ || null,
+                  timestamp: Date.now()
+                },
+                timestamp: Date.now(),
+                sessionId: 'debug-session',
+                runId: 'run1',
+                hypothesisId: 'D'
+              };
+              fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(logData2)}).catch(()=>{});
+              // #endregion
+              
+              // Call init with config (or undefined if not set - widget handles this)
+              const config = window.__A11Y_WIDGET__ || undefined;
+              window.__a11yWidgetInit(config);
+              
+              if (isDevelopment) {
+                console.log('[A11Y Layout] Widget init function called with config:', config)
+              }
+              
+              // #region agent log
+              setTimeout(() => {
+                const afterInitLog = {
+                  location: 'Layout.tsx:widgetScript.onload:afterInit',
+                  message: 'After init call - checking widget state',
+                  data: {
+                    hasWidgetGlobal: typeof window.__a11yWidget !== 'undefined',
+                    widgetLoaded: window.__a11yWidget?.__loaded || false,
+                    hasToggleButton: !!document.getElementById('a11y-widget-toggle'),
+                    hasWidgetRoot: !!document.getElementById('a11y-widget-root')
+                  },
+                  timestamp: Date.now(),
+                  sessionId: 'debug-session',
+                  runId: 'run1',
+                  hypothesisId: 'D'
+                };
+                fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(afterInitLog)}).catch(()=>{});
+              }, 500);
+              // #endregion
+            } catch (error) {
+              console.error('[A11Y Layout] Error initializing widget:', error);
+              // #region agent log
+              const logData3 = {
+                location: 'Layout.tsx:widgetScript.onload:setTimeout',
+                message: 'Widget init error',
+                data: {
+                  error: error instanceof Error ? error.message : String(error),
+                  stack: error instanceof Error ? error.stack?.substring(0, 500) : undefined,
+                  errorName: error instanceof Error ? error.name : undefined
+                },
+                timestamp: Date.now(),
+                sessionId: 'debug-session',
+                runId: 'run1',
+                hypothesisId: 'D'
+              };
+              fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(logData3)}).catch(()=>{});
+              // #endregion
+            }
+          } else {
+            console.warn('[A11Y Layout] Widget init function not found after script load');
+            // #region agent log
+            const logData4 = {
+              location: 'Layout.tsx:widgetScript.onload:setTimeout',
+              message: 'Widget init function not found',
+              data: {
+                hasInitFunction: false,
+                windowKeys: Object.keys(window).filter(k => k.includes('a11y') || k.includes('A11Y') || k.includes('widget') || k.includes('Widget')),
+                scriptSrc: widgetScript.src
+              },
+              timestamp: Date.now(),
+              sessionId: 'debug-session',
+              runId: 'run1',
+              hypothesisId: 'D'
+            };
+            fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(logData4)}).catch(()=>{});
+            // #endregion
+          }
+        }, 100);
         
         // Give widget a moment to initialize, then start checking
         setTimeout(() => {

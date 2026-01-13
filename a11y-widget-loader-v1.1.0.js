@@ -49,9 +49,20 @@ try {
   var GITHUB_BRANCH = "main";
   // Use version tag for CDN to avoid cache issues (jsDelivr caches @main aggressively)
   var WIDGET_VERSION_TAG = "v1.1.0";
-  var CDN_BASE = "https://cdn.jsdelivr.net/gh/" + GITHUB_REPO + "@" + WIDGET_VERSION_TAG + "/";
-  var GITHUB_RAW_BASE = "https://raw.githubusercontent.com/" + GITHUB_REPO + "/" + GITHUB_BRANCH + "/";
+  // Allow override via window.__A11Y_ASSET_BASE__ for local hosting (e.g., "/" or "https://cdn.example.com/")
+  // If not set, defaults to jsDelivr CDN
+  // Ensure asset base ends with "/" if provided
+  var ASSET_BASE = window.__A11Y_ASSET_BASE__ || null;
+  if (ASSET_BASE && !ASSET_BASE.endsWith('/')) {
+    ASSET_BASE = ASSET_BASE + '/';
+  }
+  var CDN_BASE = ASSET_BASE || ("https://cdn.jsdelivr.net/gh/" + GITHUB_REPO + "@" + WIDGET_VERSION_TAG + "/");
+  var GITHUB_RAW_BASE = ASSET_BASE || ("https://raw.githubusercontent.com/" + GITHUB_REPO + "/" + GITHUB_BRANCH + "/");
   var LOADER_VERSION = "1.1"; // Increment this when loader logic changes
+  
+  // #region agent log
+  fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'a11y-widget-loader-v1.1.0.js:52',message:'Asset base configuration',data:{assetBase:ASSET_BASE,cdnBase:CDN_BASE,hasOverride:!!window.__A11Y_ASSET_BASE__},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+  // #endregion
   var WIDGET_FILES_VERSION = "20260113"; // Increment this when widget CSS/JS files change (format: YYYYMMDD)
   
   // Debug telemetry removed - was causing connection errors
@@ -122,7 +133,12 @@ try {
 
   // Login function
   function login(credentials) {
-    return fetch(AUTH_API_BASE + "/login", {
+    // #region agent log
+    var loginUrl = AUTH_API_BASE + "/login";
+    var fullUrl = loginUrl.startsWith('http') ? loginUrl : window.location.origin + loginUrl;
+    fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'a11y-widget-loader-v1.1.0.js:135',message:'Login attempt starting',data:{authApiBase:AUTH_API_BASE,loginUrl:loginUrl,fullUrl:fullUrl,hasApiKey:!!credentials.apiKey,hasEmail:!!credentials.email,siteId:credentials.siteId},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
+    return fetch(loginUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -130,7 +146,13 @@ try {
       body: JSON.stringify(credentials)
     })
     .then(function(response) {
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'a11y-widget-loader-v1.1.0.js:143',message:'Login response received',data:{status:response.status,statusText:response.statusText,ok:response.ok,url:response.url},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
       return response.json().then(function(data) {
+        // #region agent log
+        fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'a11y-widget-loader-v1.1.0.js:144',message:'Login response data parsed',data:{success:data.success,hasToken:!!data.token,error:data.error},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+        // #endregion
         if (response.ok && data.success && data.token) {
           storeToken(data.token);
           return { success: true, client: data.client };
@@ -139,6 +161,9 @@ try {
       });
     })
     .catch(function(error) {
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'a11y-widget-loader-v1.1.0.js:152',message:'Login fetch error',data:{error:error.message,errorType:error.name,stack:error.stack},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
       console.error("[A11Y Auth] Login error:", error);
       return { success: false, error: "Network error. Please try again." };
     });
@@ -402,7 +427,13 @@ try {
   // EARLY AUTH CHECK: Initialize authentication status before widget loads
   // This ensures the login portal is ready and auth status is known
   function initializeAuthSystem() {
+    // #region agent log
+    fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'a11y-widget-loader-v1.1.0.js:404',message:'Auth initialization started',data:{timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
     return checkAuth().then(function(result) {
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'a11y-widget-loader-v1.1.0.js:407',message:'Auth check completed',data:{authenticated:result.authenticated,hasClient:!!result.client},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
       // Store auth status for later use
       if (window.__a11yAuth) {
         window.__a11yAuth.__status = result;
@@ -416,6 +447,9 @@ try {
       }
       return result;
     }).catch(function(error) {
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'a11y-widget-loader-v1.1.0.js:419',message:'Auth check failed',data:{error:error?error.toString():'unknown'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
       // On error, assume not authenticated
       var result = { authenticated: false };
       if (window.__a11yAuth) {
@@ -623,11 +657,17 @@ try {
     
     // Track CSS load success
     cssLink.onload = function() {
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'a11y-widget-loader-v1.1.0.js:625',message:'CSS loaded successfully',data:{url:cssLink.href},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
       console.log('[A11Y] CSS loaded from:', cssLink.href);
     };
     
     // Fallback to raw GitHub if jsDelivr fails (though it may not work due to content-type)
     cssLink.onerror = function() {
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'a11y-widget-loader-v1.1.0.js:630',message:'CSS load failed, trying fallback',data:{originalUrl:cssLink.href,fallbackUrl:GITHUB_RAW_BASE + "a11y-widget.css"},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
       cssLink.href = GITHUB_RAW_BASE + "a11y-widget.css?v=" + timestamp + "&_=" + random1 + "&nocache=" + timestamp;
     };
     
@@ -647,6 +687,9 @@ try {
     
     // Track JS load success
     script.onload = function() {
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'a11y-widget-loader-v1.1.0.js:649',message:'Widget JS loaded',data:{url:script.src},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
       console.log('[A11Y] JS loaded from:', script.src);
       // Initialize widget using exposed init function
       if (window.__a11yWidgetInit) {
@@ -659,6 +702,9 @@ try {
     
     // Fallback to raw GitHub if jsDelivr fails (though it may not work due to content-type)
     script.onerror = function() {
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'a11y-widget-loader-v1.1.0.js:662',message:'Widget JS load failed, trying fallback',data:{originalUrl:script.src,fallbackUrl:GITHUB_RAW_BASE + "a11y-widget-v1.1.0.js"},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
       script.src = GITHUB_RAW_BASE + "a11y-widget-v1.1.0.js?v=" + timestamp + "&_=" + random1 + "&nocache=" + timestamp;
     };
     
@@ -694,6 +740,9 @@ try {
   // Initialize authentication system FIRST, then load widget
   // This ensures login portal is ready before widget loads
   initializeAuthSystem().then(function() {
+    // #region agent log
+    fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'a11y-widget-loader-v1.1.0.js:697',message:'Calling loadWidget after auth init',data:{timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
     // Auth system is now initialized and ready
     // Login modal functions are available
     // Auth status is stored in window.__a11yAuth.__status
@@ -702,6 +751,9 @@ try {
     // For non-trusted domains, we still load the widget but authentication is required to use it
     loadWidget();
   }).catch(function(error) {
+    // #region agent log
+    fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'a11y-widget-loader-v1.1.0.js:705',message:'Auth init failed, loading widget anyway',data:{error:error?error.toString():'unknown'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
     // If auth initialization fails, still load widget (graceful degradation)
     console.warn('[A11Y Auth] Auth initialization failed, loading widget anyway:', error);
     loadWidget();
@@ -738,8 +790,18 @@ try {
     // Wait for widget to load, then intercept button clicks
     var checkInterval = setInterval(function() {
       var toggleButton = document.getElementById("a11y-widget-toggle");
+      // #region agent log
+      if (checkInterval._checkCount === undefined) checkInterval._checkCount = 0;
+      checkInterval._checkCount++;
+      if (checkInterval._checkCount % 10 === 0) {
+        fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'a11y-widget-loader-v1.1.0.js:741',message:'Checking for widget button',data:{buttonExists:!!toggleButton,checkCount:checkInterval._checkCount,hasAuth:!!window.__a11yAuth},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+      }
+      // #endregion
       if (toggleButton && !toggleButton.hasAttribute("data-auth-intercepted")) {
         clearInterval(checkInterval);
+        // #region agent log
+        fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'a11y-widget-loader-v1.1.0.js:744',message:'Widget button found, attaching interceptor',data:{timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+        // #endregion
         
         // Mark as intercepted to avoid duplicate handlers
         toggleButton.setAttribute("data-auth-intercepted", "true");

@@ -1,0 +1,5 @@
+language = "nodejs"
+run = "npm start"
+
+[deploy]
+run = ["sh", "-c", "cd website && npm install && npm run build && cd .. && npm install && npm start"]

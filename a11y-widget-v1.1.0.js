@@ -355,9 +355,6 @@
       borderRadius: "8px",
       opacity: 1.0,
       shadow: "none"
-    },
-    custom: {
-      // User-defined values
     }
   };
 
@@ -469,12 +466,12 @@
       globalMode: !!p.globalMode,
       // Widget appearance customization
       widgetTheme: (p.widgetTheme && WIDGET_THEMES[p.widgetTheme]) ? p.widgetTheme : "default",
-      widgetCustomization: p.widgetCustomization || {},
+      widgetCustomization: {}, // Customization removed - only presets supported
       // Icon customization
       iconSize: clamp(Number(p.iconSize || 48), 32, 80),
       iconDesign: (p.iconDesign && ICON_DESIGNS[p.iconDesign]) ? p.iconDesign : "default",
       iconStyle: (p.iconStyle && ICON_PRESETS[p.iconStyle]) ? p.iconStyle : "default",
-      iconCustomization: p.iconCustomization || {},
+      iconCustomization: {}, // Customization removed - only presets supported
       iconId: p.iconId || null
     };
     return out;
@@ -551,6 +548,20 @@
     } else {
       removeCustomCursor();
     }
+    
+    // Initialize/remove magnifier dynamically
+    if (prefs.magnifierEnabled) {
+      createMagnifier(prefs);
+    } else {
+      removeMagnifier();
+    }
+    
+    // Apply/remove translation dynamically
+    if (prefs.translationEnabled && prefs.translationLanguage && prefs.translationLanguage !== "en") {
+      applyTranslation(prefs);
+    } else {
+      removeTranslation();
+    }
   }
 
   // --- Apply Widget Customization -------------------------------------------
@@ -559,25 +570,24 @@
     if (!root) return;
     
     var theme = prefs.widgetTheme || "default";
-    var custom = prefs.widgetCustomization || {};
     
-    // Get preset values
+    // Get preset values only (no custom overrides)
     var preset = WIDGET_THEMES[theme] || {};
     
-    // Merge preset + custom overrides
+    // Use preset values only
     var colors = {
-      primary: custom.primaryColor || preset.primaryColor,
-      secondary: custom.secondaryColor || preset.secondaryColor,
-      bg: custom.backgroundColor || preset.backgroundColor,
-      text: custom.textColor || preset.textColor,
-      border: custom.borderColor || preset.borderColor
+      primary: preset.primaryColor,
+      secondary: preset.secondaryColor,
+      bg: preset.backgroundColor,
+      text: preset.textColor,
+      border: preset.borderColor
     };
     
     var sizes = {
-      button: custom.buttonSize || preset.buttonSize,
-      panel: custom.panelWidth || preset.panelWidth,
-      radius: custom.borderRadius !== undefined ? custom.borderRadius : preset.borderRadius,
-      spacing: custom.spacing || preset.spacing
+      button: preset.buttonSize,
+      panel: preset.panelWidth,
+      radius: preset.borderRadius,
+      spacing: preset.spacing
     };
     
     // Apply color overrides via CSS variables
@@ -599,10 +609,8 @@
       root.style.setProperty("--a11y-custom-spacing", spacingMap[sizes.spacing] || sizes.spacing);
     }
     
-    // Reset to defaults if no customization
-    if (theme === "default" && !custom.primaryColor && !custom.secondaryColor && !custom.backgroundColor && 
-        !custom.textColor && !custom.borderColor && !custom.buttonSize && !custom.panelWidth && 
-        custom.borderRadius === undefined && !custom.spacing) {
+    // Reset to defaults if default theme
+    if (theme === "default") {
       root.style.removeProperty("--a11y-custom-primary");
       root.style.removeProperty("--a11y-custom-secondary");
       root.style.removeProperty("--a11y-custom-bg");
@@ -683,17 +691,16 @@
     var iconId = prefs.iconId;
     var iconDesign = prefs.iconDesign || "default";
     var style = prefs.iconStyle || "default";
-    var customization = prefs.iconCustomization || {};
     var preset = ICON_PRESETS[style] || ICON_PRESETS.default;
     
-    // Merge preset + custom overrides
+    // Use preset values only (no custom overrides)
     var iconStyle = {
-      backgroundColor: customization.backgroundColor !== undefined ? customization.backgroundColor : preset.backgroundColor,
-      borderColor: customization.borderColor !== undefined ? customization.borderColor : preset.borderColor,
-      borderWidth: customization.borderWidth !== undefined ? customization.borderWidth : preset.borderWidth,
-      borderRadius: customization.borderRadius !== undefined ? customization.borderRadius : preset.borderRadius,
-      opacity: customization.opacity !== undefined ? customization.opacity : preset.opacity,
-      shadow: customization.shadow !== undefined ? customization.shadow : preset.shadow
+      backgroundColor: preset.backgroundColor,
+      borderColor: preset.borderColor,
+      borderWidth: preset.borderWidth,
+      borderRadius: preset.borderRadius,
+      opacity: preset.opacity,
+      shadow: preset.shadow
     };
     
     // Apply styling to button
@@ -3158,515 +3165,7 @@
     updateRow.appendChild(updateStatus);
     content.appendChild(updateRow);
 
-    // Widget Appearance Section
-    content.appendChild(el("div", { class: "a11y-divider" }));
-    var appearanceRow = el("div", { class: "a11y-widget-row" });
-    appearanceRow.appendChild(el("legend", { text: "🎨 Widget Appearance" }));
-
-    var themeSelect = el("select", { 
-      id: "a11y-widget-theme",
-      "aria-label": "Select widget theme"
-    });
-    var themes = [
-      ["default", "Default"],
-      ["light", "Light"],
-      ["dark", "Dark"],
-      ["high-contrast", "High Contrast"],
-      ["compact", "Compact"],
-      ["spacious", "Spacious"],
-      ["custom", "Custom"]
-    ];
-    for (var i = 0; i < themes.length; i++) {
-      var opt = el("option", { value: themes[i][0], text: themes[i][1] });
-      if (prefs.widgetTheme === themes[i][0]) opt.selected = true;
-      themeSelect.appendChild(opt);
-    }
-    themeSelect.addEventListener("change", function() {
-      var theme = themeSelect.value;
-      var updatedPrefs = assign({}, prefs);
-      updatedPrefs.widgetTheme = theme;
-      if (theme !== "custom") {
-        updatedPrefs.widgetCustomization = {};
-      }
-      enhancedOnChange({ 
-        widgetTheme: theme,
-        widgetCustomization: theme === "custom" ? (prefs.widgetCustomization || {}) : {}
-      });
-      var root = document.getElementById("a11y-widget-root");
-      applyWidgetCustomization(updatedPrefs, root);
-      // Show/hide advanced customization section
-      var advancedSection = document.getElementById("a11y-widget-advanced-customization");
-      if (advancedSection) {
-        advancedSection.style.display = theme === "custom" ? "" : "none";
-      }
-    });
-    appearanceRow.appendChild(themeSelect);
-    appearanceRow.appendChild(el("div", { 
-      class: "a11y-widget-help", 
-      text: "Choose a preset theme or customize colors and sizes below." 
-    }));
-    content.appendChild(appearanceRow);
-
-    // Advanced Customization (only show if custom theme selected)
-    var advancedRow = el("div", { 
-      class: "a11y-widget-row",
-      id: "a11y-widget-advanced-customization",
-      style: prefs.widgetTheme === "custom" ? "" : "display: none;"
-    });
-
-    // Color pickers
-    var colorFields = [
-      { key: "primaryColor", label: "Primary Color", default: "#111" },
-      { key: "secondaryColor", label: "Accent Color", default: "#007bff" },
-      { key: "backgroundColor", label: "Background", default: "#fff" },
-      { key: "textColor", label: "Text Color", default: "#111" },
-      { key: "borderColor", label: "Border Color", default: "rgba(0,0,0,0.12)" }
-    ];
-
-    for (var i = 0; i < colorFields.length; i++) {
-      var field = colorFields[i];
-      var fieldRow = el("div", { class: "a11y-widget-field" });
-      fieldRow.appendChild(el("label", { 
-        for: "a11y-custom-" + field.key,
-        text: field.label,
-        style: "min-width: 120px;"
-      }));
-      var colorInput = el("input", {
-        type: "color",
-        id: "a11y-custom-" + field.key,
-        value: (prefs.widgetCustomization && prefs.widgetCustomization[field.key]) || field.default
-      });
-      colorInput.addEventListener("change", function(key, input) {
-        return function() {
-          var custom = assign({}, prefs.widgetCustomization || {});
-          custom[key] = input.value;
-          var updatedPrefs = assign({}, prefs);
-          updatedPrefs.widgetCustomization = custom;
-          enhancedOnChange({ widgetCustomization: custom });
-          var root = document.getElementById("a11y-widget-root");
-          applyWidgetCustomization(updatedPrefs, root);
-        };
-      }(field.key, colorInput));
-      fieldRow.appendChild(colorInput);
-      advancedRow.appendChild(fieldRow);
-    }
-
-    // Size controls
-    var sizeRow = el("div", { class: "a11y-widget-field" });
-    sizeRow.appendChild(el("label", { for: "a11y-custom-button-size", text: "Button Size" }));
-    var buttonSizeSelect = el("select", { id: "a11y-custom-button-size" });
-    ["small", "medium", "large"].forEach(function(size) {
-      var opt = el("option", { value: size, text: size.charAt(0).toUpperCase() + size.slice(1) });
-      if ((prefs.widgetCustomization && prefs.widgetCustomization.buttonSize) === size) opt.selected = true;
-      buttonSizeSelect.appendChild(opt);
-    });
-    buttonSizeSelect.addEventListener("change", function() {
-      var custom = assign({}, prefs.widgetCustomization || {});
-      custom.buttonSize = buttonSizeSelect.value;
-      var updatedPrefs = assign({}, prefs);
-      updatedPrefs.widgetCustomization = custom;
-      enhancedOnChange({ widgetCustomization: custom });
-      var root = document.getElementById("a11y-widget-root");
-      applyWidgetCustomization(updatedPrefs, root);
-    });
-    sizeRow.appendChild(buttonSizeSelect);
-    advancedRow.appendChild(sizeRow);
-
-    content.appendChild(advancedRow);
-
-    // Icon Customization Section
-    content.appendChild(el("div", { class: "a11y-divider" }));
-    var iconRow = el("div", { class: "a11y-widget-row" });
-    iconRow.appendChild(el("legend", { text: "🎯 Icon Customization" }));
-
-    // Size slider
-    var sizeRow = el("div", { class: "a11y-widget-row" });
-    sizeRow.appendChild(el("label", { for: "a11y-icon-size", text: "Icon Size" }));
-    var sizeWrapper = el("div", { class: "a11y-widget-range-wrapper" });
-    var sizeRange = el("input", {
-      type: "range",
-      id: "a11y-icon-size",
-      min: "32",
-      max: "80",
-      step: "4",
-      value: String(prefs.iconSize || 48)
-    });
-    var sizeValue = el("div", { 
-      class: "a11y-widget-font-value",
-      text: (prefs.iconSize || 48) + "px"
-    });
-    sizeRange.addEventListener("input", function() {
-      var size = parseInt(sizeRange.value);
-      sizeValue.textContent = size + "px";
-      var updatedPrefs = assign({}, prefs);
-      updatedPrefs.iconSize = size;
-      enhancedOnChange({ iconSize: size });
-      renderIcon(updatedPrefs, toggle);
-    });
-    sizeWrapper.appendChild(sizeRange);
-    sizeWrapper.appendChild(sizeValue);
-    sizeRow.appendChild(sizeWrapper);
-    iconRow.appendChild(sizeRow);
-
-    // Icon Design Selector with Previews
-    var designRow = el("div", { class: "a11y-widget-field" });
-    designRow.appendChild(el("label", { text: "Icon Design", style: "display: block; margin-bottom: 0.5rem; font-weight: 500;" }));
-    var designGrid = el("div", { 
-      style: "display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.5rem; margin-bottom: 0.5rem;" 
-    });
-    
-    var iconDesignNames = {
-      default: "Default",
-      circleA: "Circle A",
-      universal: "Universal",
-      eye: "Eye",
-      gear: "Gear",
-      heart: "Heart",
-      shield: "Shield",
-      hand: "Hand",
-      star: "Star",
-      checkmark: "Checkmark"
-    };
-    
-    Object.keys(ICON_DESIGNS).forEach(function(designKey) {
-      var designBtn = el("button", {
-        type: "button",
-        class: "a11y-icon-design-btn",
-        "aria-label": iconDesignNames[designKey] || designKey,
-        title: iconDesignNames[designKey] || designKey,
-        style: "width: 100%; aspect-ratio: 1; padding: 0.5rem; border: 2px solid var(--a11y-color-border); border-radius: 6px; background: var(--a11y-color-bg); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;"
-      });
-      
-      if (prefs.iconDesign === designKey) {
-        designBtn.style.borderColor = "var(--a11y-color-secondary)";
-        designBtn.style.backgroundColor = "var(--a11y-color-bg-light)";
-        designBtn.style.boxShadow = "0 2px 4px rgba(0,123,255,0.2)";
-      }
-      
-      // Create preview icon
-      var previewSize = 32;
-      var previewIcon = el("div", {
-        style: "width: " + previewSize + "px; height: " + previewSize + "px; display: flex; align-items: center; justify-content: center;"
-      });
-      var designFn = ICON_DESIGNS[designKey];
-      previewIcon.innerHTML = designFn();
-      designBtn.appendChild(previewIcon);
-      
-      designBtn.addEventListener("click", function() {
-        // Update selected state
-        var allBtns = designGrid.querySelectorAll(".a11y-icon-design-btn");
-        for (var i = 0; i < allBtns.length; i++) {
-          allBtns[i].style.borderColor = "var(--a11y-color-border)";
-          allBtns[i].style.backgroundColor = "var(--a11y-color-bg)";
-          allBtns[i].style.boxShadow = "none";
-        }
-        designBtn.style.borderColor = "var(--a11y-color-secondary)";
-        designBtn.style.backgroundColor = "var(--a11y-color-bg-light)";
-        designBtn.style.boxShadow = "0 2px 4px rgba(0,123,255,0.2)";
-        
-        // Update preferences
-        var updatedPrefs = assign({}, prefs);
-        updatedPrefs.iconDesign = designKey;
-        enhancedOnChange({ iconDesign: designKey });
-        renderIcon(updatedPrefs, toggle);
-      });
-      
-      designBtn.addEventListener("mouseenter", function() {
-        if (prefs.iconDesign !== designKey) {
-          designBtn.style.borderColor = "var(--a11y-color-primary-light)";
-          designBtn.style.backgroundColor = "var(--a11y-color-bg-light)";
-        }
-      });
-      
-      designBtn.addEventListener("mouseleave", function() {
-        if (prefs.iconDesign !== designKey) {
-          designBtn.style.borderColor = "var(--a11y-color-border)";
-          designBtn.style.backgroundColor = "var(--a11y-color-bg)";
-        }
-      });
-      
-      designGrid.appendChild(designBtn);
-    });
-    
-    designRow.appendChild(designGrid);
-    iconRow.appendChild(designRow);
-
-    // Style preset selector
-    var styleRow = el("div", { class: "a11y-widget-field" });
-    styleRow.appendChild(el("label", { for: "a11y-icon-style", text: "Icon Style" }));
-    var styleSelect = el("select", { id: "a11y-icon-style" });
-    ["default", "minimal", "bold", "outline", "custom"].forEach(function(style) {
-      var opt = el("option", { value: style, text: style.charAt(0).toUpperCase() + style.slice(1) });
-      if (prefs.iconStyle === style) opt.selected = true;
-      styleSelect.appendChild(opt);
-    });
-    styleSelect.addEventListener("change", function() {
-      var style = styleSelect.value;
-      var updatedPrefs = assign({}, prefs);
-      updatedPrefs.iconStyle = style;
-      if (style !== "custom") {
-        updatedPrefs.iconCustomization = {};
-      }
-      enhancedOnChange({ 
-        iconStyle: style,
-        iconCustomization: style === "custom" ? (prefs.iconCustomization || {}) : {}
-      });
-      renderIcon(updatedPrefs, toggle);
-      // Show/hide advanced icon customization
-      var advancedIconSection = document.getElementById("a11y-widget-advanced-icon");
-      if (advancedIconSection) {
-        advancedIconSection.style.display = style === "custom" ? "" : "none";
-      }
-    });
-    styleRow.appendChild(styleSelect);
-    iconRow.appendChild(styleRow);
-    iconRow.appendChild(el("div", { 
-      class: "a11y-widget-help", 
-      text: "Customize icon size, design, and style. Upload your own icon below." 
-    }));
-    content.appendChild(iconRow);
-
-    // Advanced Icon Customization (only show if custom style selected)
-    var advancedIconRow = el("div", { 
-      class: "a11y-widget-row",
-      id: "a11y-widget-advanced-icon",
-      style: prefs.iconStyle === "custom" ? "" : "display: none;"
-    });
-    advancedIconRow.appendChild(el("legend", { text: "Advanced Icon Styling" }));
-    
-    // Icon customization color pickers
-    var iconColorFields = [
-      { key: "backgroundColor", label: "Background", default: "#ffffff" },
-      { key: "borderColor", label: "Border Color", default: "#007bff" }
-    ];
-    
-    for (var i = 0; i < iconColorFields.length; i++) {
-      var field = iconColorFields[i];
-      var fieldRow = el("div", { class: "a11y-widget-field" });
-      fieldRow.appendChild(el("label", { 
-        for: "a11y-icon-custom-" + field.key,
-        text: field.label,
-        style: "min-width: 120px;"
-      }));
-      var colorInput = el("input", {
-        type: "color",
-        id: "a11y-icon-custom-" + field.key,
-        value: (prefs.iconCustomization && prefs.iconCustomization[field.key]) || field.default
-      });
-      colorInput.addEventListener("change", function(key, input) {
-        return function() {
-          var custom = assign({}, prefs.iconCustomization || {});
-          custom[key] = input.value;
-          var updatedPrefs = assign({}, prefs);
-          updatedPrefs.iconCustomization = custom;
-          enhancedOnChange({ iconCustomization: custom });
-          renderIcon(updatedPrefs, toggle);
-        };
-      }(field.key, colorInput));
-      fieldRow.appendChild(colorInput);
-      advancedIconRow.appendChild(fieldRow);
-    }
-    
-    // Border width
-    var borderWidthRow = el("div", { class: "a11y-widget-field" });
-    borderWidthRow.appendChild(el("label", { for: "a11y-icon-border-width", text: "Border Width" }));
-    var borderWidthSelect = el("select", { id: "a11y-icon-border-width" });
-    ["0", "1", "2", "3", "4"].forEach(function(width) {
-      var opt = el("option", { value: width, text: width + "px" });
-      if ((prefs.iconCustomization && String(prefs.iconCustomization.borderWidth)) === width) opt.selected = true;
-      borderWidthSelect.appendChild(opt);
-    });
-    borderWidthSelect.addEventListener("change", function() {
-      var custom = assign({}, prefs.iconCustomization || {});
-      custom.borderWidth = parseInt(borderWidthSelect.value);
-      var updatedPrefs = assign({}, prefs);
-      updatedPrefs.iconCustomization = custom;
-      enhancedOnChange({ iconCustomization: custom });
-      renderIcon(updatedPrefs, toggle);
-    });
-    borderWidthRow.appendChild(borderWidthSelect);
-    advancedIconRow.appendChild(borderWidthRow);
-    
-    // Shadow selector
-    var shadowRow = el("div", { class: "a11y-widget-field" });
-    shadowRow.appendChild(el("label", { for: "a11y-icon-shadow", text: "Shadow" }));
-    var shadowSelect = el("select", { id: "a11y-icon-shadow" });
-    ["none", "small", "medium", "large"].forEach(function(shadow) {
-      var opt = el("option", { value: shadow, text: shadow.charAt(0).toUpperCase() + shadow.slice(1) });
-      if ((prefs.iconCustomization && prefs.iconCustomization.shadow) === shadow) opt.selected = true;
-      shadowSelect.appendChild(opt);
-    });
-    shadowSelect.addEventListener("change", function() {
-      var custom = assign({}, prefs.iconCustomization || {});
-      custom.shadow = shadowSelect.value;
-      var updatedPrefs = assign({}, prefs);
-      updatedPrefs.iconCustomization = custom;
-      enhancedOnChange({ iconCustomization: custom });
-      renderIcon(updatedPrefs, toggle);
-    });
-    shadowRow.appendChild(shadowSelect);
-    advancedIconRow.appendChild(shadowRow);
-    
-    content.appendChild(advancedIconRow);
-
-    // Icon Upload Section
-    var uploadRow = el("div", { class: "a11y-widget-row" });
-    uploadRow.appendChild(el("legend", { text: "📤 Upload Custom Icon" }));
-
-    var fileInput = el("input", {
-      type: "file",
-      id: "a11y-icon-upload",
-      accept: "image/png,image/jpeg,image/svg+xml,image/gif,image/webp"
-    });
-    fileInput.style.display = "none";
-
-    var uploadBtn = el("button", {
-      type: "button",
-      class: "a11y-widget-btn",
-      text: "Choose Icon File"
-    });
-    uploadBtn.addEventListener("click", function() {
-      fileInput.click();
-    });
-
-    fileInput.addEventListener("change", function(e) {
-      var file = e.target.files[0];
-      if (!file) return;
-      
-      // Validate file size (max 500KB)
-      if (file.size > 500 * 1024) {
-        alert("Icon file must be smaller than 500KB");
-        return;
-      }
-      
-      // Validate file type
-      if (!file.type.match(/^image\/(png|jpeg|svg\+xml|gif|webp)$/)) {
-        alert("Please select a valid image file (PNG, JPEG, SVG, GIF, or WebP)");
-        return;
-      }
-      
-      var reader = new FileReader();
-      reader.onload = function(e) {
-        var dataUrl = e.target.result;
-        IconDB.saveIcon(dataUrl, file.name).then(function(iconId) {
-          var updatedPrefs = assign({}, prefs);
-          updatedPrefs.iconId = iconId;
-          enhancedOnChange({ iconId: iconId });
-          renderIcon(updatedPrefs, toggle);
-          alert("Icon uploaded successfully!");
-          // Reload icons list
-          if (typeof loadUploadedIcons === "function") {
-            loadUploadedIcons();
-          }
-        }).catch(function(err) {
-          console.error("Failed to save icon:", err);
-          alert("Failed to upload icon. Please try again.");
-        });
-      };
-      reader.readAsDataURL(file);
-      // Reset file input
-      fileInput.value = "";
-    });
-
-    uploadRow.appendChild(uploadBtn);
-    uploadRow.appendChild(fileInput);
-    uploadRow.appendChild(el("div", { 
-      class: "a11y-widget-help", 
-      text: "Upload PNG, JPEG, SVG, GIF, or WebP image (max 500KB). Icon will persist across sessions." 
-    }));
-    content.appendChild(uploadRow);
-
-    // Uploaded Icons List
-    var iconsListRow = el("div", { class: "a11y-widget-row", id: "a11y-uploaded-icons" });
-    iconsListRow.appendChild(el("legend", { text: "📋 Your Uploaded Icons" }));
-    var iconsList = el("div", { id: "a11y-icons-list" });
-    iconsListRow.appendChild(iconsList);
-    content.appendChild(iconsListRow);
-
-    // Load and display uploaded icons
-    function loadUploadedIcons() {
-      IconDB.listIcons().then(function(icons) {
-        iconsList.innerHTML = "";
-        if (icons.length === 0) {
-          iconsList.appendChild(el("div", { 
-            class: "a11y-widget-help",
-            text: "No uploaded icons yet. Upload an icon above to get started." 
-          }));
-          return;
-        }
-        icons.forEach(function(icon) {
-          var iconItem = el("div", { 
-            class: "a11y-widget-field",
-            style: "display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; border: 1px solid var(--a11y-color-border); border-radius: var(--a11y-radius); margin-bottom: 0.5rem;"
-          });
-          
-          IconDB.getIcon(icon.iconId).then(function(dataUrl) {
-            if (dataUrl) {
-              var img = el("img", {
-                src: dataUrl,
-                alt: icon.name,
-                style: "width: 32px; height: 32px; object-fit: contain; border-radius: 4px;"
-              });
-              iconItem.appendChild(img);
-            }
-          }).catch(function() {
-            // Ignore errors loading icon preview
-          });
-          
-          var nameSpan = el("span", { text: icon.name, style: "flex: 1;" });
-          iconItem.appendChild(nameSpan);
-          
-          var useBtn = el("button", {
-            type: "button",
-            class: "a11y-widget-btn",
-            text: "Use",
-            style: "padding: 0.25rem 0.5rem; font-size: 12px;"
-          });
-          useBtn.addEventListener("click", function() {
-            var updatedPrefs = assign({}, prefs);
-            updatedPrefs.iconId = icon.iconId;
-            enhancedOnChange({ iconId: icon.iconId });
-            renderIcon(updatedPrefs, toggle);
-          });
-          iconItem.appendChild(useBtn);
-          
-          var deleteBtn = el("button", {
-            type: "button",
-            class: "a11y-widget-btn",
-            text: "Delete",
-            style: "padding: 0.25rem 0.5rem; font-size: 12px; background: #dc3545; color: white;"
-          });
-          deleteBtn.addEventListener("click", function() {
-            if (confirm("Delete this icon?")) {
-              IconDB.deleteIcon(icon.iconId).then(function() {
-                loadUploadedIcons();
-                if (prefs.iconId === icon.iconId) {
-                  var updatedPrefs = assign({}, prefs);
-                  updatedPrefs.iconId = null;
-                  enhancedOnChange({ iconId: null });
-                  renderIcon(updatedPrefs, toggle);
-                }
-              }).catch(function(err) {
-                console.error("Failed to delete icon:", err);
-                alert("Failed to delete icon. Please try again.");
-              });
-            }
-          });
-          iconItem.appendChild(deleteBtn);
-          
-          iconsList.appendChild(iconItem);
-        });
-      }).catch(function(err) {
-        console.error("Failed to load icons:", err);
-        iconsList.innerHTML = "";
-        iconsList.appendChild(el("div", { 
-          class: "a11y-widget-help",
-          text: "Unable to load uploaded icons. IndexedDB may not be available." 
-        }));
-      });
-    }
-
-    loadUploadedIcons();
+    // Widget Appearance and Icon Customization sections removed - archived in ARCHIVED_WIDGET_CUSTOMIZATION.js
 
     // Reset
     if (cfg.features.reset) {
@@ -4119,15 +3618,7 @@
         toolbarButtons.push(ttsBtn);
       }
 
-      // Translation Toggle
-      if (cfg.features.translation) {
-        var translateBtn = createToolbarButton("🌐", "Translation", function() {
-          var currentPrefs = Store.get(cfg.storageKey) || {};
-          var normalized = normalizePrefs(assign(assign({}, PREF_DEFAULTS), currentPrefs));
-          onChange({ translationEnabled: !normalized.translationEnabled });
-        });
-        toolbarButtons.push(translateBtn);
-      }
+      // Translation Toggle - REMOVED: Duplicate global feature (available in settings panel)
 
       // Reading Ruler Toggle
       if (cfg.features.readingRuler) {

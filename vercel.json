@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "buildCommand": "cd website && npm install && npm run build",
+  "buildCommand": "npm install && npm run sync-widget && cd website && npm install && npm run build",
   "outputDirectory": "website/dist",
-  "installCommand": "cd website && npm install",
+  "installCommand": "npm install && npm run sync-widget && cd website && npm install",
   "framework": null,
   "headers": [
     {
