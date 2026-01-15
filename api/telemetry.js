@@ -17,7 +17,16 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
 
-  const validEvents = ['widget_open', 'setting_change', 'reset', 'widget_close'];
+  const validEvents = [
+    'widget_open', 
+    'setting_change', 
+    'reset', 
+    'widget_close',
+    'preset_applied',
+    'feature_toggled',
+    'recommendation_accepted',
+    'compliance_panel_opened'
+  ];
   if (!validEvents.includes(event)) {
     return res.status(400).json({ error: 'Invalid event type' });
   }
