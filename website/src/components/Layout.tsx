@@ -17,6 +17,41 @@ export default function Layout({ children }: LayoutProps) {
   const [widgetError, setWidgetError] = useState<string | null>(null)
 
   useEffect(() => {
+    // Configure widget with all features enabled and telemetry
+    const isDevelopment = import.meta.env.DEV || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    const apiBase = isDevelopment ? 'http://localhost:3000' : window.location.origin
+    
+    // Set widget configuration before loading
+    window.__A11Y_WIDGET__ = {
+      siteId: window.location.hostname || 'localhost',
+      position: 'right',
+      keyboardShortcut: 'Alt+A',
+      enableTelemetry: true,
+      telemetryEndpoint: `${apiBase}/api/telemetry`,
+      initialOpen: false,
+      features: {
+        contrast: true,
+        fontScale: true,
+        spacing: true,
+        reduceMotion: true,
+        readableFont: true,
+        presets: true,
+        reset: true,
+        skipLink: true,
+        textToSpeech: true,
+        translation: true,
+        readingRuler: true,
+        screenMask: true,
+        textOnlyMode: true,
+        margins: true,
+        cursorOptions: true,
+        dictionary: true,
+        magnifier: true
+      }
+    }
+  }, [])
+
+  useEffect(() => {
     // Load widget directly from GitHub CDN (using versioned file v1.1.0)
     // Uses jsDelivr CDN as primary (more reliable than raw GitHub)
     const loadWidget = () => {

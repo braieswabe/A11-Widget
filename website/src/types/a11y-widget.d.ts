@@ -10,6 +10,7 @@ declare global {
       zIndex?: number
       initialOpen?: boolean
       locale?: string
+      keyboardShortcut?: string | null
       features?: {
         contrast?: boolean
         fontScale?: boolean
@@ -19,6 +20,15 @@ declare global {
         presets?: boolean
         reset?: boolean
         skipLink?: boolean
+        textToSpeech?: boolean
+        translation?: boolean
+        readingRuler?: boolean
+        screenMask?: boolean
+        textOnlyMode?: boolean
+        margins?: boolean
+        cursorOptions?: boolean
+        dictionary?: boolean
+        magnifier?: boolean
       }
     }
     __a11yWidget?: {
@@ -28,6 +38,7 @@ declare global {
       setPrefs: (prefs: any) => void
       reset: () => void
     }
+    __a11yWidgetInit?: (config?: any) => void
   }
 }
 
