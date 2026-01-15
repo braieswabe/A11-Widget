@@ -146,6 +146,8 @@
 
   // --- ARIA Live Announcements ----------------------------------------------
   var ariaLiveRegion = null;
+  var ariaLiveRegionAssertive = null;
+  
   function ensureAriaLiveRegion() {
     if (!ariaLiveRegion) {
       ariaLiveRegion = document.createElement("div");
@@ -153,17 +155,39 @@
       ariaLiveRegion.setAttribute("aria-atomic", "true");
       ariaLiveRegion.className = "a11y-widget-sr-only";
       ariaLiveRegion.style.cssText = "position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden;";
-      document.body.appendChild(ariaLiveRegion);
+      if (document.body) {
+        document.body.appendChild(ariaLiveRegion);
+      }
     }
     return ariaLiveRegion;
   }
+  
+  function ensureAriaLiveRegionAssertive() {
+    if (!ariaLiveRegionAssertive) {
+      ariaLiveRegionAssertive = document.createElement("div");
+      ariaLiveRegionAssertive.setAttribute("aria-live", "assertive");
+      ariaLiveRegionAssertive.setAttribute("aria-atomic", "true");
+      ariaLiveRegionAssertive.className = "a11y-widget-sr-only";
+      ariaLiveRegionAssertive.style.cssText = "position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden;";
+      if (document.body) {
+        document.body.appendChild(ariaLiveRegionAssertive);
+      }
+    }
+    return ariaLiveRegionAssertive;
+  }
 
-  function announceToScreenReader(message) {
-    var region = ensureAriaLiveRegion();
+  function announceToScreenReader(message, assertive) {
+    var region = assertive ? ensureAriaLiveRegionAssertive() : ensureAriaLiveRegion();
+    // Clear previous content
     region.textContent = "";
+    // Use a longer delay to ensure screen readers are ready
     setTimeout(function() {
       region.textContent = message;
-    }, 100);
+      // Clear again after announcement to allow re-announcement
+      setTimeout(function() {
+        region.textContent = "";
+      }, 1000);
+    }, assertive ? 300 : 200);
   }
 
   // --- Focus Trap -------------------------------------------------------------
@@ -3003,7 +3027,6 @@
     }
 
     // Global Mode Toggle
-    content.appendChild(el("div", { class: "a11y-divider" }));
     var globalModeRow = toggleRow(
       "a11y-global-mode",
       "🌐 Global Mode",
@@ -3128,14 +3151,16 @@
     controls.updateGlobalModeControls = updateGlobalModeControls;
 
     // Reading & Focus Aids Section
-    content.appendChild(el("div", { class: "a11y-divider" }));
+    // Track if any features are added to readingPanel
+    var readingFeaturesCount = 0;
+    
+    // Add label to readingPanel (not main content)
     var readingLabel = el("div", { text: "📖 Reading & Focus Aids", class: "a11y-widget-help" });
     readingLabel.style.fontSize = "12px";
     readingLabel.style.fontWeight = "650";
     readingLabel.style.opacity = "1";
     readingLabel.style.marginBottom = "0.4rem";
     readingLabel.style.color = "#111";
-    content.appendChild(readingLabel);
 
     // Text-to-Speech
     if (cfg.features.textToSpeech) {
@@ -3152,7 +3177,12 @@
         "Read website text aloud with customizable voice settings."
       );
       controls.textToSpeechCheckbox = ttsRow.checkbox;
+      // Add label if this is the first feature
+      if (readingFeaturesCount === 0) {
+        readingPanel.appendChild(readingLabel);
+      }
       readingPanel.appendChild(ttsRow.row);
+      readingFeaturesCount++;
       
       // TTS Controls container (will be shown/hidden)
       var ttsControlsContainer = el("div", { 
@@ -3234,7 +3264,12 @@
         "Horizontal line that follows your cursor to focus on one line of text."
       );
       controls.readingRulerCheckbox = rulerRow.checkbox;
+      // Add label if this is the first feature
+      if (readingFeaturesCount === 0) {
+        readingPanel.appendChild(readingLabel);
+      }
       readingPanel.appendChild(rulerRow.row);
+      readingFeaturesCount++;
     }
 
     // Screen Mask
@@ -3247,7 +3282,12 @@
         COPY.screenMask + ". Dim distractions around the focused area to improve concentration."
       );
       controls.screenMaskCheckbox = maskRow.checkbox;
+      // Add label if this is the first feature
+      if (readingFeaturesCount === 0) {
+        readingPanel.appendChild(readingLabel);
+      }
       readingPanel.appendChild(maskRow.row);
+      readingFeaturesCount++;
     }
 
     // Text-Only Mode
@@ -3260,7 +3300,12 @@
         "Strip away images and layout, showing only text content for easier reading."
       );
       controls.textOnlyModeCheckbox = textOnlyRow.checkbox;
+      // Add label if this is the first feature
+      if (readingFeaturesCount === 0) {
+        readingPanel.appendChild(readingLabel);
+      }
       readingPanel.appendChild(textOnlyRow.row);
+      readingFeaturesCount++;
     }
 
     // Margins
@@ -3277,7 +3322,12 @@
         "Add adjustable margins for better readability."
       );
       controls.marginsCheckbox = marginsRow.checkbox;
+      // Add label if this is the first feature
+      if (readingFeaturesCount === 0) {
+        readingPanel.appendChild(readingLabel);
+      }
       readingPanel.appendChild(marginsRow.row);
+      readingFeaturesCount++;
       
       // Margins slider container (will be shown/hidden)
       var marginsControlsContainer = el("div", { 
@@ -3311,8 +3361,14 @@
       controls.updateMarginsControls = updateMarginsControls;
     }
 
+    // Hide Reading & Focus tab if it has no features
+    if (readingFeaturesCount === 0) {
+      readingTab.style.display = "none";
+      readingTab.setAttribute("hidden", "");
+      readingPanel.setAttribute("hidden", "");
+    }
+
     // Tools Section - moved to Advanced Tools tab
-    advancedPanel.appendChild(el("div", { class: "a11y-divider" }));
     var toolsLabel = el("div", { text: "🛠️ Advanced Tools", class: "a11y-widget-help" });
     toolsLabel.style.fontSize = "12px";
     toolsLabel.style.fontWeight = "650";
@@ -3565,7 +3621,6 @@
 
     // Presets
     if (cfg.features.presets) {
-      content.appendChild(el("div", { class: "a11y-divider" }));
       var presetRow = el("div", { class: "a11y-widget-row" });
       var presetLabel = el("div", { text: "Quick Presets", class: "a11y-widget-help" });
       presetLabel.style.fontSize = "12px";
@@ -3805,7 +3860,6 @@
     }
 
     // Check for Updates button
-    content.appendChild(el("div", { class: "a11y-divider" }));
     var updateRow = el("div", { class: "a11y-widget-row" });
     var updateBtn = el("button", { 
       type: "button", 
@@ -3837,7 +3891,6 @@
 
     // Reset
     if (cfg.features.reset) {
-      content.appendChild(el("div", { class: "a11y-divider" }));
       var resetRow = el("div", { class: "a11y-widget-row" });
       var resetBtn = el("button", { 
         type: "button", 
@@ -3901,7 +3954,6 @@
     }
 
     // Toolbar Mode Toggle
-    content.appendChild(el("div", { class: "a11y-divider" }));
     var toolbarModeRow = toggleRow(
       "a11y-toolbar-mode",
       "📋 Toolbar Mode",
@@ -3916,7 +3968,6 @@
     advancedPanel.appendChild(toolbarModeRow.row);
 
     // Keyboard Instructions Section
-    content.appendChild(el("div", { class: "a11y-divider" }));
     var keyboardSection = el("div", { class: "a11y-widget-row" });
     var keyboardLabel = el("div", { 
       text: "⌨️ Keyboard Shortcuts", 
@@ -3999,12 +4050,12 @@
       dialog.style.cssText = 
         "background: white; border-radius: 8px; padding: 1.5rem; " +
         "max-width: 600px; max-height: 80vh; overflow-y: auto; " +
-        "box-shadow: 0 8px 32px rgba(0,0,0,0.2);";
+        "box-shadow: 0 8px 32px rgba(0,0,0,0.2); position: relative;";
       
       var title = document.createElement("h2");
       title.id = "a11y-compliance-title";
       title.textContent = COPY.compliance.title;
-      title.style.cssText = "margin: 0 0 1rem 0; font-size: 18px; font-weight: 700;";
+      title.style.cssText = "margin: 0 0 1rem 0; padding-right: 2rem; font-size: 18px; font-weight: 700;";
       
       var wcagStatement = document.createElement("p");
       wcagStatement.textContent = COPY.compliance.wcagStatement;
@@ -4077,14 +4128,28 @@
       });
       
       var closeBtn = document.createElement("button");
-      closeBtn.textContent = "Close";
+      closeBtn.textContent = "×";
+      closeBtn.type = "button";
       closeBtn.style.cssText = 
         "position: absolute; top: 1rem; right: 1rem; " +
-        "background: none; border: none; font-size: 24px; " +
-        "cursor: pointer; color: #666; width: 32px; height: 32px;";
-      closeBtn.setAttribute("aria-label", "Close compliance panel");
+        "background: transparent; border: none; font-size: 28px; line-height: 1; " +
+        "cursor: pointer; color: #666; width: 36px; height: 36px; " +
+        "display: flex; align-items: center; justify-content: center; " +
+        "border-radius: 4px; padding: 0; z-index: 10; " +
+        "transition: background-color 0.2s, color 0.2s;";
+      closeBtn.setAttribute("aria-label", "Close accessibility information");
+      closeBtn.addEventListener("mouseenter", function() {
+        closeBtn.style.backgroundColor = "#f0f0f0";
+        closeBtn.style.color = "#000";
+      });
+      closeBtn.addEventListener("mouseleave", function() {
+        closeBtn.style.backgroundColor = "transparent";
+        closeBtn.style.color = "#666";
+      });
       closeBtn.addEventListener("click", function() {
-        document.body.removeChild(modal);
+        if (modal && modal.parentNode) {
+          modal.parentNode.removeChild(modal);
+        }
       });
       
       dialog.appendChild(closeBtn);
@@ -4910,6 +4975,18 @@
     // Auto-load CSS from GitHub repository
     ensureCSS();
     
+    // Create ARIA live regions early to ensure they're ready for announcements
+    if (document.body) {
+      ensureAriaLiveRegion();
+      ensureAriaLiveRegionAssertive();
+    } else {
+      // Wait for body if not ready
+      document.addEventListener("DOMContentLoaded", function() {
+        ensureAriaLiveRegion();
+        ensureAriaLiveRegionAssertive();
+      });
+    }
+    
     // Set up dictionary handler once (it checks enabled state internally)
     setupDictionaryHandler();
 
@@ -4992,6 +5069,23 @@
           // Sync to user profile if authenticated
           syncPreferencesToProfile(cfg, prefs);
           emit(cfg, "setting_change", { keys: Object.keys(delta) });
+          
+          // Emit feature_toggled events for individual feature changes
+          for (var key in delta) {
+            if (delta.hasOwnProperty(key)) {
+              var value = delta[key];
+              // Map preference keys to feature names
+              var featureKey = key;
+              // Emit feature_toggled event for boolean toggles and key changes
+              if (typeof value === 'boolean' || typeof value === 'string' || typeof value === 'number') {
+                emit(cfg, "feature_toggled", { 
+                  featureKey: featureKey, 
+                  featureValue: value 
+                });
+              }
+            }
+          }
+          
           // Update UI controls after preferences change
           if (widget.updateControls) {
             widget.updateControls(prefs);
@@ -5018,11 +5112,22 @@
 
       document.body.appendChild(widget.root);
 
+      // Ensure ARIA live regions are created before announcing
+      ensureAriaLiveRegion();
+      ensureAriaLiveRegionAssertive();
+
       // Show first-visit nudge
       var toggle = document.getElementById("a11y-widget-toggle");
       if (toggle) {
         showFirstVisitNudge(cfg, toggle);
       }
+
+      // Announce to screen readers that accessibility options are available
+      // Use assertive for initial announcement to ensure it's always heard
+      // Use setTimeout to ensure DOM is fully ready and screen readers can detect the announcement
+      setTimeout(function() {
+        announceToScreenReader(COPY.announcements.optionsAvailable, true);
+      }, 800);
 
       // open on init if configured
       if (cfg.initialOpen) {
