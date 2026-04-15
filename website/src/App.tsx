@@ -6,6 +6,7 @@ import Home from './pages/Home'
 import GettingStarted from './pages/GettingStarted'
 import Download from './pages/Download'
 import Features from './pages/Features'
+import WordPress from './pages/WordPress'
 import AdminLogin from './pages/admin/AdminLogin'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import ClientForm from './pages/admin/ClientForm'
@@ -21,6 +22,7 @@ function App() {
           <Route path="/getting-started" element={<Layout><GettingStarted /></Layout>} />
           <Route path="/download" element={<Layout><Download /></Layout>} />
           <Route path="/features" element={<Layout><Features /></Layout>} />
+          <Route path="/wordpress" element={<Layout><WordPress /></Layout>} />
           
           {/* Admin routes */}
           <Route path="/admin/login" element={<AdminLogin />} />

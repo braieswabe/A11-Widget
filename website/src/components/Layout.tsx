@@ -484,6 +484,7 @@ export default function Layout({ children }: LayoutProps) {
             <li><Link to="/" className={isActive('/') ? 'active' : ''}>Home</Link></li>
             <li><Link to="/features" className={isActive('/features') ? 'active' : ''}>Features</Link></li>
             <li><Link to="/getting-started" className={isActive('/getting-started') ? 'active' : ''}>Installation</Link></li>
+            <li><Link to="/wordpress" className={isActive('/wordpress') ? 'active' : ''}>WordPress</Link></li>
             <li><Link to="/download" className={isActive('/download') ? 'active' : ''}>Download</Link></li>
             <li>
               <Link 
@@ -539,6 +540,7 @@ export default function Layout({ children }: LayoutProps) {
           <div className="footer-links">
             <Link to="/features">Features</Link>
             <Link to="/getting-started">Installation</Link>
+            <Link to="/wordpress">WordPress</Link>
             <Link to="/download">Download</Link>
           </div>
           <p>Accessibility Widget {WIDGET_VERSION} — WCAG 2.1 AA-aligned enhancements for supported surfaces only.</p>
