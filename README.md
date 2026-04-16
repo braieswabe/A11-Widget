@@ -32,10 +32,10 @@ Just add this single line to your HTML:
 
 ```html
 <!-- Use versioned tag to ensure you get the latest stable version -->
-<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.1.0/a11y-widget-loader-v1.1.0.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.1/a11y-widget-loader-v1.6.1.js" defer></script>
 ```
 
-**Note:** We use version tags (`@v1.1.0`) instead of branch names (`@main`) because jsDelivr CDN aggressively caches branch URLs for up to 7 days. Version tags are served immediately and ensure you always get the exact version you specify.
+**Note:** We use version tags (`@v1.6.1`) instead of branch names (`@main`) because jsDelivr CDN aggressively caches branch URLs for up to 7 days. Version tags are served immediately and ensure you always get the exact version you specify.
 
 That's it! The widget loads automatically from GitHub. No configuration needed.
 
@@ -60,7 +60,7 @@ initA11yWidget({
 ```
 
 **✨ Version Updates**: 
-- **CDN**: Update the version tag in your script tag (e.g., `@v1.1.0` → `@v1.2.0`)
+- **CDN**: Update the version tag in your script tag (e.g., `@v1.6.1` → `@v1.7.0`)
 - **NPM**: Run `npm update @careerdriver/a11y-widget` to get the latest version
 
 **⌨️ Keyboard Shortcut**: Press **Alt+A** (Option+A on Mac) from anywhere on the page to quickly open/close the accessibility widget. The shortcut doesn't interfere with typing in input fields.
@@ -81,7 +81,7 @@ If you want to customize the widget, add configuration before the loader script:
     surfaces: ["body", "main"]  // Optional: CSS selectors (ignored if globalMode is true)
   };
 </script>
-<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.1.0/a11y-widget-loader-v1.1.0.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.1/a11y-widget-loader-v1.6.1.js" defer></script>
 ```
 
 #### NPM Method

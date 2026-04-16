@@ -41,12 +41,8 @@
       "destination": "/a11y-widget.js"
     },
     {
-      "source": "/a11y-widget/v1.1.0/a11y-widget-v1.1.0.js",
-      "destination": "/a11y-widget-v1.1.0.js"
-    },
-    {
-      "source": "/a11y-widget-v1.1.0.js",
-      "destination": "/a11y-widget-v1.1.0.js"
+      "source": "/a11y-widget/v1.6.1/a11y-widget.js",
+      "destination": "/a11y-widget.js"
     },
     {
       "source": "/a11y-widget/v1/a11y-widget.css",

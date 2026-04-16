@@ -372,98 +372,11 @@ async function loadApiRoutes() {
 loadApiRoutes().then(() => {
   // Serve widget files directly from root (before static files)
   // This ensures local widget files are always served, not CDN
-  app.get('/a11y-widget-v1.1.0.js', (req, res) => {
-    // #region agent log
-    const logData = {
-      location: 'server.js:/a11y-widget-v1.1.0.js',
-      message: 'Widget file request received',
-      data: {
-        url: req.url,
-        path: req.path,
-        query: req.query,
-        timestamp: Date.now()
-      },
-      timestamp: Date.now(),
-      sessionId: 'debug-session',
-      runId: 'run1',
-      hypothesisId: 'C'
-    };
-    fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(logData)}).catch(()=>{});
-    // #endregion
-    
-    const npmCoreJs = join(__dirname, 'packages', 'a11y-widget', 'vendor', 'a11y-widget.core.js');
-    const widgetJsV110 = join(__dirname, 'a11y-widget-v1.1.0.js');
-    const widgetJs = fs.existsSync(npmCoreJs) ? npmCoreJs : widgetJsV110;
-    
-    // #region agent log
-    const logData2 = {
-      location: 'server.js:/a11y-widget-v1.1.0.js',
-      message: 'File path resolution',
-      data: {
-        npmCoreJsExists: fs.existsSync(npmCoreJs),
-        widgetJsV110Exists: fs.existsSync(widgetJsV110),
-        selectedPath: widgetJs,
-        npmCoreJsPath: npmCoreJs,
-        widgetJsV110Path: widgetJsV110
-      },
-      timestamp: Date.now(),
-      sessionId: 'debug-session',
-      runId: 'run1',
-      hypothesisId: 'C'
-    };
-    fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(logData2)}).catch(()=>{});
-    // #endregion
-    
-    if (fs.existsSync(widgetJs)) {
-      // #region agent log
-      const fileContent = fs.readFileSync(widgetJs, 'utf8');
-      const hasRemovedSections = fileContent.includes('Widget Appearance and Icon Customization sections removed');
-      const fileSize = fileContent.length;
-      const logData3 = {
-        location: 'server.js:/a11y-widget-v1.1.0.js',
-        message: 'File content verification',
-        data: {
-          filePath: widgetJs,
-          fileSize: fileSize,
-          hasRemovedSectionsMarker: hasRemovedSections,
-          first500Chars: fileContent.substring(0, 500)
-        },
-        timestamp: Date.now(),
-        sessionId: 'debug-session',
-        runId: 'run1',
-        hypothesisId: 'E'
-      };
-      fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(logData3)}).catch(()=>{});
-      // #endregion
-      
-      res.setHeader('Content-Type', 'application/javascript');
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-      res.sendFile(widgetJs);
-    } else {
-      // #region agent log
-      const logData4 = {
-        location: 'server.js:/a11y-widget-v1.1.0.js',
-        message: 'Widget file not found',
-        data: {
-          npmCoreJsExists: fs.existsSync(npmCoreJs),
-          widgetJsV110Exists: fs.existsSync(widgetJsV110),
-          npmCoreJsPath: npmCoreJs,
-          widgetJsV110Path: widgetJsV110
-        },
-        timestamp: Date.now(),
-        sessionId: 'debug-session',
-        runId: 'run1',
-        hypothesisId: 'C'
-      };
-      fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(logData4)}).catch(()=>{});
-      // #endregion
-      
-      res.status(404).send('Widget file not found');
-    }
-  });
-
   app.get('/a11y-widget.js', (req, res) => {
-    const widgetJs = join(__dirname, 'a11y-widget.js');
+    const npmCoreJs = join(__dirname, 'packages', 'a11y-widget', 'vendor', 'a11y-widget.core.js');
+    const widgetJsRoot = join(__dirname, 'a11y-widget.js');
+    const widgetJs = fs.existsSync(npmCoreJs) ? npmCoreJs : widgetJsRoot;
+
     if (fs.existsSync(widgetJs)) {
       res.setHeader('Content-Type', 'application/javascript');
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');

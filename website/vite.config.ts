@@ -12,8 +12,8 @@ export default defineConfig({
       configureServer(server) {
         // In development, serve widget files from npm package or root
         server.middlewares.use((req, res, next) => {
-          // Serve versioned widget file (v1.1.0) - prefer npm package
-          if (req.url === '/a11y-widget-v1.1.0.js' || req.url?.startsWith('/a11y-widget-v1.1.0.js?')) {
+          // Serve widget file - prefer npm package
+          if (req.url === '/a11y-widget.js' || req.url?.startsWith('/a11y-widget.js?')) {
             // #region agent log
             const logData = {
               location: 'vite.config.ts:configureServer',
@@ -31,8 +31,8 @@ export default defineConfig({
             // #endregion
             
             const npmCoreJs = join(__dirname, '..', 'packages', 'a11y-widget', 'vendor', 'a11y-widget.core.js')
-            const widgetJsV110 = join(__dirname, '..', 'a11y-widget-v1.1.0.js')
-            const widgetJs = existsSync(npmCoreJs) ? npmCoreJs : widgetJsV110
+            const widgetJsRoot = join(__dirname, '..', 'a11y-widget.js')
+            const widgetJs = existsSync(npmCoreJs) ? npmCoreJs : widgetJsRoot
             
             // #region agent log
             const logData2 = {
@@ -40,10 +40,10 @@ export default defineConfig({
               message: 'Vite file path resolution',
               data: {
                 npmCoreJsExists: existsSync(npmCoreJs),
-                widgetJsV110Exists: existsSync(widgetJsV110),
+                widgetJsRootExists: existsSync(widgetJsRoot),
                 selectedPath: widgetJs,
                 npmCoreJsPath: npmCoreJs,
-                widgetJsV110Path: widgetJsV110
+                widgetJsRootPath: widgetJsRoot
               },
               timestamp: Date.now(),
               sessionId: 'debug-session',
@@ -79,16 +79,6 @@ export default defineConfig({
               return
             }
           }
-          // Fallback to original widget file for backward compatibility
-          if (req.url === '/a11y-widget.js' || req.url?.startsWith('/a11y-widget.js?')) {
-            const widgetJs = join(__dirname, '..', 'a11y-widget.js')
-            if (existsSync(widgetJs)) {
-              res.setHeader('Content-Type', 'application/javascript')
-              res.setHeader('Cache-Control', 'no-cache')
-              res.end(readFileSync(widgetJs))
-              return
-            }
-          }
           if (req.url === '/a11y-widget.css' || req.url?.startsWith('/a11y-widget.css?')) {
             const npmCss = join(__dirname, '..', 'packages', 'a11y-widget', 'assets', 'a11y-widget.css')
             const widgetCss = join(__dirname, '..', 'a11y-widget.css')
@@ -111,41 +101,17 @@ export default defineConfig({
         const npmCoreJs = join(__dirname, '..', 'packages', 'a11y-widget', 'vendor', 'a11y-widget.core.js')
         const npmCss = join(__dirname, '..', 'packages', 'a11y-widget', 'assets', 'a11y-widget.css')
         const widgetJs = join(__dirname, '..', 'a11y-widget.js')
-        const widgetJsV110 = join(__dirname, '..', 'a11y-widget-v1.1.0.js')
         const widgetCss = join(__dirname, '..', 'a11y-widget.css')
         const downloadsDir = join(__dirname, 'public', 'downloads')
         const distDownloadsDir = join(distPath, 'downloads')
         
-        // Copy widget files - prefer npm package files if available
-        // For v1.1.0, use npm core file or fallback to root file
+        // Copy widget JS - prefer npm package files if available
         if (existsSync(npmCoreJs)) {
-          copyFileSync(npmCoreJs, join(distPath, 'a11y-widget-v1.1.0.js'))
+          copyFileSync(npmCoreJs, join(distPath, 'a11y-widget.js'))
           console.log('[Vite] Copied widget core from npm package')
-          // #region agent log
-          const logData = {
-            location: 'vite.config.ts:closeBundle',
-            message: 'Widget file copied to dist',
-            data: {
-              source: npmCoreJs,
-              destination: join(distPath, 'a11y-widget-v1.1.0.js'),
-              sourceExists: existsSync(npmCoreJs),
-              destExists: existsSync(join(distPath, 'a11y-widget-v1.1.0.js'))
-            },
-            timestamp: Date.now(),
-            sessionId: 'debug-session',
-            runId: 'post-fix',
-            hypothesisId: 'A'
-          };
-          fetch('http://127.0.0.1:7244/ingest/3544e706-ca53-43b1-b2c7-985ccfcff332',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(logData)}).catch(()=>{});
-          // #endregion
-        } else if (existsSync(widgetJsV110)) {
-          copyFileSync(widgetJsV110, join(distPath, 'a11y-widget-v1.1.0.js'))
-          console.log('[Vite] Copied widget v1.1.0 from root')
-        }
-        
-        // Copy legacy widget.js for backward compatibility
-        if (existsSync(widgetJs)) {
+        } else if (existsSync(widgetJs)) {
           copyFileSync(widgetJs, join(distPath, 'a11y-widget.js'))
+          console.log('[Vite] Copied widget from root')
         }
         
         // Copy CSS - prefer npm package file
