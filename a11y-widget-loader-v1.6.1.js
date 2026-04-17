@@ -9,7 +9,7 @@
   var VERSION_TAG = "v1.6.1";
   var LOADER_VERSION = "1.6.1";
   var CSS_FILE = "a11y-widget.css";
-  var JS_FILE = "a11y-widget.js";
+  var JS_FILE = "a11y-widget-v1.1.0.js";
 
   var ASSET_BASE = window.__A11Y_ASSET_BASE__ || null;
   if (ASSET_BASE && !ASSET_BASE.endsWith("/")) {
@@ -53,7 +53,7 @@
     }
 
     var existing = document.getElementById("a11y-widget-script") ||
-      document.querySelector('script[src*="a11y-widget.js"]');
+      document.querySelector('script[src*="a11y-widget-v1.1.0.js"],script[src*="a11y-widget.js"]');
     if (existing) {
       if (existing.dataset && existing.dataset.loaded === "true") {
         initWidgetIfReady();

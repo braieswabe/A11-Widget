@@ -1256,45 +1256,56 @@
   }
 
 
+  function isWidgetElement(node) {
+    if (!node || node.nodeType !== 1) return false;
+    if (node.id && node.id.indexOf("a11y-widget") === 0) return true;
+    if (node.closest && node.closest("#a11y-widget-root")) return true;
+    return false;
+  }
+
+  function clearMarkedSurfaces() {
+    var marked = document.querySelectorAll("[data-a11y-managed-surface='1']");
+    for (var i = 0; i < marked.length; i++) {
+      marked[i].removeAttribute("data-a11y-surface");
+      marked[i].removeAttribute("data-a11y-managed-surface");
+    }
+  }
+
   function markSurfaces(selectors, globalMode) {
-    // If global mode is enabled, mark all elements
+    // Always clear stale marks first so toggling global mode/reset restores expected scope.
+    clearMarkedSurfaces();
+
+    // If global mode is enabled, mark all non-widget body descendants.
     if (globalMode) {
       try {
-        var allElements = document.querySelectorAll("*");
+        if (document.body && !isWidgetElement(document.body)) {
+          document.body.setAttribute("data-a11y-surface", "true");
+          document.body.setAttribute("data-a11y-managed-surface", "1");
+        }
+        var allElements = document.body ? document.body.querySelectorAll("*") : document.querySelectorAll("*");
         for (var k = 0; k < allElements.length; k++) {
-          // Skip widget elements
-          if (allElements[k].id && allElements[k].id.indexOf("a11y-widget") === 0) continue;
+          if (isWidgetElement(allElements[k])) continue;
           allElements[k].setAttribute("data-a11y-surface", "true");
+          allElements[k].setAttribute("data-a11y-managed-surface", "1");
         }
       } catch (e) {
-        // Fallback: mark body and all descendants
-        try {
-          var body = document.body;
-          if (body) {
-            body.setAttribute("data-a11y-surface", "true");
-            var descendants = body.querySelectorAll("*");
-            for (var d = 0; d < descendants.length; d++) {
-              if (descendants[d].id && descendants[d].id.indexOf("a11y-widget") === 0) continue;
-              descendants[d].setAttribute("data-a11y-surface", "true");
-            }
-          }
-        } catch (e2) {
-          // Ignore errors
-        }
+        // Ignore and continue without crashing.
       }
       return;
     }
     
-    // Otherwise, use selectors as before
+    // Otherwise, use configured selectors.
     selectors = selectors && selectors.length ? selectors : ["body"];
-    for (var i = 0; i < selectors.length; i++) {
+    for (var s = 0; s < selectors.length; s++) {
       try {
-        var nodes = document.querySelectorAll(selectors[i]);
+        var nodes = document.querySelectorAll(selectors[s]);
         for (var j = 0; j < nodes.length; j++) {
+          if (isWidgetElement(nodes[j])) continue;
           nodes[j].setAttribute("data-a11y-surface", "true");
+          nodes[j].setAttribute("data-a11y-managed-surface", "1");
         }
-      } catch (e) {
-        // ignore invalid selectors
+      } catch (e2) {
+        // Ignore invalid selectors.
       }
     }
   }
@@ -1323,6 +1334,67 @@
         });
       }
     } catch (e) {}
+  }
+
+  var WIDGET_VERSION_SIGNATURE_KEY = "__a11y_widget_version_signature__";
+
+  function setUpdateStatus(statusEl, message, isError) {
+    if (!statusEl) return;
+    statusEl.textContent = message;
+    statusEl.style.color = isError ? "#b42318" : "";
+  }
+
+  function checkForUpdates(cfg, buttonEl, statusEl) {
+    var originalButtonText = buttonEl ? buttonEl.textContent : "";
+
+    if (buttonEl) {
+      buttonEl.disabled = true;
+      buttonEl.textContent = "⏳ Checking...";
+    }
+    setUpdateStatus(statusEl, "Checking latest version...", false);
+
+    var probeUrl = CDN_BASE + "a11y-widget-v1.1.0.js?_a11y_check=" + Date.now();
+    var supportsFetch = typeof fetch !== "undefined";
+
+    function finish(buttonText) {
+      if (!buttonEl) return;
+      buttonEl.disabled = false;
+      buttonEl.textContent = buttonText || originalButtonText;
+    }
+
+    if (!supportsFetch) {
+      setUpdateStatus(statusEl, "Cannot verify automatically in this browser. Reloading...", false);
+      setTimeout(function() { window.location.reload(); }, 600);
+      return;
+    }
+
+    fetch(probeUrl, { method: "HEAD", cache: "no-store" })
+      .then(function(response) {
+        if (!response.ok) throw new Error("Update check failed with status " + response.status);
+
+        var signature = response.headers.get("etag") || response.headers.get("last-modified") || String(Date.now());
+        var previousSignature = null;
+        try {
+          previousSignature = window.localStorage.getItem(WIDGET_VERSION_SIGNATURE_KEY);
+          window.localStorage.setItem(WIDGET_VERSION_SIGNATURE_KEY, signature);
+        } catch (e) {}
+
+        if (previousSignature && previousSignature !== signature) {
+          setUpdateStatus(statusEl, "Update found. Reloading...", false);
+          setTimeout(function() { window.location.reload(); }, 700);
+          return;
+        }
+
+        setUpdateStatus(statusEl, "You are using the latest available widget build.", false);
+      })
+      .catch(function() {
+        // Fallback behavior: reload so users can still pull fresh assets when HEAD is blocked.
+        setUpdateStatus(statusEl, "Unable to verify remotely. Reloading to fetch latest assets...", false);
+        setTimeout(function() { window.location.reload(); }, 700);
+      })
+      .finally(function() {
+        finish("🔄 Check for Updates");
+      });
   }
 
   // --- Text-to-Speech Handler -----------------------------------------------
@@ -2116,6 +2188,7 @@
   var translationNodes = [];
   var translationInProgress = false;
   var translationStatusEl = null;
+  var translatedEntries = [];
 
   function showTranslationStatus(message, isError, isPersistent) {
     if (!translationStatusEl) {
@@ -2197,6 +2270,82 @@
     return names[code] || code;
   }
 
+  function isTranslatableText(raw) {
+    if (typeof raw !== "string") return false;
+    var text = raw.trim();
+    if (!text || text.length < 2) return false;
+    // Require at least one letter to avoid translating purely numeric/symbol content.
+    if (!/[A-Za-z\u00C0-\u024F]/.test(text)) return false;
+    return true;
+  }
+
+  function collectTranslationTargets(surface, targets) {
+    if (!surface || isWidgetElement(surface)) return;
+
+    // 1) Text nodes
+    var walker = document.createTreeWalker(
+      surface,
+      NodeFilter.SHOW_TEXT,
+      null,
+      false
+    );
+    var node;
+    while ((node = walker.nextNode())) {
+      if (!node.parentElement || isWidgetElement(node.parentElement)) continue;
+      var parent = node.parentElement;
+      if (parent && (parent.tagName === "SCRIPT" || parent.tagName === "STYLE" || parent.tagName === "NOSCRIPT")) {
+        continue;
+      }
+
+      var originalText = node.textContent || "";
+      if (!isTranslatableText(originalText)) continue;
+
+      targets.push({
+        type: "text",
+        node: node,
+        text: originalText.trim(),
+        original: originalText
+      });
+    }
+
+    // 2) Common UI attributes and button input values
+    var attrNodes = surface.querySelectorAll("[placeholder],[title],[aria-label],[alt],input[type='button'][value],input[type='submit'][value],input[type='reset'][value]");
+    var attrs = ["placeholder", "title", "aria-label", "alt"];
+    for (var i = 0; i < attrNodes.length; i++) {
+      var el = attrNodes[i];
+      if (isWidgetElement(el)) continue;
+
+      for (var a = 0; a < attrs.length; a++) {
+        var attr = attrs[a];
+        var raw = el.getAttribute(attr);
+        if (!isTranslatableText(raw)) continue;
+        targets.push({
+          type: "attr",
+          element: el,
+          attr: attr,
+          text: raw.trim(),
+          original: raw
+        });
+      }
+
+      if (el.tagName === "INPUT") {
+        var inputType = (el.getAttribute("type") || "").toLowerCase();
+        if (inputType === "button" || inputType === "submit" || inputType === "reset") {
+          var valueText = el.getAttribute("value");
+          if (isTranslatableText(valueText)) {
+            targets.push({
+              type: "attr",
+              element: el,
+              attr: "value",
+              text: valueText.trim(),
+              original: valueText
+            });
+          }
+        }
+      }
+    }
+  }
+
   function applyTranslation(prefs) {
     if (!prefs.translationEnabled || prefs.translationLanguage === "en") {
       removeTranslation();
@@ -2209,51 +2358,33 @@
     }
 
     var targetLang = prefs.translationLanguage;
-    var surfaces = document.querySelectorAll("[data-a11y-surface='true']");
+    var surfaces = [];
+    if (prefs.globalMode && document.body) {
+      surfaces = [document.body];
+    } else {
+      var markedSurfaces = document.querySelectorAll("[data-a11y-surface='true']");
+      for (var si = 0; si < markedSurfaces.length; si++) {
+        var surface = markedSurfaces[si];
+        if (isWidgetElement(surface)) continue;
+        // Only process top-level marked surfaces to avoid duplicate nested traversal.
+        if (surface.parentElement && surface.parentElement.closest && surface.parentElement.closest("[data-a11y-surface='true']")) {
+          continue;
+        }
+        surfaces.push(surface);
+      }
+    }
     
     // Clear previous translation state
     removeTranslation();
     translationNodes = [];
     translationInProgress = true;
 
-    // Collect all text nodes from surfaces
-    var totalNodes = 0;
+    // Collect all translatable targets from surfaces.
     for (var i = 0; i < surfaces.length; i++) {
-      var surface = surfaces[i];
-      // Skip widget elements
-      if (surface.id && surface.id.indexOf("a11y-widget") === 0) continue;
-      if (surface.closest && surface.closest("#a11y-widget-root")) continue;
-      
-      var walker = document.createTreeWalker(
-        surface,
-        NodeFilter.SHOW_TEXT,
-        null,
-        false
-      );
-      
-      var node;
-      while ((node = walker.nextNode())) {
-        var text = node.textContent.trim();
-        // Skip very short text, numbers only, or special characters only
-        if (text && text.length > 2 && !/^[\d\s\W]+$/.test(text)) {
-          // Skip if already has original text stored (already translated)
-          if (node.parentElement && node.parentElement.getAttribute("data-a11y-original-text")) {
-            continue;
-          }
-          // Skip script/style/noscript content
-          var parent = node.parentElement;
-          if (parent && (parent.tagName === "SCRIPT" || parent.tagName === "STYLE" || parent.tagName === "NOSCRIPT")) {
-            continue;
-          }
-          translationNodes.push({
-            node: node,
-            text: text,
-            parent: node.parentElement
-          });
-          totalNodes++;
-        }
-      }
+      collectTranslationTargets(surfaces[i], translationNodes);
     }
+
+    var totalNodes = translationNodes.length;
 
     if (totalNodes === 0) {
       translationInProgress = false;
@@ -2332,48 +2463,66 @@
   }
 
   function applyTranslationToNode(item, translatedText) {
-    if (!item.node || !item.parent) return;
-    
-    // Store original text in parent element's data attribute
-    if (!item.parent.getAttribute("data-a11y-original-text")) {
-      item.parent.setAttribute("data-a11y-original-text", item.text);
-    }
-    
-    // Replace text content with fade effect
+    if (!item || !translatedText) return;
+
     try {
-      item.node.textContent = translatedText;
+      if (item.type === "attr") {
+        if (!item.element) return;
+
+        translatedEntries.push({
+          type: "attr",
+          element: item.element,
+          attr: item.attr,
+          original: item.original
+        });
+
+        item.element.setAttribute(item.attr, translatedText);
+        if (item.attr === "value" && item.element.value !== undefined) {
+          item.element.value = translatedText;
+        }
+        return;
+      }
+
+      if (!item.node) return;
+
+      translatedEntries.push({
+        type: "text",
+        node: item.node,
+        original: item.original
+      });
+
+      var originalText = item.original || "";
+      var leadingWhitespace = (originalText.match(/^\s*/) || [""])[0];
+      var trailingWhitespace = (originalText.match(/\s*$/) || [""])[0];
+      item.node.textContent = leadingWhitespace + translatedText + trailingWhitespace;
     } catch (e) {
-      // Ignore errors
+      // Ignore errors.
     }
   }
 
   function removeTranslation() {
     hideTranslationStatus();
-    
-    // Restore original text from data attributes
-    var elements = document.querySelectorAll("[data-a11y-original-text]");
-    for (var i = 0; i < elements.length; i++) {
-      var element = elements[i];
-      var originalText = element.getAttribute("data-a11y-original-text");
-      if (originalText) {
-        // Find text node and restore
-        var walker = document.createTreeWalker(
-          element,
-          NodeFilter.SHOW_TEXT,
-          null,
-          false
-        );
-        var node = walker.nextNode();
-        if (node) {
-          try {
-            node.textContent = originalText;
-          } catch (e) {
-            // Ignore errors
+
+    // Restore translated text/attributes.
+    for (var i = translatedEntries.length - 1; i >= 0; i--) {
+      var entry = translatedEntries[i];
+      try {
+        if (entry.type === "attr") {
+          if (!entry.element) continue;
+          entry.element.setAttribute(entry.attr, entry.original);
+          if (entry.attr === "value" && entry.element.value !== undefined) {
+            entry.element.value = entry.original;
           }
+        } else if (entry.type === "text") {
+          if (!entry.node) continue;
+          entry.node.textContent = entry.original;
         }
-        element.removeAttribute("data-a11y-original-text");
+      } catch (e) {
+        // Ignore restore failures.
       }
     }
+
+    translatedEntries = [];
     translationNodes = [];
     translationInProgress = false;
   }
@@ -3935,12 +4084,12 @@
       });
       resetToSiteDefaultsBtn.addEventListener("click", function() {
         announceToScreenReader(COPY.announcements.settingsReset);
-        onReset();
+        enhancedOnReset();
       });
       
       resetBtn.addEventListener("click", function () { 
         announceToScreenReader(COPY.announcements.settingsReset);
-        onReset(); 
+        enhancedOnReset(); 
       });
       
       // Only show "Reset to my defaults" if user is authenticated
@@ -5094,6 +5243,7 @@
         function () {
           prefs = normalizePrefs(assign({}, PREF_DEFAULTS));
           applyPrefs(prefs);
+          markSurfaces(cfg.surfaces, prefs.globalMode || cfg.globalMode || false);
           // Reset widget customization
           var root = document.getElementById("a11y-widget-root");
           var toggle = document.getElementById("a11y-widget-toggle");
@@ -5157,6 +5307,7 @@
         reset: function () {
           prefs = normalizePrefs(assign({}, PREF_DEFAULTS));
           applyPrefs(prefs);
+          markSurfaces(cfg.surfaces, prefs.globalMode || cfg.globalMode || false);
           var root = document.getElementById("a11y-widget-root");
           var toggle = document.getElementById("a11y-widget-toggle");
           if (root) {
