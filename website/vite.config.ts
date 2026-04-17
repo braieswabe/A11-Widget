@@ -12,8 +12,13 @@ export default defineConfig({
       configureServer(server) {
         // In development, serve widget files from npm package or root
         server.middlewares.use((req, res, next) => {
-          // Serve widget file - prefer npm package
-          if (req.url === '/a11y-widget.js' || req.url?.startsWith('/a11y-widget.js?')) {
+          // Serve widget file - prefer updated v1.1.0 file with legacy fallback
+          const isWidgetJsRequest =
+            req.url === '/a11y-widget-v1.1.0.js' ||
+            req.url?.startsWith('/a11y-widget-v1.1.0.js?') ||
+            req.url === '/a11y-widget.js' ||
+            req.url?.startsWith('/a11y-widget.js?')
+          if (isWidgetJsRequest) {
             // #region agent log
             const logData = {
               location: 'vite.config.ts:configureServer',
@@ -31,8 +36,11 @@ export default defineConfig({
             // #endregion
             
             const npmCoreJs = join(__dirname, '..', 'packages', 'a11y-widget', 'vendor', 'a11y-widget.core.js')
+            const widgetJsV110Root = join(__dirname, '..', 'a11y-widget-v1.1.0.js')
             const widgetJsRoot = join(__dirname, '..', 'a11y-widget.js')
-            const widgetJs = existsSync(npmCoreJs) ? npmCoreJs : widgetJsRoot
+            const widgetJs = existsSync(widgetJsV110Root)
+              ? widgetJsV110Root
+              : (existsSync(npmCoreJs) ? npmCoreJs : widgetJsRoot)
             
             // #region agent log
             const logData2 = {
@@ -40,8 +48,10 @@ export default defineConfig({
               message: 'Vite file path resolution',
               data: {
                 npmCoreJsExists: existsSync(npmCoreJs),
+                widgetJsV110RootExists: existsSync(widgetJsV110Root),
                 widgetJsRootExists: existsSync(widgetJsRoot),
                 selectedPath: widgetJs,
+                widgetJsV110RootPath: widgetJsV110Root,
                 npmCoreJsPath: npmCoreJs,
                 widgetJsRootPath: widgetJsRoot
               },
@@ -100,11 +110,21 @@ export default defineConfig({
         // Try npm package files first, fallback to root files
         const npmCoreJs = join(__dirname, '..', 'packages', 'a11y-widget', 'vendor', 'a11y-widget.core.js')
         const npmCss = join(__dirname, '..', 'packages', 'a11y-widget', 'assets', 'a11y-widget.css')
+        const widgetJsV110 = join(__dirname, '..', 'a11y-widget-v1.1.0.js')
         const widgetJs = join(__dirname, '..', 'a11y-widget.js')
         const widgetCss = join(__dirname, '..', 'a11y-widget.css')
         const downloadsDir = join(__dirname, 'public', 'downloads')
         const distDownloadsDir = join(distPath, 'downloads')
         
+        // Copy updated widget JS (v1.1.0) for current web app runtime
+        if (existsSync(widgetJsV110)) {
+          copyFileSync(widgetJsV110, join(distPath, 'a11y-widget-v1.1.0.js'))
+          console.log('[Vite] Copied widget v1.1.0 from root')
+        } else if (existsSync(npmCoreJs)) {
+          copyFileSync(npmCoreJs, join(distPath, 'a11y-widget-v1.1.0.js'))
+          console.log('[Vite] Copied widget v1.1.0 fallback from npm package')
+        }
+
         // Copy widget JS - prefer npm package files if available
         if (existsSync(npmCoreJs)) {
           copyFileSync(npmCoreJs, join(distPath, 'a11y-widget.js'))

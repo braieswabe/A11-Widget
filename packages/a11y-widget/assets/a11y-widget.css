@@ -275,6 +275,33 @@ html[data-a11y][data-a11y-spacing="max"]{
   word-spacing: var(--a11y-word-spacing);
 }
 
+/* Ensure spacing presets affect common reading elements, not only paragraph line-height. */
+[data-a11y-surface="true"] p,
+[data-a11y-surface="true"] li,
+[data-a11y-surface="true"] blockquote,
+[data-a11y-surface="true"] span,
+[data-a11y-surface="true"] a,
+[data-a11y-surface="true"] label,
+[data-a11y-surface="true"] button,
+[data-a11y-surface="true"] input,
+[data-a11y-surface="true"] textarea,
+[data-a11y-surface="true"] select,
+[data-a11y-surface="true"] h1,
+[data-a11y-surface="true"] h2,
+[data-a11y-surface="true"] h3,
+[data-a11y-surface="true"] h4,
+[data-a11y-surface="true"] h5,
+[data-a11y-surface="true"] h6{
+  letter-spacing: var(--a11y-letter-spacing);
+  word-spacing: var(--a11y-word-spacing);
+}
+
+[data-a11y-surface="true"] p,
+[data-a11y-surface="true"] li,
+[data-a11y-surface="true"] blockquote{
+  margin-bottom: var(--a11y-paragraph-spacing);
+}
+
 /* Readable font toggle — keep it system-safe */
 html[data-a11y][data-a11y-readable-font="1"] [data-a11y-surface="true"]{
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Noto Sans", "Liberation Sans", sans-serif;
@@ -430,13 +457,17 @@ html[data-a11y][data-a11y-cursor="extra-large"] * {
 /* Contrast modes: applied ONLY to our surfaces by setting data-a11y-contrast on html */
 
 /* High Contrast Mode */
-html[data-a11y][data-a11y-contrast="high"] [data-a11y-surface="true"],
-html[data-a11y][data-a11y-contrast="high"] #a11y-widget-root{
+html[data-a11y][data-a11y-contrast="high"] [data-a11y-surface="true"]:not(html):not(body):not(#a11y-widget-root):not(#a11y-widget-root *){
+  filter: contrast(1.25);
+}
+
+/* If body is a declared surface, apply contrast to its children to avoid fixed-position jitter. */
+html[data-a11y][data-a11y-contrast="high"] body[data-a11y-surface="true"] > :not(#a11y-widget-root){
   filter: contrast(1.25);
 }
 
 /* Global Mode: High Contrast applied globally */
-html[data-a11y][data-a11y-global-mode="1"][data-a11y-contrast="high"] * {
+html[data-a11y][data-a11y-global-mode="1"][data-a11y-contrast="high"] body *:not(#a11y-widget-root):not(#a11y-widget-root *) {
   filter: contrast(1.25) !important;
 }
 
@@ -1222,6 +1253,8 @@ html.a11y-widget-hidden .accessibility-widget {
   cursor: pointer;
   transition: all 0.2s ease;
   appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23333' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 0.75rem center;
@@ -1424,6 +1457,8 @@ html.a11y-widget-hidden .accessibility-widget {
   color: var(--a11y-color-text);
   transition: all 0.2s ease;
   appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23333' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 0.75rem center;
@@ -1440,6 +1475,40 @@ html.a11y-widget-hidden .accessibility-widget {
   outline-offset: 2px;
   border-color: var(--a11y-color-secondary);
   background-color: var(--a11y-color-bg);
+}
+
+#a11y-widget-panel select::-ms-expand,
+.a11y-widget-select::-ms-expand{
+  display: none;
+}
+
+/* Keep placeholders readable on default/light themes. */
+[data-a11y-surface="true"] input::placeholder,
+[data-a11y-surface="true"] textarea::placeholder,
+#a11y-widget-panel input::placeholder,
+#a11y-widget-panel textarea::placeholder{
+  color: #5f6b7a;
+  opacity: 1;
+}
+
+/* Prevent global mode from washing out widget control labels/tab text. */
+html[data-a11y][data-a11y-global-mode="1"] #a11y-widget-root,
+html[data-a11y][data-a11y-global-mode="1"] #a11y-widget-root *{
+  font-family: var(--a11y-font-family) !important;
+}
+
+html[data-a11y][data-a11y-global-mode="1"] #a11y-widget-panel,
+html[data-a11y][data-a11y-global-mode="1"] #a11y-widget-header,
+html[data-a11y][data-a11y-global-mode="1"] #a11y-widget-content{
+  background: var(--a11y-custom-bg, var(--a11y-color-bg)) !important;
+}
+
+html[data-a11y][data-a11y-global-mode="1"] #a11y-widget-title,
+html[data-a11y][data-a11y-global-mode="1"] #a11y-widget-description,
+html[data-a11y][data-a11y-global-mode="1"] .a11y-widget-row label,
+html[data-a11y][data-a11y-global-mode="1"] .a11y-widget-help,
+html[data-a11y][data-a11y-global-mode="1"] .a11y-widget-tab{
+  color: var(--a11y-color-text) !important;
 }
 
 .a11y-widget-btn{

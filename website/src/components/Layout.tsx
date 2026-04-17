@@ -52,27 +52,52 @@ export default function Layout({ children }: LayoutProps) {
   }, [])
 
   useEffect(() => {
-    // Load widget directly from GitHub CDN (using versioned file v1.6.1)
+    // Load widget directly from GitHub CDN (using updated tabbed widget file)
     // Uses jsDelivr CDN as primary (more reliable than raw GitHub)
     const loadWidget = () => {
+      const updatedScriptSelector = 'script[src*="a11y-widget-v1.1.0.js"]'
+      const hasUpdatedScriptAlready = !!document.querySelector(updatedScriptSelector)
+
       // Check if widget is already loaded
-      if (window.__a11yWidget?.__loaded) {
+      if (window.__a11yWidget?.__loaded && hasUpdatedScriptAlready) {
         console.log('[A11Y Layout] Widget already loaded')
         setWidgetLoaded(true)
         return
       }
 
+      // If an older widget runtime exists, clear stale state so updated script can initialize.
+      if (window.__a11yWidget?.__loaded && !hasUpdatedScriptAlready) {
+        window.__a11yWidget.__loaded = false
+      }
+
       // Check if widget button already exists (widget might be loaded but flag not set)
       const existingToggle = document.getElementById('a11y-widget-toggle')
       const existingRoot = document.getElementById('a11y-widget-root')
-      if (existingToggle || existingRoot) {
+      if ((existingToggle || existingRoot) && hasUpdatedScriptAlready) {
         console.log('[A11Y Layout] Widget elements already exist in DOM')
         setWidgetLoaded(true)
         return
       }
 
+      if (!hasUpdatedScriptAlready) {
+        // Remove stale widget DOM from older script includes.
+        if (existingRoot && existingRoot.parentNode) {
+          existingRoot.parentNode.removeChild(existingRoot)
+        } else if (existingToggle && existingToggle.parentNode) {
+          existingToggle.parentNode.removeChild(existingToggle)
+        }
+
+        // Remove legacy direct script includes so only updated widget script remains.
+        document.querySelectorAll('script[src*="a11y-widget.js"]').forEach((el) => {
+          const scriptEl = el as HTMLScriptElement
+          if (!scriptEl.src.includes('a11y-widget-v1.1.0.js') && scriptEl.parentNode) {
+            scriptEl.parentNode.removeChild(scriptEl)
+          }
+        })
+      }
+
       // Check if widget script already exists
-      const existingWidgetScript = document.querySelector('script[src*="a11y-widget"]')
+      const existingWidgetScript = document.querySelector(updatedScriptSelector)
       if (existingWidgetScript) {
         console.log('[A11Y Layout] Widget script already loading, waiting...')
         // Script already loading, wait for widget to initialize
@@ -123,16 +148,16 @@ export default function Layout({ children }: LayoutProps) {
       
       document.head.appendChild(cssLink)
 
-      // Load widget script directly (using new versioned file)
+      // Load widget script directly (updated v1.1.0 tabbed widget)
       const widgetScript = document.createElement('script')
       widgetScript.id = 'a11y-widget-script'
       
       // Use local files on Vercel/devel, CDN in production
       const widgetUrl = useLocalFiles 
-        ? '/a11y-widget.js?v=' + Date.now()
+        ? '/a11y-widget-v1.1.0.js?v=' + Date.now()
         : WIDGET_SCRIPT_URL + '?v=' + Date.now()
       const fallbackUrl = useLocalFiles
-        ? '/a11y-widget.js?v=' + Date.now()
+        ? '/a11y-widget-v1.1.0.js?v=' + Date.now()
         : WIDGET_SCRIPT_URL_FALLBACK + '?v=' + Date.now()
       
       widgetScript.src = widgetUrl
@@ -549,4 +574,3 @@ export default function Layout({ children }: LayoutProps) {
     </>
   )
 }
-

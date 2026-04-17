@@ -7,11 +7,10 @@ export const WIDGET_CDN_BASE = `https://cdn.jsdelivr.net/gh/braieswabe/A11-Widge
 // Loader script URL - use versioned filename to bypass CDN cache
 export const WIDGET_LOADER_URL = `${WIDGET_CDN_BASE}/a11y-widget-loader-v1.6.1.js`
 
-// Widget script URL (direct)
-export const WIDGET_SCRIPT_URL = `${WIDGET_CDN_BASE}/a11y-widget.js`
+// Widget script URL (direct, updated tabbed widget UI)
+export const WIDGET_SCRIPT_URL = `${WIDGET_CDN_BASE}/a11y-widget-v1.1.0.js`
 // Fallback to same version if needed
-export const WIDGET_SCRIPT_URL_FALLBACK = `${WIDGET_CDN_BASE}/a11y-widget.js`
+export const WIDGET_SCRIPT_URL_FALLBACK = `${WIDGET_CDN_BASE}/a11y-widget-v1.1.0.js`
 
 // Widget CSS URL
 export const WIDGET_CSS_URL = `${WIDGET_CDN_BASE}/a11y-widget.css`
-
