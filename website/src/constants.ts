@@ -1,5 +1,5 @@
 // Current widget version - update this when releasing a new version
-export const WIDGET_VERSION = 'v1.6.1'
+export const WIDGET_VERSION = 'v1.6.3'
 
 // CDN base URL for the widget
 export const WIDGET_CDN_BASE = `https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@${WIDGET_VERSION}`

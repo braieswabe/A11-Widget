@@ -6,10 +6,29 @@
   "use strict";
 
   var GITHUB_REPO = "braieswabe/A11-Widget";
-  var VERSION_TAG = "v1.6.1";
+  var DEFAULT_VERSION_TAG = "v1.6.2";
   var LOADER_VERSION = "1.6.1";
   var CSS_FILE = "a11y-widget.css";
   var JS_FILE = "a11y-widget-v1.1.0.js";
+
+  function detectVersionTag() {
+    try {
+      var src = "";
+      if (document.currentScript && document.currentScript.src) {
+        src = document.currentScript.src;
+      } else {
+        var scripts = document.querySelectorAll('script[src*="a11y-widget-loader"]');
+        if (scripts.length) {
+          src = scripts[scripts.length - 1].src || "";
+        }
+      }
+      var match = src.match(/@([^/]+)\//);
+      if (match && match[1]) return match[1];
+    } catch (e) {}
+    return DEFAULT_VERSION_TAG;
+  }
+
+  var VERSION_TAG = detectVersionTag();
 
   var ASSET_BASE = window.__A11Y_ASSET_BASE__ || null;
   if (ASSET_BASE && !ASSET_BASE.endsWith("/")) {
