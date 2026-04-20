@@ -32,7 +32,7 @@ Just add this single line to your HTML:
 
 ```html
 <!-- Use versioned tag to ensure you get the latest stable version -->
-<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.1/a11y-widget-loader-v1.6.1.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.4/a11y-widget-loader-v1.6.1.js" defer></script>
 ```
 
 **Note:** We use version tags (`@v1.6.1`) instead of branch names (`@main`) because jsDelivr CDN aggressively caches branch URLs for up to 7 days. Version tags are served immediately and ensure you always get the exact version you specify.
@@ -81,7 +81,7 @@ If you want to customize the widget, add configuration before the loader script:
     surfaces: ["body", "main"]  // Optional: CSS selectors (ignored if globalMode is true)
   };
 </script>
-<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.1/a11y-widget-loader-v1.6.1.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.4/a11y-widget-loader-v1.6.1.js" defer></script>
 ```
 
 #### NPM Method

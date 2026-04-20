@@ -9,6 +9,14 @@
     - Fixed cursor visibility with enhanced outline
     - Improved cursor initialization
     - Enhanced cursor styling with better contrast
+
+    QA Remediation (v1.6.4 release):
+    - Hardened checkForUpdates with timeout, deterministic states, fallback reload button
+    - Reset to Defaults now fully restores contrast/theme UI + tears down active features
+    - Screen Mask reworked with SVG inverted mask for reliable video/canvas coverage
+    - Translation expanded to more attributes, <option> text, and MutationObserver for dynamic content
+    - Large Cursor no longer hides native pointer inside widget panel (checkbox usability fix)
+    - Cursor visibility strengthened across contrast modes via CSS
 */
 (function () {
   "use strict";
@@ -1363,16 +1371,43 @@
     }
 
     if (!supportsFetch) {
-      setUpdateStatus(statusEl, "Cannot verify automatically in this browser. Reloading...", false);
-      setTimeout(function() { window.location.reload(); }, 600);
+      setUpdateStatus(statusEl, "Cannot verify automatically in this browser.", false);
+      finish("🔁 Reload to Update");
+      if (buttonEl) {
+        buttonEl.onclick = function () { window.location.reload(); };
+      }
       return;
     }
 
-    fetch(probeUrl, { method: "HEAD", cache: "no-store" })
-      .then(function(response) {
-        if (!response.ok) throw new Error("Update check failed with status " + response.status);
+    var controller;
+    var timeoutId;
+    var signal;
+    try {
+      controller = new AbortController();
+      signal = controller.signal;
+      timeoutId = setTimeout(function () { controller.abort(); }, 8000);
+    } catch (e) {
+      signal = undefined;
+    }
 
-        var signature = response.headers.get("etag") || response.headers.get("last-modified") || String(Date.now());
+    var fetchOpts = { method: "HEAD", cache: "no-store" };
+    if (signal) fetchOpts.signal = signal;
+
+    fetch(probeUrl, fetchOpts)
+      .then(function(response) {
+        if (timeoutId) clearTimeout(timeoutId);
+        if (!response.ok) throw new Error("HTTP " + response.status);
+
+        var signature = response.headers.get("etag") || response.headers.get("last-modified") || "";
+        if (!signature) {
+          setUpdateStatus(statusEl, "Server did not provide version info. Use the button below to refresh.", false);
+          finish("🔁 Reload to Update");
+          if (buttonEl) {
+            buttonEl.onclick = function () { window.location.reload(); };
+          }
+          return;
+        }
+
         var previousSignature = null;
         try {
           previousSignature = window.localStorage.getItem(WIDGET_VERSION_SIGNATURE_KEY);
@@ -1380,20 +1415,27 @@
         } catch (e) {}
 
         if (previousSignature && previousSignature !== signature) {
-          setUpdateStatus(statusEl, "Update found. Reloading...", false);
+          setUpdateStatus(statusEl, "Update found! Reloading...", false);
+          finish("⏳ Reloading...");
+          if (buttonEl) buttonEl.disabled = true;
           setTimeout(function() { window.location.reload(); }, 700);
           return;
         }
 
         setUpdateStatus(statusEl, "You are using the latest available widget build.", false);
-      })
-      .catch(function() {
-        // Fallback behavior: reload so users can still pull fresh assets when HEAD is blocked.
-        setUpdateStatus(statusEl, "Unable to verify remotely. Reloading to fetch latest assets...", false);
-        setTimeout(function() { window.location.reload(); }, 700);
-      })
-      .finally(function() {
         finish("🔄 Check for Updates");
+      })
+      .catch(function(err) {
+        if (timeoutId) clearTimeout(timeoutId);
+        var isTimeout = err && err.name === "AbortError";
+        var msg = isTimeout
+          ? "Check timed out. You can reload the page to fetch the latest assets."
+          : "Unable to verify remotely. You can reload the page to fetch the latest assets.";
+        setUpdateStatus(statusEl, msg, false);
+        finish("🔁 Reload to Update");
+        if (buttonEl) {
+          buttonEl.onclick = function () { window.location.reload(); };
+        }
       });
   }
 
@@ -1638,45 +1680,80 @@
   }
 
   // --- Screen Mask Handler ----------------------------------------------------
+  // Uses an SVG-based inverted mask so the dim overlay reliably covers all
+  // content including <video>, <canvas>, and iframe surfaces.
   var screenMaskElement = null;
   var screenMaskHandler = null;
 
   function createScreenMask(prefs) {
-    if (screenMaskElement) {
-      screenMaskElement.remove();
-    }
-    if (screenMaskHandler) {
-      document.removeEventListener("mousemove", screenMaskHandler);
-    }
-    
+    removeScreenMask();
+
+    var opacity = prefs.screenMaskOpacity || 0.5;
+    var radius = prefs.screenMaskRadius || 200;
+
     screenMaskElement = document.createElement("div");
     screenMaskElement.id = "a11y-screen-mask";
-    screenMaskElement.style.cssText = 
+    screenMaskElement.style.cssText =
       "position: fixed; " +
       "pointer-events: none; " +
       "z-index: 2147482998; " +
-      "top: 0; " +
-      "left: 0; " +
-      "width: 100%; " +
-      "height: 100%; " +
-      "background: rgba(0, 0, 0, " + (prefs.screenMaskOpacity || 0.5) + "); " +
-      "display: none; " +
-      "clip-path: circle(" + (prefs.screenMaskRadius || 200) + "px at 50% 50%);";
+      "top: 0; left: 0; " +
+      "width: 100vw; height: 100vh; " +
+      "display: none;";
+
+    // Inline SVG mask — a full-viewport rectangle with a transparent circle cut-out.
+    // Works in all modern browsers; the circle position is updated on mousemove.
+    var svgNS = "http://www.w3.org/2000/svg";
+    var svg = document.createElementNS(svgNS, "svg");
+    svg.setAttribute("width", "100%");
+    svg.setAttribute("height", "100%");
+    svg.style.cssText = "position: absolute; top: 0; left: 0; width: 100%; height: 100%;";
+
+    var defs = document.createElementNS(svgNS, "defs");
+    var mask = document.createElementNS(svgNS, "mask");
+    mask.setAttribute("id", "a11y-mask-hole");
+
+    var maskBg = document.createElementNS(svgNS, "rect");
+    maskBg.setAttribute("width", "100%");
+    maskBg.setAttribute("height", "100%");
+    maskBg.setAttribute("fill", "white");
+
+    var circle = document.createElementNS(svgNS, "circle");
+    circle.setAttribute("cx", "50%");
+    circle.setAttribute("cy", "50%");
+    circle.setAttribute("r", String(radius));
+    circle.setAttribute("fill", "black");
+
+    mask.appendChild(maskBg);
+    mask.appendChild(circle);
+    defs.appendChild(mask);
+    svg.appendChild(defs);
+
+    var overlay = document.createElementNS(svgNS, "rect");
+    overlay.setAttribute("width", "100%");
+    overlay.setAttribute("height", "100%");
+    overlay.setAttribute("fill", "rgba(0,0,0," + opacity + ")");
+    overlay.setAttribute("mask", "url(#a11y-mask-hole)");
+    svg.appendChild(overlay);
+
+    screenMaskElement.appendChild(svg);
     document.body.appendChild(screenMaskElement);
-    
+
     screenMaskHandler = function(e) {
       var html = document.documentElement;
       var enabled = html.getAttribute("data-a11y-screen-mask") === "1";
       if (enabled && screenMaskElement) {
-        var radius = parseInt(html.style.getPropertyValue("--a11y-screen-mask-radius") || "200px", 10);
+        var r = parseInt(html.style.getPropertyValue("--a11y-screen-mask-radius") || String(radius), 10);
         screenMaskElement.style.display = "block";
-        screenMaskElement.style.clipPath = "circle(" + radius + "px at " + e.clientX + "px " + e.clientY + "px)";
+        circle.setAttribute("cx", String(e.clientX));
+        circle.setAttribute("cy", String(e.clientY));
+        circle.setAttribute("r", String(r));
       } else if (screenMaskElement) {
         screenMaskElement.style.display = "none";
       }
     };
-    
-    document.addEventListener("mousemove", screenMaskHandler);
+
+    document.addEventListener("mousemove", screenMaskHandler, { passive: true });
   }
 
   function removeScreenMask() {
@@ -2007,11 +2084,19 @@
       }, 150);
     };
     
-    // Handle hover states
+    // Handle hover states (skip widget controls so native cursor works there)
     customCursorHoverHandler = function(e) {
       if (!customCursorElement) return;
-      
+
       var target = e.target;
+
+      // Hide custom cursor while hovering inside widget so native pointer works
+      var widgetRoot = document.getElementById("a11y-widget-root");
+      if (widgetRoot && widgetRoot.contains(target)) {
+        customCursorElement.style.display = "none";
+        return;
+      }
+      customCursorElement.style.display = "block";
       var isInteractive = (
         target.tagName === "A" ||
         target.tagName === "BUTTON" ||
@@ -2293,7 +2378,7 @@
     while ((node = walker.nextNode())) {
       if (!node.parentElement || isWidgetElement(node.parentElement)) continue;
       var parent = node.parentElement;
-      if (parent && (parent.tagName === "SCRIPT" || parent.tagName === "STYLE" || parent.tagName === "NOSCRIPT")) {
+      if (parent && (parent.tagName === "SCRIPT" || parent.tagName === "STYLE" || parent.tagName === "NOSCRIPT" || parent.tagName === "CODE" || parent.tagName === "PRE")) {
         continue;
       }
 
@@ -2308,9 +2393,14 @@
       });
     }
 
-    // 2) Common UI attributes and button input values
-    var attrNodes = surface.querySelectorAll("[placeholder],[title],[aria-label],[alt],input[type='button'][value],input[type='submit'][value],input[type='reset'][value]");
-    var attrs = ["placeholder", "title", "aria-label", "alt"];
+    // 2) Expanded set of translatable attributes
+    var attrSelector = [
+      "[placeholder]", "[title]", "[aria-label]", "[alt]",
+      "[aria-description]", "[data-tooltip]",
+      "input[type='button'][value]", "input[type='submit'][value]", "input[type='reset'][value]"
+    ].join(",");
+    var attrNodes = surface.querySelectorAll(attrSelector);
+    var attrs = ["placeholder", "title", "aria-label", "alt", "aria-description", "data-tooltip"];
     for (var i = 0; i < attrNodes.length; i++) {
       var el = attrNodes[i];
       if (isWidgetElement(el)) continue;
@@ -2343,6 +2433,65 @@
           }
         }
       }
+    }
+
+    // 3) <option> text inside <select> elements
+    var options = surface.querySelectorAll("select option");
+    for (var oi = 0; oi < options.length; oi++) {
+      var opt = options[oi];
+      if (isWidgetElement(opt)) continue;
+      var optText = opt.textContent || "";
+      if (!isTranslatableText(optText)) continue;
+      if (opt.firstChild && opt.firstChild.nodeType === 3) {
+        targets.push({
+          type: "text",
+          node: opt.firstChild,
+          text: optText.trim(),
+          original: optText
+        });
+      }
+    }
+  }
+
+  // --- Translation MutationObserver for dynamic content ----------------------
+  var translationObserver = null;
+
+  function startTranslationObserver(prefs) {
+    stopTranslationObserver();
+    if (!prefs.translationEnabled || prefs.translationLanguage === "en") return;
+    if (typeof MutationObserver === "undefined") return;
+
+    var targetLang = prefs.translationLanguage;
+    var debounceTimer = null;
+
+    translationObserver = new MutationObserver(function(mutations) {
+      if (!prefs.translationEnabled) return;
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(function() {
+        var newTargets = [];
+        for (var m = 0; m < mutations.length; m++) {
+          var added = mutations[m].addedNodes;
+          for (var n = 0; n < added.length; n++) {
+            var node = added[n];
+            if (node.nodeType === 1 && !isWidgetElement(node)) {
+              collectTranslationTargets(node, newTargets);
+            }
+          }
+        }
+        if (newTargets.length > 0) {
+          translationNodes = translationNodes.concat(newTargets);
+          translateBatch(newTargets, targetLang, 0, newTargets.length);
+        }
+      }, 300);
+    });
+
+    translationObserver.observe(document.body, { childList: true, subtree: true });
+  }
+
+  function stopTranslationObserver() {
+    if (translationObserver) {
+      translationObserver.disconnect();
+      translationObserver = null;
     }
   }
 
@@ -2396,6 +2545,9 @@
 
     // Translate in batches to reduce API calls
     translateBatch(translationNodes, targetLang, 0, totalNodes);
+
+    // Start observing for dynamically added content
+    startTranslationObserver(prefs);
   }
 
   function translateBatch(nodes, targetLang, startIndex, totalNodes) {
@@ -2502,6 +2654,7 @@
 
   function removeTranslation() {
     hideTranslationStatus();
+    stopTranslationObserver();
 
     // Restore translated text/attributes.
     for (var i = translatedEntries.length - 1; i >= 0; i--) {
@@ -2716,6 +2869,11 @@
       controls.globalModeBgColorTextInput.value = prefs.globalModeBgColor || "#ffffff";
     }
     
+    // Toolbar mode checkbox
+    if (controls.toolbarModeCheckbox !== undefined) {
+      controls.toolbarModeCheckbox.checked = !!prefs.toolbarMode;
+    }
+
     // Update dynamic controls visibility
     if (controls.updateTTSControls && controls.textToSpeechCheckbox) {
       controls.updateTTSControls(controls.textToSpeechCheckbox.checked);
@@ -4438,10 +4596,33 @@
       }
     };
 
-    // Create enhanced onReset that updates UI controls
+    // Create enhanced onReset that updates UI controls and cleans up active features
     var enhancedOnReset = function() {
+      // Tear down active visual features before prefs revert
+      removeCustomCursor();
+      removeScreenMask();
+      removeMagnifier();
+      removeTranslation();
+      if (typeof stopSpeech === "function") stopSpeech();
+
       onReset();
-      updateUIControls(controls, normalizePrefs(assign({}, PREF_DEFAULTS)));
+      var defaults = normalizePrefs(assign({}, PREF_DEFAULTS));
+      updateUIControls(controls, defaults);
+
+      // Toolbar mode: disable if it was on
+      if (controls.toolbar) {
+        toggleToolbarMode(false, root, controls, cfg, defaults, enhancedOnChange);
+      }
+
+      // Explicitly reset toolbar dropdown visual state
+      var dropdownMenus = document.querySelectorAll(".a11y-toolbar-dropdown-menu");
+      for (var i = 0; i < dropdownMenus.length; i++) {
+        dropdownMenus[i].style.display = "none";
+        var items = dropdownMenus[i].querySelectorAll(".a11y-toolbar-dropdown-item");
+        for (var j = 0; j < items.length; j++) {
+          items[j].classList.remove("active");
+        }
+      }
     };
 
     // Setup keyboard shortcut
