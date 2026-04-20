@@ -72,6 +72,8 @@ website/
 
 ## Widget Integration
 
+**Release tag for docs and copy-paste snippets:** update `src/constants.ts` (`WIDGET_VERSION`, and loader/CSS/JS URLs if filenames change) so Home, Getting Started, Tutorials, Examples, and WordPress pages stay aligned with the GitHub tag you ship.
+
 The website includes the widget for demonstration. The Layout component loads the widget script dynamically:
 
 ```typescript

@@ -11,9 +11,9 @@ The widget is served via **jsDelivr CDN** which aggressively caches files refere
 ### 1. Make Your Changes
 
 Edit the widget files as needed:
-- `a11y-widget.js` - Main widget JavaScript
+- `a11y-widget-v1.1.0.js` - Main widget JavaScript (updated runtime)
 - `a11y-widget.css` - Widget styles
-- `a11y-widget-loader.js` - Loader script (if needed)
+- `a11y-widget-loader-v1.6.1.js` - Zero-config loader (CDN installs)
 
 ### 2. Test Locally
 
@@ -30,7 +30,7 @@ Open `http://localhost:5173` to test the widget.
 
 ```bash
 # Stage your changes
-git add a11y-widget.js a11y-widget.css
+git add a11y-widget-v1.1.0.js a11y-widget.css a11y-widget-loader-v1.6.1.js
 
 # Commit with a descriptive message
 git commit -m "feat: Add new feature description"
@@ -59,10 +59,10 @@ git push origin v1.X.X
 
 ### 5. Update the Loader (If Major Changes)
 
-If you've made significant changes, update the `WIDGET_VERSION_TAG` in `a11y-widget-loader.js`:
+If you've made significant changes, update `DEFAULT_VERSION_TAG` in `a11y-widget-loader-v1.6.1.js` (fallback when the script URL has no `@tag`):
 
 ```javascript
-var WIDGET_VERSION_TAG = "v1.X.X";  // Update to new version
+var DEFAULT_VERSION_TAG = "v1.X.X";  // Update to new release tag
 ```
 
 Then commit, push, and tag again.
@@ -73,7 +73,7 @@ Test that the new version is available:
 
 ```bash
 # Check if jsDelivr serves the new version
-curl -s "https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.X.X/a11y-widget.js" | head -20
+curl -s "https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.X.X/a11y-widget-v1.1.0.js" | head -20
 ```
 
 You should see your updated code.
@@ -94,9 +94,9 @@ git push origin v1.X.X
 If you need to purge jsDelivr cache for the `@main` branch (not recommended, use tags instead):
 
 ```bash
-curl "https://purge.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget.js"
+curl "https://purge.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-v1.1.0.js"
 curl "https://purge.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget.css"
-curl "https://purge.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader.js"
+curl "https://purge.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader-v1.6.1.js"
 ```
 
 **Note:** Cache purges are not always reliable. Always use version tags for production deployments.
@@ -153,16 +153,16 @@ git show v1.X.X
 # 2. Test locally with `npm run dev`
 # 3. Deploy:
 
-git add a11y-widget.js a11y-widget.css
+git add a11y-widget-v1.1.0.js a11y-widget.css a11y-widget-loader-v1.6.1.js
 git commit -m "fix: Improve magnifier performance and add translation status"
 git push origin main
 
 # 4. Create version tag
-git tag -a v1.6.0 -m "Magnifier improvements, translation status, preset feedback"
-git push origin v1.6.0
+git tag -a v1.6.4 -m "QA remediation: runtime, CSS, loader default tag"
+git push origin v1.6.4
 
 # 5. Verify
-curl -s "https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.0/a11y-widget.js" | head -10
+curl -s "https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.4/a11y-widget-v1.1.0.js" | head -10
 ```
 
 Remember: **No tag = No update for live users!**

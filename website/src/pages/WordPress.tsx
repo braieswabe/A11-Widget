@@ -289,7 +289,7 @@ export default function WordPress() {
               <li>Clear your WordPress cache (WP Super Cache, W3 Total Cache, LiteSpeed, WP Rocket, etc.)</li>
               <li>Clear your browser cache or try an incognito window</li>
               <li>Open browser DevTools (F12) → Console tab and look for errors</li>
-              <li>Check Network tab to verify <code>a11y-widget-loader</code> script loads (status 200)</li>
+              <li>Check Network tab to verify <code>a11y-widget-loader-v1.6.1.js</code> loads (status 200)</li>
               <li>Temporarily switch to a default theme (Twenty Twenty-Four) to rule out theme conflicts</li>
             </ol>
           </div>
