@@ -31,9 +31,11 @@ declare global {
         magnifier?: boolean
       }
     }
+    __A11Y_WIDGET_BUILD__?: string
     __a11yWidget?: {
       __loaded: boolean
       config: any
+      getBuild: () => string
       getPrefs: () => any
       setPrefs: (prefs: any) => void
       reset: () => void

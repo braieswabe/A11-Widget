@@ -17,6 +17,9 @@
     - Translation expanded to more attributes, <option> text, and MutationObserver for dynamic content
     - Large Cursor no longer hides native pointer inside widget panel (checkbox usability fix)
     - Cursor visibility strengthened across contrast modes via CSS
+
+    QA plan follow-up:
+    - window.__A11Y_WIDGET_BUILD__ + __a11yWidget.getBuild() for Network/console verification
 */
 (function () {
   "use strict";
@@ -5299,6 +5302,9 @@
     
     var cfg = getConfig();
 
+    // QA / deploy verification: check in console `window.__A11Y_WIDGET_BUILD__` and Network for this filename (not legacy a11y-widget.js).
+    window.__A11Y_WIDGET_BUILD__ = "a11y-widget-v1.1.0.js";
+
     // Namespace guard
     if (window.__a11yWidget && window.__a11yWidget.__loaded) return;
 
@@ -5468,6 +5474,7 @@
       window.__a11yWidget = {
         __loaded: true,
         config: cfg,
+        getBuild: function () { return window.__A11Y_WIDGET_BUILD__ || "a11y-widget-v1.1.0.js"; },
         getPrefs: function () { return assign({}, prefs); },
         setPrefs: function (next) {
           prefs = normalizePrefs(assign(prefs, next || {}));

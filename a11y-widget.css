@@ -153,6 +153,7 @@ html[data-a11y][data-a11y-global-mode="1"] select,
 html[data-a11y][data-a11y-global-mode="1"] textarea {
   background-color: var(--a11y-global-bg-color, #ffffff) !important;
   color: var(--a11y-global-text-color, #000000) !important;
+  -webkit-text-fill-color: var(--a11y-global-text-color, #000000) !important;
   border-color: var(--a11y-global-text-color, #000000) !important;
   border-width: 2px !important;
   opacity: 0.9;
@@ -170,6 +171,30 @@ html[data-a11y][data-a11y-global-mode="1"] textarea:focus {
   border-color: var(--a11y-global-text-color, #000000) !important;
   border-width: 3px !important;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+}
+
+/* Stronger than many theme tab/button rules so labels stay visible under Global Mode */
+html[data-a11y][data-a11y-global-mode="1"] body [role="tab"],
+html[data-a11y][data-a11y-global-mode="1"] body [role="tab"]:hover,
+html[data-a11y][data-a11y-global-mode="1"] body [role="tab"]:focus,
+html[data-a11y][data-a11y-global-mode="1"] body .nav-tab,
+html[data-a11y][data-a11y-global-mode="1"] body .nav-tab:hover,
+html[data-a11y][data-a11y-global-mode="1"] body a.nav-tab,
+html[data-a11y][data-a11y-global-mode="1"] body a.nav-tab:focus {
+  background-color: var(--a11y-global-bg-color, #ffffff) !important;
+  color: var(--a11y-global-text-color, #000000) !important;
+  border-color: var(--a11y-global-text-color, #000000) !important;
+  opacity: 1 !important;
+  -webkit-text-fill-color: var(--a11y-global-text-color, #000000) !important;
+}
+
+html[data-a11y][data-a11y-global-mode="1"] body [role="tab"][aria-selected="true"],
+html[data-a11y][data-a11y-global-mode="1"] body .nav-tab-active,
+html[data-a11y][data-a11y-global-mode="1"] body .nav-tab.nav-tab-active {
+  background-color: var(--a11y-global-bg-color, #eaeaea) !important;
+  color: var(--a11y-global-text-color, #000000) !important;
+  outline: 2px solid var(--a11y-global-text-color, #000000) !important;
+  opacity: 1 !important;
 }
 
 /* Apply global colors to common UI elements */
@@ -1638,7 +1663,7 @@ html[data-a11y][data-a11y-global-mode="1"] #a11y-widget-root *{
 html[data-a11y][data-a11y-global-mode="1"] #a11y-widget-panel,
 html[data-a11y][data-a11y-global-mode="1"] #a11y-widget-header,
 html[data-a11y][data-a11y-global-mode="1"] #a11y-widget-content{
-  background: var(--a11y-custom-bg, var(--a11y-color-bg)) !important;
+  background-color: var(--a11y-custom-bg, var(--a11y-color-bg)) !important;
 }
 
 html[data-a11y][data-a11y-global-mode="1"] #a11y-widget-title,
@@ -1657,14 +1682,29 @@ html[data-a11y][data-a11y-global-mode="1"] #a11y-widget-close{
   color: var(--a11y-color-text) !important;
 }
 
-/* Global + Default contrast: restore widget control backgrounds */
+/* Global + Default contrast: restore widget control backgrounds.
+   Use background-color only on <select> so the custom chevron background-image is preserved. */
 html[data-a11y][data-a11y-global-mode="1"] #a11y-widget-panel select,
+html[data-a11y][data-a11y-global-mode="1"] #a11y-widget-root .a11y-widget-select{
+  background-color: var(--a11y-custom-bg, var(--a11y-color-bg)) !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23333' d='M6 9L1 4h10z'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 0.75rem center !important;
+  border-color: var(--a11y-color-border-dark) !important;
+}
+
 html[data-a11y][data-a11y-global-mode="1"] .a11y-widget-btn,
 html[data-a11y][data-a11y-global-mode="1"] .a11y-widget-preset-btn,
 html[data-a11y][data-a11y-global-mode="1"] .a11y-widget-radio-wrapper,
 html[data-a11y][data-a11y-global-mode="1"] #a11y-widget-close{
-  background: var(--a11y-custom-bg, var(--a11y-color-bg)) !important;
+  background-color: var(--a11y-custom-bg, var(--a11y-color-bg)) !important;
   border-color: var(--a11y-color-border-dark) !important;
+}
+
+/* Global + Dark: light chevron on selects inside widget */
+html[data-a11y][data-a11y-global-mode="1"][data-a11y-contrast="dark"] #a11y-widget-panel select,
+html[data-a11y][data-a11y-global-mode="1"][data-a11y-contrast="dark"] #a11y-widget-root .a11y-widget-select{
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23e6edf3' d='M6 9L1 4h10z'/%3E%3C/svg%3E") !important;
 }
 
 /* Global + High Contrast: keep widget text readable against widget bg */
