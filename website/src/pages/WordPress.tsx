@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import CodeBlock from '../components/CodeBlock'
-import { WIDGET_LOADER_URL } from '../constants'
+import { WIDGET_LOADER_URL, WIDGET_VERSION, WIDGET_LOADER_FILENAME, WIDGET_RUNTIME_FILENAME } from '../constants'
 import './Pages.css'
 
 const steps = [
@@ -116,6 +116,9 @@ export default function WordPress() {
           <h1>Install on WordPress</h1>
           <p style={{ fontSize: '1.25rem', color: 'var(--color-text-light)', maxWidth: '600px', margin: '0 auto' }}>
             Add the Accessibility Widget to any WordPress site in under 5 minutes using the free WPCode plugin. No coding experience required.
+          </p>
+          <p style={{ fontSize: '0.95rem', color: 'var(--color-text-light)', maxWidth: '640px', margin: '1rem auto 0' }}>
+            Snippets below match this site&apos;s current release: <strong>{WIDGET_VERSION}</strong> (loader <code>{WIDGET_LOADER_FILENAME}</code>, runtime <code>{WIDGET_RUNTIME_FILENAME}</code>).
           </p>
         </div>
 
@@ -289,7 +292,10 @@ export default function WordPress() {
               <li>Clear your WordPress cache (WP Super Cache, W3 Total Cache, LiteSpeed, WP Rocket, etc.)</li>
               <li>Clear your browser cache or try an incognito window</li>
               <li>Open browser DevTools (F12) → Console tab and look for errors</li>
-              <li>Check Network tab to verify <code>a11y-widget-loader-v1.6.1.js</code> loads (status 200)</li>
+              <li>
+                Check Network tab: <code>{WIDGET_LOADER_FILENAME}</code> (status 200), URL should include{' '}
+                <code>@{WIDGET_VERSION}</code>, then <code>{WIDGET_RUNTIME_FILENAME}</code> and <code>a11y-widget.css</code>
+              </li>
               <li>Temporarily switch to a default theme (Twenty Twenty-Four) to rule out theme conflicts</li>
             </ol>
           </div>

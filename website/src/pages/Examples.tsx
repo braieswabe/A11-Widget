@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import CodeBlock from '../components/CodeBlock'
-import { WIDGET_LOADER_URL } from '../constants'
+import { WIDGET_LOADER_URL, WIDGET_VERSION } from '../constants'
 import './Pages.css'
 
 export default function Examples() {
@@ -51,6 +51,9 @@ export default function Examples() {
         <h1 className="section-title">Examples & Use Cases</h1>
         <p className="text-center" style={{ maxWidth: '700px', margin: '0 auto 3rem' }}>
           See the widget in action with live demonstrations and real-world examples.
+        </p>
+        <p className="text-center" style={{ maxWidth: '700px', margin: '-2rem auto 3rem', fontSize: '0.95rem', color: 'var(--color-text-light)' }}>
+          Code snippets use the pinned release <strong>{WIDGET_VERSION}</strong> (same as this site&apos;s demo widget).
         </p>
 
         <div className="demo-container demo-content" style={{ marginBottom: '3rem' }}>

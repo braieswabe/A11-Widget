@@ -45,7 +45,10 @@ export default function Home() {
           <h2 className="section-title">Installation</h2>
           <p className="text-center">Add this single line to your HTML:</p>
           <CodeBlock code={quickStartCode} />
-          <p className="text-center" style={{ marginTop: '1.5rem', fontSize: '0.95rem' }}>
+          <p className="text-center" style={{ marginTop: '1rem', fontSize: '0.9rem', color: 'var(--color-text-light)' }}>
+            Snippet pins GitHub release <strong>{WIDGET_VERSION}</strong> — same release this documentation site uses for its live demo.
+          </p>
+          <p className="text-center" style={{ marginTop: '1rem', fontSize: '0.95rem' }}>
             No configuration needed. The widget loads automatically and works immediately.
           </p>
           <div className="text-center" style={{ marginTop: '2rem' }}>

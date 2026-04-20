@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import CodeBlock from '../components/CodeBlock'
-import { WIDGET_LOADER_URL } from '../constants'
+import { WIDGET_LOADER_URL, WIDGET_VERSION } from '../constants'
 import './Pages.css'
 
 export default function GettingStarted() {
@@ -25,6 +25,9 @@ export default function GettingStarted() {
       <div className="container container-narrow">
         <h1>Installation Guide</h1>
         <p>Add the Accessibility Widget to your website with a single line of code.</p>
+        <p style={{ fontSize: '0.95rem', color: 'var(--color-text-light)', marginBottom: '1.5rem' }}>
+          All snippets on this site pin the <strong>{WIDGET_VERSION}</strong> GitHub release on jsDelivr (same as the demo widget in the site header).
+        </p>
 
         <h2>Quick Installation</h2>
         <div className="card" style={{ marginBottom: '2rem', border: '2px solid var(--color-secondary)' }}>
@@ -34,7 +37,7 @@ export default function GettingStarted() {
           <p style={{ marginTop: '1rem', fontSize: '0.875rem', color: 'var(--color-text-light)' }}>
             ✅ No configuration needed<br/>
             ✅ Works immediately<br/>
-            ✅ Auto-updates from GitHub
+            ✅ Loads from jsDelivr using pinned release {WIDGET_VERSION} (update the tag in your embed when you move to a newer release)
           </p>
         </div>
 

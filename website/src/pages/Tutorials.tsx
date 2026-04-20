@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import CodeBlock from '../components/CodeBlock'
-import { WIDGET_LOADER_URL } from '../constants'
+import { WIDGET_LOADER_URL, WIDGET_VERSION } from '../constants'
 import './Pages.css'
 
 interface Tutorial {
@@ -233,6 +233,9 @@ export default function Tutorials() {
         <h1 className="section-title">Platform-Specific Tutorials</h1>
         <p className="text-center" style={{ maxWidth: '700px', margin: '0 auto 3rem' }}>
           Step-by-step installation guides for popular platforms and frameworks.
+        </p>
+        <p className="text-center" style={{ maxWidth: '700px', margin: '-2rem auto 3rem', fontSize: '0.95rem', color: 'var(--color-text-light)' }}>
+          Loader snippets reference <strong>{WIDGET_VERSION}</strong> on jsDelivr, matching the live widget on this documentation site.
         </p>
 
         <div className="tutorials-list">

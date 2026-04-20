@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { WIDGET_VERSION } from '../constants'
 import './Pages.css'
 
 export default function Download() {
@@ -8,6 +9,9 @@ export default function Download() {
       <div className="container container-narrow">
         <h1 className="section-title">Download Example</h1>
         <p className="text-center">Get a ready-to-use HTML file with the widget pre-installed.</p>
+        <p className="text-center" style={{ fontSize: '0.95rem', color: 'var(--color-text-light)', marginTop: '-0.5rem' }}>
+          The bundled example uses the same pinned release as this site: <strong>{WIDGET_VERSION}</strong>.
+        </p>
 
         <div className="download-box">
           <h3>Example HTML File</h3>

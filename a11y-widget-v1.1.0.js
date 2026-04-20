@@ -10,7 +10,7 @@
     - Improved cursor initialization
     - Enhanced cursor styling with better contrast
 
-    QA Remediation (v1.6.4 release):
+    QA Remediation (v1.6.5 release):
     - Hardened checkForUpdates with timeout, deterministic states, fallback reload button
     - Reset to Defaults now fully restores contrast/theme UI + tears down active features
     - Screen Mask reworked with SVG inverted mask for reliable video/canvas coverage

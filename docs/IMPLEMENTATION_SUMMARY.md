@@ -154,7 +154,7 @@ To configure the auth API base URL (if different from widget domain):
 <script>
   window.__A11Y_AUTH_API_BASE__ = "https://api.example.com/api/auth";
 </script>
-<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.4/a11y-widget-loader-v1.6.1.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.5/a11y-widget-loader-v1.6.1.js" defer></script>
 ```
 
 ### Site-Specific Authentication

@@ -1,7 +1,13 @@
 import { ReactNode, useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { WIDGET_VERSION, WIDGET_SCRIPT_URL, WIDGET_SCRIPT_URL_FALLBACK, WIDGET_CSS_URL } from '../constants'
+import {
+  WIDGET_VERSION,
+  WIDGET_SCRIPT_URL,
+  WIDGET_SCRIPT_URL_FALLBACK,
+  WIDGET_CSS_URL,
+  WIDGET_RUNTIME_FILENAME
+} from '../constants'
 import A11yLogo from './A11yLogo'
 import './Layout.css'
 
@@ -55,7 +61,7 @@ export default function Layout({ children }: LayoutProps) {
     // Load widget directly from GitHub CDN (using updated tabbed widget file)
     // Uses jsDelivr CDN as primary (more reliable than raw GitHub)
     const loadWidget = () => {
-      const updatedScriptSelector = 'script[src*="a11y-widget-v1.1.0.js"]'
+      const updatedScriptSelector = `script[src*="${WIDGET_RUNTIME_FILENAME}"]`
       const hasUpdatedScriptAlready = !!document.querySelector(updatedScriptSelector)
 
       // Check if widget is already loaded
@@ -90,7 +96,7 @@ export default function Layout({ children }: LayoutProps) {
         // Remove legacy direct script includes so only updated widget script remains.
         document.querySelectorAll('script[src*="a11y-widget.js"]').forEach((el) => {
           const scriptEl = el as HTMLScriptElement
-          if (!scriptEl.src.includes('a11y-widget-v1.1.0.js') && scriptEl.parentNode) {
+          if (!scriptEl.src.includes(WIDGET_RUNTIME_FILENAME) && scriptEl.parentNode) {
             scriptEl.parentNode.removeChild(scriptEl)
           }
         })
@@ -153,11 +159,12 @@ export default function Layout({ children }: LayoutProps) {
       widgetScript.id = 'a11y-widget-script'
       
       // Use local files on Vercel/devel, CDN in production
+      const localRuntime = '/' + WIDGET_RUNTIME_FILENAME
       const widgetUrl = useLocalFiles 
-        ? '/a11y-widget-v1.1.0.js?v=' + Date.now()
+        ? localRuntime + '?v=' + Date.now()
         : WIDGET_SCRIPT_URL + '?v=' + Date.now()
       const fallbackUrl = useLocalFiles
-        ? '/a11y-widget-v1.1.0.js?v=' + Date.now()
+        ? localRuntime + '?v=' + Date.now()
         : WIDGET_SCRIPT_URL_FALLBACK + '?v=' + Date.now()
       
       widgetScript.src = widgetUrl

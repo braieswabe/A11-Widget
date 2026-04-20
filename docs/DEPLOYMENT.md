@@ -115,7 +115,7 @@ curl "https://purge.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loade
 This usually means you forgot to:
 1. Push changes to GitHub
 2. Create and push a version tag
-3. Update `WIDGET_VERSION_TAG` in the loader
+3. Update `DEFAULT_VERSION_TAG` in `a11y-widget-loader-v1.6.1.js`
 
 ### jsDelivr Returning Old Version?
 
@@ -158,11 +158,11 @@ git commit -m "fix: Improve magnifier performance and add translation status"
 git push origin main
 
 # 4. Create version tag
-git tag -a v1.6.4 -m "QA remediation: runtime, CSS, loader default tag"
-git push origin v1.6.4
+git tag -a v1.6.5 -m "Release: site + docs on v1.6.5, loader default tag"
+git push origin v1.6.5
 
 # 5. Verify
-curl -s "https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.4/a11y-widget-v1.1.0.js" | head -10
+curl -s "https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.5/a11y-widget-v1.1.0.js" | head -10
 ```
 
 Remember: **No tag = No update for live users!**
