@@ -74,6 +74,8 @@ website/
 
 **Release tag for docs and copy-paste snippets:** update `src/constants.ts` (`WIDGET_VERSION`, and loader/CSS/JS URLs if filenames change) so Home, Getting Started, Tutorials, Examples, and WordPress pages stay aligned with the GitHub tag you ship.
 
+**Runtime on this site:** `npm run dev` and production builds load `a11y-widget-v1.1.0.js` and `a11y-widget.css` from the **repository root** (Vite middleware + `closeBundle` copy). Root is preferred over `packages/a11y-widget` assets so the demo always matches the updated CDN files you ship.
+
 The website includes the widget for demonstration. The Layout component loads the widget script dynamically:
 
 ```typescript

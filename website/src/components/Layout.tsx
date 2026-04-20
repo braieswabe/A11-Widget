@@ -124,9 +124,9 @@ export default function Layout({ children }: LayoutProps) {
       const isDevelopment = import.meta.env.DEV || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
       const isVercelDeployment = window.location.hostname === 'a11-widget.vercel.app' || window.location.hostname.endsWith('.vercel.app')
       
-      // Always use local files when on localhost (for local development)
-      // On Vercel deployment, always use local files for guaranteed availability (testing/demo)
-      // In production (external), use CDN URLs
+      // Localhost / dev: serve widget from Vite (repo root `a11y-widget*.js` + `a11y-widget.css`).
+      // Vercel / static hosting: same files are copied into `dist/` at build time (see vite.config `closeBundle`).
+      // Any other hostname: load from GitHub tag via CDN (same URLs as `constants.ts` / install docs).
       const useLocalFiles = isDevelopment || isVercelDeployment || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
 
       // Load CSS first

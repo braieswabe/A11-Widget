@@ -90,9 +90,10 @@ export default defineConfig({
             }
           }
           if (req.url === '/a11y-widget.css' || req.url?.startsWith('/a11y-widget.css?')) {
-            const npmCss = join(__dirname, '..', 'packages', 'a11y-widget', 'assets', 'a11y-widget.css')
+            // Repo root is canonical (matches CDN / releases); npm package assets may lag.
             const widgetCss = join(__dirname, '..', 'a11y-widget.css')
-            const cssFile = existsSync(npmCss) ? npmCss : widgetCss
+            const npmCss = join(__dirname, '..', 'packages', 'a11y-widget', 'assets', 'a11y-widget.css')
+            const cssFile = existsSync(widgetCss) ? widgetCss : npmCss
             if (existsSync(cssFile)) {
               res.setHeader('Content-Type', 'text/css')
               res.setHeader('Cache-Control', 'no-cache')
@@ -107,7 +108,7 @@ export default defineConfig({
         // Copy widget files to dist root for serving
         const distPath = join(__dirname, 'dist')
         
-        // Try npm package files first, fallback to root files
+        // Prefer repo root (release/runtime source); npm package vendor may lag.
         const npmCoreJs = join(__dirname, '..', 'packages', 'a11y-widget', 'vendor', 'a11y-widget.core.js')
         const npmCss = join(__dirname, '..', 'packages', 'a11y-widget', 'assets', 'a11y-widget.css')
         const widgetJsV110 = join(__dirname, '..', 'a11y-widget-v1.1.0.js')
@@ -125,22 +126,22 @@ export default defineConfig({
           console.log('[Vite] Copied widget v1.1.0 fallback from npm package')
         }
 
-        // Copy widget JS - prefer npm package files if available
-        if (existsSync(npmCoreJs)) {
-          copyFileSync(npmCoreJs, join(distPath, 'a11y-widget.js'))
-          console.log('[Vite] Copied widget core from npm package')
-        } else if (existsSync(widgetJs)) {
+        // Copy legacy `a11y-widget.js` for any direct links — root first, then npm vendor.
+        if (existsSync(widgetJs)) {
           copyFileSync(widgetJs, join(distPath, 'a11y-widget.js'))
-          console.log('[Vite] Copied widget from root')
+          console.log('[Vite] Copied legacy widget JS from repo root')
+        } else if (existsSync(npmCoreJs)) {
+          copyFileSync(npmCoreJs, join(distPath, 'a11y-widget.js'))
+          console.log('[Vite] Copied legacy widget JS from npm package')
         }
         
-        // Copy CSS - prefer npm package file
-        if (existsSync(npmCss)) {
+        // Copy CSS — repo root first (same source as jsDelivr tag); npm package may be older.
+        if (existsSync(widgetCss)) {
+          copyFileSync(widgetCss, join(distPath, 'a11y-widget.css'))
+          console.log('[Vite] Copied widget CSS from repo root')
+        } else if (existsSync(npmCss)) {
           copyFileSync(npmCss, join(distPath, 'a11y-widget.css'))
           console.log('[Vite] Copied widget CSS from npm package')
-        } else if (existsSync(widgetCss)) {
-          copyFileSync(widgetCss, join(distPath, 'a11y-widget.css'))
-          console.log('[Vite] Copied widget CSS from root')
         }
         
         // Copy downloads folder
