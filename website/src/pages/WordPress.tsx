@@ -294,7 +294,7 @@ export default function WordPress() {
               <li>Open browser DevTools (F12) → Console tab and look for errors</li>
               <li>
                 Check Network tab: <code>{WIDGET_LOADER_FILENAME}</code> (status 200), URL should include{' '}
-                <code>@main</code> for the current files, then <code>{WIDGET_RUNTIME_FILENAME}</code> and <code>a11y-widget.css</code>
+                <code>@{WIDGET_VERSION}</code>, then <code>a11y-widget.js</code> (or <code>{WIDGET_RUNTIME_FILENAME}</code> via raw GitHub fallback) and <code>a11y-widget.css</code>
               </li>
               <li>Temporarily switch to a default theme (Twenty Twenty-Four) to rule out theme conflicts</li>
             </ol>

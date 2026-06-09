@@ -37,7 +37,7 @@ export default function GettingStarted() {
           <p style={{ marginTop: '1rem', fontSize: '0.875rem', color: 'var(--color-text-light)' }}>
             ✅ No configuration needed<br/>
             ✅ Works immediately<br/>
-            ✅ Loads the {WIDGET_VERSION} widget files from jsDelivr/GitHub (switch to the pinned tag once the GitHub release tag is published)
+            ✅ Loads the {WIDGET_VERSION} widget files from jsDelivr/GitHub
           </p>
         </div>
 

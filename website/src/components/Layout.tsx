@@ -6,8 +6,11 @@ import {
   WIDGET_SCRIPT_URL,
   WIDGET_SCRIPT_URL_FALLBACK,
   WIDGET_CSS_URL,
-  WIDGET_RUNTIME_FILENAME
+  WIDGET_RUNTIME_FILENAME,
+  WIDGET_RUNTIME_CDN_FILENAME
 } from '../constants'
+
+const WIDGET_SCRIPT_MARKERS = [WIDGET_RUNTIME_FILENAME, WIDGET_RUNTIME_CDN_FILENAME, 'a11y-widget.js']
 import A11yLogo from './A11yLogo'
 import './Layout.css'
 
@@ -61,8 +64,12 @@ export default function Layout({ children }: LayoutProps) {
     // Load widget directly from GitHub CDN (using updated tabbed widget file)
     // Uses jsDelivr CDN as primary (more reliable than raw GitHub)
     const loadWidget = () => {
-      const updatedScriptSelector = `script[src*="${WIDGET_RUNTIME_FILENAME}"]`
-      const hasUpdatedScriptAlready = !!document.querySelector(updatedScriptSelector)
+      const hasUpdatedScriptAlready = WIDGET_SCRIPT_MARKERS.some(
+        (marker) => !!document.querySelector(`script[src*="${marker}"]`)
+      )
+      const updatedScriptSelector = WIDGET_SCRIPT_MARKERS
+        .map((marker) => `script[src*="${marker}"]`)
+        .join(', ')
 
       // Check if widget is already loaded
       if (window.__a11yWidget?.__loaded && hasUpdatedScriptAlready) {
