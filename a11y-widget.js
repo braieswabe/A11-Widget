@@ -3,7 +3,7 @@
     No claims of full-site ADA compliance.
     
     GitHub Repository: https://github.com/braieswabe/A11-Widget
-    CDN: https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.8/
+    CDN: https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/
     
     Version 1.6.8 Changelog:
     - Fixed cursor visibility with enhanced outline

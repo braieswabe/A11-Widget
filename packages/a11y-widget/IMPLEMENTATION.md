@@ -42,7 +42,7 @@ packages/a11y-widget/
 <script>
   window.__A11Y_WIDGET__ = { siteId: "example.com" };
 </script>
-<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.8/a11y-widget-loader-v1.6.8.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader-v1.6.8.js" defer></script>
 ```
 
 ### NPM (New - Additional Option)

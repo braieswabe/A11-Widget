@@ -162,7 +162,7 @@ git tag -a v1.6.8 -m "Release: site + docs on v1.6.8, loader default tag"
 git push origin v1.6.8
 
 # 5. Verify
-curl -s "https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.8/a11y-widget-v1.6.8.js" | head -10
+curl -s "https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-v1.6.8.js" | head -10
 ```
 
 Remember: **No tag = No update for live users!**
