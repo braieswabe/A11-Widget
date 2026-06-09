@@ -53,7 +53,7 @@ export default function Examples() {
           See the widget in action with live demonstrations and real-world examples.
         </p>
         <p className="text-center" style={{ maxWidth: '700px', margin: '-2rem auto 3rem', fontSize: '0.95rem', color: 'var(--color-text-light)' }}>
-          Code snippets use the pinned release <strong>{WIDGET_VERSION}</strong> (same as this site&apos;s demo widget).
+          Code snippets use the current <strong>{WIDGET_VERSION}</strong> widget files (same as this site&apos;s demo widget).
         </p>
 
         <div className="demo-container demo-content" style={{ marginBottom: '3rem' }}>

@@ -1,12 +1,12 @@
 /*! a11y-widget-loader-v1.6.7.js — Zero-Config Loader v1.6.7
     Usage:
-    <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.7/a11y-widget-loader-v1.6.7.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader-v1.6.7.js" defer></script>
 */
 (function () {
   "use strict";
 
   var GITHUB_REPO = "braieswabe/A11-Widget";
-  var DEFAULT_VERSION_TAG = "v1.6.7";
+  var DEFAULT_VERSION_TAG = "main";
   var LOADER_VERSION = "1.6.7";
   var CSS_FILE = "a11y-widget.css";
   var JS_FILE = "a11y-widget-v1.6.7.js";
@@ -65,6 +65,37 @@
       window.__a11yWidgetInit(window.__A11Y_WIDGET__);
     }
   }
+
+  function waitForWidgetReady(timeoutMs) {
+    timeoutMs = timeoutMs || 5000;
+    return new Promise(function(resolve, reject) {
+      var started = Date.now();
+      function check() {
+        if (window.__a11yWidget && window.__a11yWidget.__loaded) {
+          resolve(window.__a11yWidget);
+          return;
+        }
+        if (typeof window.__a11yWidgetInit === "function") {
+          initWidgetIfReady();
+        }
+        if (Date.now() - started >= timeoutMs) {
+          reject(new Error("Accessibility widget failed to initialize before timeout"));
+          return;
+        }
+        setTimeout(check, 50);
+      }
+      check();
+    });
+  }
+
+  window.__initA11yWidget = window.__initA11yWidget || function(config) {
+    if (config && typeof config === "object") {
+      window.__A11Y_WIDGET__ = Object.assign(window.__A11Y_WIDGET__ || {}, config);
+    }
+    ensureStylesheet();
+    ensureWidgetScript();
+    return waitForWidgetReady(5000);
+  };
 
   function ensureWidgetScript() {
     if (window.__a11yWidget && window.__a11yWidget.__loaded) {

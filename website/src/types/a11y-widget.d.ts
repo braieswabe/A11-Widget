@@ -35,12 +35,16 @@ declare global {
     __a11yWidget?: {
       __loaded: boolean
       config: any
+      open: () => void
+      close: () => void
+      toggle: () => void
       getBuild: () => string
       getPrefs: () => any
       setPrefs: (prefs: any) => void
       reset: () => void
     }
     __a11yWidgetInit?: (config?: any) => void
+    __initA11yWidget?: (config?: any) => Promise<Window['__a11yWidget']>
   }
 }
 

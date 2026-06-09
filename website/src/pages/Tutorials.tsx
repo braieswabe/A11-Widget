@@ -31,16 +31,19 @@ const tutorials: Tutorial[] = [
       {
         title: 'Optional: Custom Button Control',
         content: 'To hide the default button and control it with your own header button, see the Custom Button Control guide.',
-        code: `/* Add to your CSS */
-.a11y-widget-hidden #a11y-widget-root {
+        code: `/* Hide only the default floating toggle */
+.a11y-widget-custom-button #a11y-widget-toggle {
   display: none !important;
 }
 
 /* Add to your HTML on page load */
-document.documentElement.classList.add('a11y-widget-hidden');
+document.documentElement.classList.add('a11y-widget-custom-button');
 
 /* Toggle in your button click handler */
-document.documentElement.classList.toggle('a11y-widget-hidden');`
+async function toggleAccessibilityWidget() {
+  const widget = await window.__initA11yWidget();
+  widget.toggle();
+}`
       }
     ]
   },
@@ -116,16 +119,17 @@ export default function RootLayout({ children }) {
         title: 'Optional: Custom Button Control',
         content: 'Hide default button and control with your own header button:',
         code: `/* In src/index.css */
-.a11y-widget-hidden #a11y-widget-root {
+.a11y-widget-custom-button #a11y-widget-toggle {
   display: none !important;
 }
 
 /* In src/index.js or src/main.jsx */
-document.documentElement.classList.add('a11y-widget-hidden');
+document.documentElement.classList.add('a11y-widget-custom-button');
 
 /* In your Header component */
-const toggleWidget = () => {
-  document.documentElement.classList.toggle('a11y-widget-hidden');
+const toggleWidget = async () => {
+  const widget = await window.__initA11yWidget();
+  widget.toggle();
 };`
       }
     ]
@@ -235,7 +239,7 @@ export default function Tutorials() {
           Step-by-step installation guides for popular platforms and frameworks.
         </p>
         <p className="text-center" style={{ maxWidth: '700px', margin: '-2rem auto 3rem', fontSize: '0.95rem', color: 'var(--color-text-light)' }}>
-          Loader snippets reference <strong>{WIDGET_VERSION}</strong> on jsDelivr, matching the live widget on this documentation site.
+          Loader snippets reference the current <strong>{WIDGET_VERSION}</strong> widget files on jsDelivr, matching the live widget on this documentation site.
         </p>
 
         <div className="tutorials-list">

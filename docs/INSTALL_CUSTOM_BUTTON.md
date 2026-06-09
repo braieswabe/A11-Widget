@@ -1,6 +1,6 @@
 # Installation Guide — Custom Button Control
 
-This guide shows how to hide the widget by default and control it with a custom button in your header/navigation.
+This guide shows how to hide the default floating widget button and control the panel with a custom button in your header/navigation.
 
 ## Overview
 
@@ -22,7 +22,7 @@ Add the loader script globally in your `index.html` (or equivalent):
   <title>Your Site</title>
   
   <!-- Accessibility Widget Loader -->
-  <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.7/a11y-widget-loader-v1.6.7.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader-v1.6.7.js" defer></script>
 </head>
 <body>
   <!-- Your content -->
@@ -30,15 +30,13 @@ Add the loader script globally in your `index.html` (or equivalent):
 </html>
 ```
 
-## Step 2: Hide Widget by Default
+## Step 2: Hide the Default Floating Button
 
-Add CSS to hide the widget on page load. Add this to your global CSS file (e.g., `index.css`, `global.css`, `App.css`):
+Add CSS to hide only the built-in floating toggle button. Do not hide `#a11y-widget-root` or `#a11y-widget-panel`; the public API needs the panel to remain renderable.
 
 ```css
-/* Hide widget by default */
-.a11y-widget-hidden #a11y-widget-root,
-.a11y-widget-hidden #a11y-widget-toggle,
-.a11y-widget-hidden #a11y-widget-panel {
+/* Hide only the default floating toggle */
+.a11y-widget-custom-button #a11y-widget-toggle {
   display: none !important;
   visibility: hidden !important;
 }
@@ -48,32 +46,7 @@ Then add the class to your HTML element on page load:
 
 ```javascript
 // Add this script before </head> or in your main JS file
-document.documentElement.classList.add('a11y-widget-hidden');
-```
-
-**For React/Vite:**
-
-In `src/index.css` or `src/index.js`:
-
-```css
-/* Hide widget by default */
-.a11y-widget-hidden #a11y-widget-root,
-.a11y-widget-hidden #a11y-widget-toggle,
-.a11y-widget-hidden #a11y-widget-panel,
-.a11y-widget-hidden #a11y-widget-header,
-.a11y-widget-hidden #a11y-widget-title,
-.a11y-widget-hidden #a11y-widget-close,
-.a11y-widget-hidden .a11y-widget-help {
-  display: none !important;
-  visibility: hidden !important;
-}
-```
-
-In `src/index.js` or `src/main.jsx`:
-
-```javascript
-// Hide widget on startup
-document.documentElement.classList.add('a11y-widget-hidden');
+document.documentElement.classList.add('a11y-widget-custom-button');
 ```
 
 ## Step 3: Add Custom Header Button
@@ -86,8 +59,9 @@ Add a button in your header/navigation component:
 import { Accessibility } from 'lucide-react' // or your icon library
 
 function Header() {
-  const toggleWidget = () => {
-    document.documentElement.classList.toggle('a11y-widget-hidden');
+  const toggleWidget = async () => {
+    const widget = await window.__initA11yWidget();
+    widget.toggle();
   };
 
   return (
@@ -129,8 +103,9 @@ function Header() {
 </header>
 
 <script>
-  document.getElementById('custom-a11y-button').addEventListener('click', function() {
-    document.documentElement.classList.toggle('a11y-widget-hidden');
+  document.getElementById('custom-a11y-button').addEventListener('click', async function() {
+    const widget = await window.__initA11yWidget();
+    widget.toggle();
   });
 </script>
 ```
@@ -179,7 +154,7 @@ function Header() {
 <head>
   <meta charset="UTF-8">
   <title>My App</title>
-  <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.7/a11y-widget-loader-v1.6.7.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader-v1.6.7.js" defer></script>
 </head>
 <body>
   <div id="root"></div>
@@ -190,14 +165,8 @@ function Header() {
 ### `src/index.css`
 
 ```css
-/* Hide widget by default */
-.a11y-widget-hidden #a11y-widget-root,
-.a11y-widget-hidden #a11y-widget-toggle,
-.a11y-widget-hidden #a11y-widget-panel,
-.a11y-widget-hidden #a11y-widget-header,
-.a11y-widget-hidden #a11y-widget-title,
-.a11y-widget-hidden #a11y-widget-close,
-.a11y-widget-hidden .a11y-widget-help {
+/* Hide only the default floating toggle */
+.a11y-widget-custom-button #a11y-widget-toggle {
   display: none !important;
   visibility: hidden !important;
 }
@@ -211,8 +180,8 @@ import ReactDOM from 'react-dom/client'
 import './index.css'
 import App from './App'
 
-// Hide widget on startup
-document.documentElement.classList.add('a11y-widget-hidden')
+// Use a custom header button instead of the default floating toggle
+document.documentElement.classList.add('a11y-widget-custom-button')
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
@@ -227,8 +196,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 import { Accessibility } from 'lucide-react'
 
 export default function Header() {
-  const toggleWidget = () => {
-    document.documentElement.classList.toggle('a11y-widget-hidden')
+  const toggleWidget = async () => {
+    const widget = await window.__initA11yWidget()
+    widget.toggle()
   }
 
   return (
@@ -254,9 +224,9 @@ export default function Header() {
 ## How It Works
 
 1. **Widget loads**: The loader script loads CSS and JS from GitHub
-2. **Widget hidden**: The `a11y-widget-hidden` class hides the default toggle button
-3. **Custom button**: Your header button toggles the class
-4. **Widget shows/hides**: Removing the class shows the widget, adding it hides it
+2. **Default button hidden**: The `a11y-widget-custom-button` class hides only the built-in floating toggle
+3. **Custom button**: Your header button calls `window.__initA11yWidget()` and then `widget.toggle()`
+4. **Widget opens/closes**: The public widget API controls the panel without depending on private DOM selectors
 
 ## Benefits
 
@@ -268,42 +238,27 @@ export default function Header() {
 
 ## Advanced: Track Widget State
 
-If you want to track whether the widget is open:
+If you want to track whether the widget is open, read the panel state after the API call:
 
 ```tsx
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 
 function Header() {
-  const [widgetVisible, setWidgetVisible] = useState(false)
+  const [widgetOpen, setWidgetOpen] = useState(false)
 
-  useEffect(() => {
-    const checkVisibility = () => {
-      setWidgetVisible(!document.documentElement.classList.contains('a11y-widget-hidden'))
-    }
+  const toggleWidget = async () => {
+    const widget = await window.__initA11yWidget()
+    widget.toggle()
 
-    // Check on mount
-    checkVisibility()
-
-    // Watch for changes (optional - uses MutationObserver)
-    const observer = new MutationObserver(checkVisibility)
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['class']
-    })
-
-    return () => observer.disconnect()
-  }, [])
-
-  const toggleWidget = () => {
-    document.documentElement.classList.toggle('a11y-widget-hidden')
-    setWidgetVisible(!widgetVisible)
+    const panel = document.getElementById('a11y-widget-panel')
+    setWidgetOpen(!!panel && !panel.hasAttribute('hidden'))
   }
 
   return (
     <button
       onClick={toggleWidget}
-      aria-label={widgetVisible ? "Close accessibility widget" : "Open accessibility widget"}
-      aria-expanded={widgetVisible}
+      aria-label={widgetOpen ? "Close accessibility widget" : "Open accessibility widget"}
+      aria-expanded={widgetOpen}
     >
       <Accessibility />
       <span>Accessibility</span>
@@ -314,17 +269,18 @@ function Header() {
 
 ## Troubleshooting
 
-### Widget Not Hiding
+### Default Floating Button Not Hiding
 
 - Ensure CSS is loaded before widget script
-- Check that class is added to `document.documentElement` (not `document.body`)
-- Verify CSS selectors match widget elements
+- Check that `a11y-widget-custom-button` is added to `document.documentElement` (not `document.body`)
+- Verify the selector targets only `#a11y-widget-toggle`
 
-### Widget Not Showing When Class Removed
+### Widget Panel Not Opening
 
 - Check browser console for errors
-- Verify widget script loaded successfully
-- Ensure widget root element exists in DOM
+- Verify the loader script URL returns HTTP 200
+- Verify `window.__initA11yWidget` exists after the loader script runs
+- Use `const widget = await window.__initA11yWidget(); widget.open();` to test the API directly
 
 ### Custom Button Not Working
 

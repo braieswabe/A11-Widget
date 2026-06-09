@@ -10,7 +10,7 @@ export default function Download() {
         <h1 className="section-title">Download Example</h1>
         <p className="text-center">Get a ready-to-use HTML file with the widget pre-installed.</p>
         <p className="text-center" style={{ fontSize: '0.95rem', color: 'var(--color-text-light)', marginTop: '-0.5rem' }}>
-          The bundled example uses the same pinned release as this site: <strong>{WIDGET_VERSION}</strong>.
+          The bundled example uses the same current widget version as this site: <strong>{WIDGET_VERSION}</strong>.
         </p>
 
         <div className="download-box">

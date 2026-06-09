@@ -46,7 +46,7 @@ export default function Home() {
           <p className="text-center">Add this single line to your HTML:</p>
           <CodeBlock code={quickStartCode} />
           <p className="text-center" style={{ marginTop: '1rem', fontSize: '0.9rem', color: 'var(--color-text-light)' }}>
-            Snippet pins GitHub release <strong>{WIDGET_VERSION}</strong> — same release this documentation site uses for its live demo.
+            Snippet loads the current <strong>{WIDGET_VERSION}</strong> files from GitHub/jsDelivr — same runtime this documentation site uses for its live demo.
           </p>
           <p className="text-center" style={{ marginTop: '1rem', fontSize: '0.95rem' }}>
             No configuration needed. The widget loads automatically and works immediately.

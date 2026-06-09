@@ -26,7 +26,7 @@ export default function GettingStarted() {
         <h1>Installation Guide</h1>
         <p>Add the Accessibility Widget to your website with a single line of code.</p>
         <p style={{ fontSize: '0.95rem', color: 'var(--color-text-light)', marginBottom: '1.5rem' }}>
-          All snippets on this site pin the <strong>{WIDGET_VERSION}</strong> GitHub release on jsDelivr (same as the demo widget in the site header).
+          All snippets on this site load the current <strong>{WIDGET_VERSION}</strong> widget files from GitHub/jsDelivr (same as the demo widget in the site header).
         </p>
 
         <h2>Quick Installation</h2>
@@ -37,7 +37,7 @@ export default function GettingStarted() {
           <p style={{ marginTop: '1rem', fontSize: '0.875rem', color: 'var(--color-text-light)' }}>
             ✅ No configuration needed<br/>
             ✅ Works immediately<br/>
-            ✅ Loads from jsDelivr using pinned release {WIDGET_VERSION} (update the tag in your embed when you move to a newer release)
+            ✅ Loads the {WIDGET_VERSION} widget files from jsDelivr/GitHub (switch to the pinned tag once the GitHub release tag is published)
           </p>
         </div>
 

@@ -4863,6 +4863,11 @@
       emit(cfg, "widget_close", {});
     }
 
+    function togglePanel() {
+      var expanded = toggle.getAttribute("aria-expanded") === "true";
+      if (expanded) closePanel(); else openPanel();
+    }
+
     toggle.addEventListener("click", function (e) {
       // Check if we're on Vercel demo site (skip auth for demo)
       var hostname = window.location.hostname;
@@ -5548,6 +5553,7 @@
       root: root, 
       open: openPanel, 
       close: closePanel,
+      toggle: togglePanel,
       controls: controls,
       updateControls: function(prefs) { updateUIControls(controls, prefs); }
     };
@@ -5813,6 +5819,9 @@
       window.__a11yWidget = {
         __loaded: true,
         config: cfg,
+        open: function () { widget.open(); },
+        close: function () { widget.close(); },
+        toggle: function () { widget.toggle(); },
         getBuild: function () { return window.__A11Y_WIDGET_BUILD__ || "a11y-widget-v1.6.7.js"; },
         getPrefs: function () { return assign({}, prefs); },
         setPrefs: function (next) {
@@ -5854,6 +5863,39 @@
     }
   }
 
-  // Expose init function for manual initialization (CDN loader or npm)
+  function waitForA11yWidgetReady(timeoutMs) {
+    timeoutMs = timeoutMs || 5000;
+    return new Promise(function(resolve, reject) {
+      var started = Date.now();
+      function check() {
+        if (window.__a11yWidget && window.__a11yWidget.__loaded) {
+          resolve(window.__a11yWidget);
+          return;
+        }
+        if (Date.now() - started >= timeoutMs) {
+          reject(new Error("Accessibility widget failed to initialize before timeout"));
+          return;
+        }
+        setTimeout(check, 50);
+      }
+      check();
+    });
+  }
+
+  function initA11yWidgetCompat(config) {
+    if (config && typeof config === "object") {
+      window.__A11Y_WIDGET__ = assign(window.__A11Y_WIDGET__ || {}, config);
+    }
+    if (window.__a11yWidget && window.__a11yWidget.__loaded) {
+      return Promise.resolve(window.__a11yWidget);
+    }
+    if (typeof window.__a11yWidgetInit === "function") {
+      try { window.__a11yWidgetInit(window.__A11Y_WIDGET__); } catch (e) { return Promise.reject(e); }
+    }
+    return waitForA11yWidgetReady(5000);
+  }
+
+  // Expose init functions for manual initialization (CDN loader, npm, or legacy header buttons)
   window.__a11yWidgetInit = init;
+  window.__initA11yWidget = initA11yWidgetCompat;
 })();
