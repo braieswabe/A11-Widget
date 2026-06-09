@@ -1,16 +1,16 @@
-/*! a11y-widget.js — Accessibility Widget v1.6.7 (IIFE, no deps)
+/*! a11y-widget.js — Accessibility Widget v1.6.8 (IIFE, no deps)
     Scope: widget UI + configured surfaces only.
     No claims of full-site ADA compliance.
     
     GitHub Repository: https://github.com/braieswabe/A11-Widget
-    CDN: https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/
+    CDN: https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.8/
     
-    Version 1.6.7 Changelog:
+    Version 1.6.8 Changelog:
     - Fixed cursor visibility with enhanced outline
     - Improved cursor initialization
     - Enhanced cursor styling with better contrast
 
-    QA Remediation (v1.6.7 release):
+    QA Remediation (v1.6.8 release):
     - Hardened checkForUpdates with timeout, deterministic states, fallback reload button
     - Reset to Defaults now fully restores contrast/theme UI + tears down active features
     - Screen Mask reworked with SVG inverted mask for reliable video/canvas coverage
@@ -1416,7 +1416,7 @@
     }
     setUpdateStatus(statusEl, "Checking latest version...", false);
 
-    var probeUrl = CDN_BASE + "a11y-widget-v1.6.7.js?_a11y_check=" + Date.now();
+    var probeUrl = CDN_BASE + "a11y-widget-v1.6.8.js?_a11y_check=" + Date.now();
     var supportsFetch = typeof fetch !== "undefined";
 
     function finish(buttonText) {
@@ -3093,8 +3093,8 @@
       "aria-label": "Open accessibility settings" + shortcutText,
       "aria-haspopup": "dialog",
       "aria-keyshortcuts": cfg.keyboardShortcut || undefined,
-      "data-a11y-widget-version": "1.6.7",
-      title: (shortcutHint || "Accessibility Settings") + " - Widget v1.6.7",
+      "data-a11y-widget-version": "1.6.8",
+      title: (shortcutHint || "Accessibility Settings") + " - Widget v1.6.8",
       html: logoSVG
     });
     
@@ -3178,6 +3178,8 @@
       text: "Advanced Tools"
     });
 
+    // Temporarily disabled: hide Icon Style tab while preserving the implementation for re-enable.
+    var enableIconStyleTab = false;
     var iconTab = el("button", {
       type: "button",
       role: "tab",
@@ -3191,7 +3193,7 @@
     tabList.appendChild(quickFixesTab);
     tabList.appendChild(readingTab);
     tabList.appendChild(advancedTab);
-    tabList.appendChild(iconTab);
+    if (enableIconStyleTab) tabList.appendChild(iconTab);
     tabContainer.appendChild(tabList);
     
     // Tab panels
@@ -3230,7 +3232,7 @@
     function switchTab(selectedTab, selectedPanel) {
       // Update all tabs
       var tabs = tabList.querySelectorAll(".a11y-widget-tab");
-      var panels = [quickFixesPanel, readingPanel, advancedPanel, iconPanel];
+      var panels = enableIconStyleTab ? [quickFixesPanel, readingPanel, advancedPanel, iconPanel] : [quickFixesPanel, readingPanel, advancedPanel];
       
       for (var i = 0; i < tabs.length; i++) {
         tabs[i].setAttribute("aria-selected", "false");
@@ -3258,7 +3260,7 @@
     quickFixesTab.addEventListener("click", function() { switchTab(quickFixesTab, quickFixesPanel); });
     readingTab.addEventListener("click", function() { switchTab(readingTab, readingPanel); });
     advancedTab.addEventListener("click", function() { switchTab(advancedTab, advancedPanel); });
-    iconTab.addEventListener("click", function() { switchTab(iconTab, iconPanel); });
+    if (enableIconStyleTab) iconTab.addEventListener("click", function() { switchTab(iconTab, iconPanel); });
     
     // Keyboard navigation for tabs
     tabList.addEventListener("keydown", function(e) {
@@ -3283,7 +3285,7 @@
     content.appendChild(quickFixesPanel);
     content.appendChild(readingPanel);
     content.appendChild(advancedPanel);
-    content.appendChild(iconPanel);
+    if (enableIconStyleTab) content.appendChild(iconPanel);
 
     // Icon customization
     var iconIntro = el("div", { class: "a11y-widget-row" });
@@ -5648,7 +5650,7 @@
     var cfg = getConfig();
 
     // QA / deploy verification: check in console `window.__A11Y_WIDGET_BUILD__` and Network for this filename (not legacy a11y-widget.js).
-    window.__A11Y_WIDGET_BUILD__ = "a11y-widget-v1.6.7.js";
+    window.__A11Y_WIDGET_BUILD__ = "a11y-widget-v1.6.8.js";
 
     // Namespace guard
     if (window.__a11yWidget && window.__a11yWidget.__loaded) return;
@@ -5822,7 +5824,7 @@
         open: function () { widget.open(); },
         close: function () { widget.close(); },
         toggle: function () { widget.toggle(); },
-        getBuild: function () { return window.__A11Y_WIDGET_BUILD__ || "a11y-widget-v1.6.7.js"; },
+        getBuild: function () { return window.__A11Y_WIDGET_BUILD__ || "a11y-widget-v1.6.8.js"; },
         getPrefs: function () { return assign({}, prefs); },
         setPrefs: function (next) {
           prefs = normalizePrefs(assign(prefs, next || {}));

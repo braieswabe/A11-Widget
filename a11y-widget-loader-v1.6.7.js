@@ -1,12 +1,12 @@
 /*! a11y-widget-loader-v1.6.7.js — Zero-Config Loader v1.6.7
     Usage:
-    <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader-v1.6.7.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.7/a11y-widget-loader-v1.6.7.js" defer></script>
 */
 (function () {
   "use strict";
 
   var GITHUB_REPO = "braieswabe/A11-Widget";
-  var DEFAULT_VERSION_TAG = "main";
+  var DEFAULT_VERSION_TAG = "v1.6.7";
   var LOADER_VERSION = "1.6.7";
   var CSS_FILE = "a11y-widget.css";
   var JS_FILE = "a11y-widget-v1.6.7.js";

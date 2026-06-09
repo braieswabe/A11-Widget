@@ -99,7 +99,7 @@ npm install @careerdriver/a11y-widget
 node -e "import('@careerdriver/a11y-widget').then(m => console.log('✅ Import successful:', Object.keys(m)))"
 ```
 
-**Note**: If you see "Access token expired or revoked" warnings but the publish shows `+ @careerdriver/a11y-widget@1.6.7`, the package was likely published successfully. The 404 error when viewing immediately after publishing is normal - npm registry propagation can take 2-5 minutes.
+**Note**: If you see "Access token expired or revoked" warnings but the publish shows `+ @careerdriver/a11y-widget@1.6.8`, the package was likely published successfully. The 404 error when viewing immediately after publishing is normal - npm registry propagation can take 2-5 minutes.
 
 ---
 
@@ -193,7 +193,7 @@ The package has been transferred to the `@careerdriver` organization scope.
    ```json
    {
      "dependencies": {
-       "@careerdriver/a11y-widget": "^1.6.7"
+       "@careerdriver/a11y-widget": "^1.6.8"
      }
    }
    ```
@@ -234,7 +234,7 @@ npm unpublish @mcelestino-conversion/a11y-widget --force
 
 ### Package Published but Shows 404 When Viewing
 
-**Symptom**: `npm publish` shows success (`+ @careerdriver/a11y-widget@1.6.7`) but `npm view` returns 404.
+**Symptom**: `npm publish` shows success (`+ @careerdriver/a11y-widget@1.6.8`) but `npm view` returns 404.
 
 **Solutions**:
 1. **Wait 2-5 minutes**: npm registry propagation takes time. This is normal!
@@ -254,7 +254,7 @@ npm unpublish @mcelestino-conversion/a11y-widget --force
 
 ### "Access token expired or revoked" warnings during publish
 
-**Symptom**: Warnings appear but publish shows success message (`+ @careerdriver/a11y-widget@1.6.7`).
+**Symptom**: Warnings appear but publish shows success message (`+ @careerdriver/a11y-widget@1.6.8`).
 
 **Solution**:
 - If publish shows the success message, **the package was published successfully**

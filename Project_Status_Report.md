@@ -160,7 +160,7 @@ All 10 planned enhancements have been successfully implemented. Scope remained s
 | Field | Value |
 |-------|-------|
 | **Branch Strategy:** | Feature branches, main branch |
-| **Last Production Deploy:** | June 2026 - v1.6.7 |
+| **Last Production Deploy:** | June 2026 - v1.6.8 |
 | **Current Dev Branch:** | main - stable |
 | **Open Pull Requests:** | 0 open PRs |
 | **Known Bugs (Critical):** | 0 |
@@ -338,7 +338,7 @@ All critical dependencies are stable and active. The only pending item is NPM pa
 
 No significant deployment risks. Automated deployment via Vercel. Database migrations are versioned and tested. The widget is deployed via:
 
-1. **CDN Method**: GitHub releases with version tags (v1.6.7) served via jsDelivr CDN
+1. **CDN Method**: GitHub releases with version tags (v1.6.8) served via jsDelivr CDN
 2. **NPM Method**: Package ready for publication (pending 2FA)
 3. **Vercel**: Frontend website and API routes deployed automatically
 

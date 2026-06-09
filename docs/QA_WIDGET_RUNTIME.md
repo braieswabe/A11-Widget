@@ -1,4 +1,4 @@
-# QA: updated widget runtime (`a11y-widget-v1.6.7.js` + `a11y-widget.css`)
+# QA: updated widget runtime (`a11y-widget-v1.6.8.js` + `a11y-widget.css`)
 
 Use this with a **pinned jsDelivr tag** (see root [README.md](../README.md)) so CSS and JS stay paired.
 
@@ -7,11 +7,11 @@ Use this with a **pinned jsDelivr tag** (see root [README.md](../README.md)) so 
 1. Open DevTools → **Network**, filter by `a11y`.
 2. Reload with cache disabled (or hard refresh).
 3. Confirm:
-   - **Script** response URL ends with **`a11y-widget-v1.6.7.js`** (not legacy `a11y-widget.js`) unless you intentionally test legacy.
+   - **Script** response URL ends with **`a11y-widget-v1.6.8.js`** (not legacy `a11y-widget.js`) unless you intentionally test legacy.
    - **Stylesheet** **`a11y-widget.css`** loads with status **200**.
    - Only **one** widget script is injected (no duplicate loaders/runtimes).
 4. In the **Console**, run:
-   - `window.__A11Y_WIDGET_BUILD__` → should be `"a11y-widget-v1.6.7.js"`.
+   - `window.__A11Y_WIDGET_BUILD__` → should be `"a11y-widget-v1.6.8.js"`.
    - After the widget mounts: `window.__a11yWidget.getBuild()` → same string.
 
 If `checkForUpdates is not defined` or similar appears while the file name is still `a11y-widget.js`, the site is on the **wrong asset** or a **cached/truncated** file—fix the enqueue URL and purge CDN/browser cache before filing a widget bug.

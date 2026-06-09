@@ -1,6 +1,6 @@
 # Widget Core Patch Diff
 
-## File: a11y-widget.js & a11y-widget-v1.6.7.js
+## File: a11y-widget.js & a11y-widget-v1.6.8.js
 
 ### Change 1: Modified init() function signature
 
@@ -47,7 +47,7 @@ function init(userConfig) {
 })();
 ```
 
-## File: a11y-widget-loader-v1.6.7.js
+## File: a11y-widget-loader-v1.6.8.js
 
 ### Change: Update script.onload to call init function
 

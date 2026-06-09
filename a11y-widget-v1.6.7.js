@@ -3,7 +3,7 @@
     No claims of full-site ADA compliance.
     
     GitHub Repository: https://github.com/braieswabe/A11-Widget
-    CDN: https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/
+    CDN: https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.7/
     
     Version 1.6.7 Changelog:
     - Fixed cursor visibility with enhanced outline
@@ -3178,6 +3178,8 @@
       text: "Advanced Tools"
     });
 
+    // Temporarily disabled: hide Icon Style tab while preserving the implementation for re-enable.
+    var enableIconStyleTab = false;
     var iconTab = el("button", {
       type: "button",
       role: "tab",
@@ -3191,7 +3193,7 @@
     tabList.appendChild(quickFixesTab);
     tabList.appendChild(readingTab);
     tabList.appendChild(advancedTab);
-    tabList.appendChild(iconTab);
+    if (enableIconStyleTab) tabList.appendChild(iconTab);
     tabContainer.appendChild(tabList);
     
     // Tab panels
@@ -3230,7 +3232,7 @@
     function switchTab(selectedTab, selectedPanel) {
       // Update all tabs
       var tabs = tabList.querySelectorAll(".a11y-widget-tab");
-      var panels = [quickFixesPanel, readingPanel, advancedPanel, iconPanel];
+      var panels = enableIconStyleTab ? [quickFixesPanel, readingPanel, advancedPanel, iconPanel] : [quickFixesPanel, readingPanel, advancedPanel];
       
       for (var i = 0; i < tabs.length; i++) {
         tabs[i].setAttribute("aria-selected", "false");
@@ -3258,7 +3260,7 @@
     quickFixesTab.addEventListener("click", function() { switchTab(quickFixesTab, quickFixesPanel); });
     readingTab.addEventListener("click", function() { switchTab(readingTab, readingPanel); });
     advancedTab.addEventListener("click", function() { switchTab(advancedTab, advancedPanel); });
-    iconTab.addEventListener("click", function() { switchTab(iconTab, iconPanel); });
+    if (enableIconStyleTab) iconTab.addEventListener("click", function() { switchTab(iconTab, iconPanel); });
     
     // Keyboard navigation for tabs
     tabList.addEventListener("keydown", function(e) {
@@ -3283,7 +3285,7 @@
     content.appendChild(quickFixesPanel);
     content.appendChild(readingPanel);
     content.appendChild(advancedPanel);
-    content.appendChild(iconPanel);
+    if (enableIconStyleTab) content.appendChild(iconPanel);
 
     // Icon customization
     var iconIntro = el("div", { class: "a11y-widget-row" });

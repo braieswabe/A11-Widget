@@ -1,6 +1,6 @@
 {
   "name": "@careerdriver/a11y-widget",
-  "version": "1.6.7",
+  "version": "1.6.8",
   "description": "Accessibility Widget - WCAG 2.1 AA-aligned support layer",
   "type": "module",
   "main": "./src/index.js",

@@ -1,6 +1,5 @@
-/*! a11y-widget-loader-v1.6.1.js — Zero-Config Loader v1.6.1
+/*! a11y-widget-loader-v1.6.8.js — Zero-Config Loader v1.6.8
     Usage:
-    Compatibility shim. New installs should use:
     <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.8/a11y-widget-loader-v1.6.8.js" defer></script>
 */
 (function () {
@@ -8,7 +7,7 @@
 
   var GITHUB_REPO = "braieswabe/A11-Widget";
   var DEFAULT_VERSION_TAG = "v1.6.8";
-  var LOADER_VERSION = "1.6.1";
+  var LOADER_VERSION = "1.6.8";
   var CSS_FILE = "a11y-widget.css";
   var JS_FILE = "a11y-widget-v1.6.8.js";
 
