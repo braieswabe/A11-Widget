@@ -19,8 +19,8 @@
 ## Widget Architecture
 
 ### Entry Point Files
-1. **Primary widget**: `a11y-widget.js` / `a11y-widget-v1.6.6.js` (~4,681 lines)
-2. **Auto-loader**: `a11y-widget-loader-v1.6.6.js` (loads widget from CDN)
+1. **Primary widget**: `a11y-widget.js` / `a11y-widget-v1.6.7.js` (~4,681 lines)
+2. **Auto-loader**: `a11y-widget-loader-v1.6.7.js` (loads widget from CDN)
 3. **CSS**: `a11y-widget.css` / `a11y-widget.css`
 
 ### Initialization Pattern
@@ -165,7 +165,7 @@
 ### Hardcoded Paths
 1. **GitHub CDN URLs in code**:
    - `a11y-widget.js`: `GITHUB_REPO = "braieswabe/A11-Widget"`, `CDN_BASE` hardcoded
-   - `a11y-widget-loader-v1.6.6.js`: Same hardcoded repo paths
+   - `a11y-widget-loader-v1.6.7.js`: Same hardcoded repo paths
    - CSS loading: Falls back to GitHub raw URLs
 
 2. **CSS loading strategy**:
@@ -184,7 +184,7 @@
 
 ### Package Structure Issues
 1. **Multiple entry points**: Which file is the "main" entry?
-   - `a11y-widget.js` vs `a11y-widget-v1.6.6.js`
+   - `a11y-widget.js` vs `a11y-widget-v1.6.7.js`
    - Loader vs widget vs standalone?
 
 2. **CSS file separation**: CSS must be loaded separately
@@ -193,8 +193,8 @@
 
 3. **Version files**: Multiple versioned files in root
    - `a11y-widget.js`
-   - `a11y-widget-v1.6.6.js`
-   - `a11y-widget-loader-v1.6.6.js`
+   - `a11y-widget-v1.6.7.js`
+   - `a11y-widget-loader-v1.6.7.js`
    - Need clear versioning strategy for npm
 
 ### Build Process

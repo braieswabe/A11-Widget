@@ -1,9 +1,9 @@
 // Current GitHub release tag (jsDelivr) — update when you ship a new tag
-export const WIDGET_VERSION = 'v1.6.6'
+export const WIDGET_VERSION = 'v1.6.7'
 
 // Filenames on the CDN for this release (keep in sync with repo root assets)
-export const WIDGET_LOADER_FILENAME = 'a11y-widget-loader-v1.6.6.js'
-export const WIDGET_RUNTIME_FILENAME = 'a11y-widget-v1.6.6.js'
+export const WIDGET_LOADER_FILENAME = 'a11y-widget-loader-v1.6.7.js'
+export const WIDGET_RUNTIME_FILENAME = 'a11y-widget-v1.6.7.js'
 
 // CDN base URL for the widget
 export const WIDGET_CDN_BASE = `https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@${WIDGET_VERSION}`

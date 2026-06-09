@@ -31,7 +31,7 @@ initA11yWidget({
     position: "right"
   };
 </script>
-<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.6/a11y-widget-loader-v1.6.6.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.7/a11y-widget-loader-v1.6.7.js" defer></script>
 ```
 
 ## Configuration

@@ -74,7 +74,7 @@ website/
 
 **Release tag for docs and copy-paste snippets:** update `src/constants.ts` (`WIDGET_VERSION`, `WIDGET_LOADER_FILENAME`, `WIDGET_RUNTIME_FILENAME`, and `WIDGET_CSS_URL` if paths change) so Home, Getting Started, Tutorials, Examples, WordPress, Download, and `Layout` stay aligned with the GitHub tag you ship.
 
-**Runtime on this site:** `npm run dev` and production builds load `a11y-widget-v1.6.6.js` and `a11y-widget.css` from the npm package copy in `packages/a11y-widget` (Vite middleware + `closeBundle` copy). Run `npm run sync-widget` before building so the package mirrors the GitHub release assets.
+**Runtime on this site:** `npm run dev` and production builds load `a11y-widget-v1.6.7.js` and `a11y-widget.css` from the npm package copy in `packages/a11y-widget` (Vite middleware + `closeBundle` copy). Run `npm run sync-widget` before building so the package mirrors the GitHub release assets.
 
 The website includes the widget for demonstration. The Layout component loads the widget script dynamically:
 

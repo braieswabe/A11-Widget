@@ -24,7 +24,7 @@ This guide covers installing the Accessibility Widget v1 on Shopify stores.
 
 ```liquid
 <!-- Accessibility Widget - Just one line! -->
-<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.6/a11y-widget-loader-v1.6.6.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.7/a11y-widget-loader-v1.6.7.js" defer></script>
 ```
 
 4. Click **Save**
