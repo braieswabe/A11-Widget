@@ -14,9 +14,9 @@ const rootDir = join(__dirname, '..');
 
 const filesToSync = [
   {
-    source: join(rootDir, 'a11y-widget.js'),
+    source: join(rootDir, 'a11y-widget-v1.6.6.js'),
     dest: join(rootDir, 'packages/a11y-widget/vendor/a11y-widget.core.js'),
-    description: 'Widget core file'
+    description: 'Widget core runtime file'
   },
   {
     source: join(rootDir, 'a11y-widget.css'),

@@ -1,14 +1,25 @@
-/*! a11y-widget.js — Accessibility Widget v1.1.0 (IIFE, no deps)
+/*! a11y-widget.js — Accessibility Widget v1.6.6 (IIFE, no deps)
     Scope: widget UI + configured surfaces only.
     No claims of full-site ADA compliance.
     
     GitHub Repository: https://github.com/braieswabe/A11-Widget
     CDN: https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/
     
-    Version 1.1.0 Changelog:
+    Version 1.6.6 Changelog:
     - Fixed cursor visibility with enhanced outline
     - Improved cursor initialization
     - Enhanced cursor styling with better contrast
+
+    QA Remediation (v1.6.6 release):
+    - Hardened checkForUpdates with timeout, deterministic states, fallback reload button
+    - Reset to Defaults now fully restores contrast/theme UI + tears down active features
+    - Screen Mask reworked with SVG inverted mask for reliable video/canvas coverage
+    - Translation expanded to more attributes, <option> text, and MutationObserver for dynamic content
+    - Large Cursor no longer hides native pointer inside widget panel (checkbox usability fix)
+    - Cursor visibility strengthened across contrast modes via CSS
+
+    QA plan follow-up:
+    - window.__A11Y_WIDGET_BUILD__ + __a11yWidget.getBuild() for Network/console verification
 */
 (function () {
   "use strict";
@@ -85,6 +96,385 @@
     try { return new Date().toISOString(); } catch (e) { return ""; }
   }
 
+  // --- Human-Friendly Copy --------------------------------------------------
+  var COPY = {
+    reduceMotion: "Turn off animations (helps with dizziness)",
+    textSpacing: "Increase space between lines & letters",
+    readableFont: "Use easier-to-read font",
+    highContrast: "Increase color contrast for better visibility",
+    textSize: "Make text larger or smaller",
+    readingRuler: "Show reading line to focus on text",
+    screenMask: "Dim distractions around your focus area",
+    contrast: "Contrast Mode",
+    fontScale: "Text Size",
+    spacing: "Text Spacing",
+    presets: {
+      lowVision: "Best for visual impairments",
+      dyslexia: "Best for reading difficulties",
+      reducedMotion: "Best for motion sensitivity",
+      highContrast: "Best for better visibility",
+      largeText: "Best for easier reading",
+      darkTheme: "Best for reduced eye strain",
+      readingMode: "Best for long reading sessions",
+      callCenterMode: "Best for dashboards & fast workflows",
+      quickScanMode: "Best for quick scanning"
+    },
+    announcements: {
+      widgetOpened: "Accessibility panel opened",
+      widgetClosed: "Accessibility panel closed",
+      optionsAvailable: "Accessibility options available. Press Alt + A to open.",
+      contrastChanged: "Contrast mode changed to",
+      textSizeChanged: "Text size changed to",
+      presetApplied: "Preset applied:",
+      settingsReset: "All settings reset to defaults",
+      preferencesSaved: "Accessibility preferences saved"
+    },
+    firstVisit: {
+      title: "Accessibility tools available",
+      message: "Press Alt + A or click here to customize your viewing experience",
+      dismiss: "Got it"
+    },
+    trustStatement: "This tool runs locally and does not track personal data.",
+    compliance: {
+      title: "Accessibility Information",
+      wcagStatement: "This widget provides accessibility enhancements aligned with WCAG 2.1 AA standards for supported surfaces.",
+      featuresTitle: "Supported Features",
+      shortcutsTitle: "Keyboard Shortcuts",
+      lastUpdated: "Last updated:",
+      exportButton: "Export Settings Snapshot"
+    },
+    recommendations: {
+      title: "Based on this page, we recommend:",
+      apply: "Apply",
+      dismiss: "Dismiss"
+    },
+    reset: {
+      toDefaults: "Reset to Defaults",
+      toMyDefaults: "Reset to my defaults",
+      toSiteDefaults: "Reset to site defaults"
+    }
+  };
+
+  // --- ARIA Live Announcements ----------------------------------------------
+  var ariaLiveRegion = null;
+  var ariaLiveRegionAssertive = null;
+  
+  function ensureAriaLiveRegion() {
+    if (!ariaLiveRegion) {
+      ariaLiveRegion = document.createElement("div");
+      ariaLiveRegion.setAttribute("aria-live", "polite");
+      ariaLiveRegion.setAttribute("aria-atomic", "true");
+      ariaLiveRegion.className = "a11y-widget-sr-only";
+      ariaLiveRegion.style.cssText = "position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden;";
+      if (document.body) {
+        document.body.appendChild(ariaLiveRegion);
+      }
+    }
+    return ariaLiveRegion;
+  }
+  
+  function ensureAriaLiveRegionAssertive() {
+    if (!ariaLiveRegionAssertive) {
+      ariaLiveRegionAssertive = document.createElement("div");
+      ariaLiveRegionAssertive.setAttribute("aria-live", "assertive");
+      ariaLiveRegionAssertive.setAttribute("aria-atomic", "true");
+      ariaLiveRegionAssertive.className = "a11y-widget-sr-only";
+      ariaLiveRegionAssertive.style.cssText = "position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden;";
+      if (document.body) {
+        document.body.appendChild(ariaLiveRegionAssertive);
+      }
+    }
+    return ariaLiveRegionAssertive;
+  }
+
+  function announceToScreenReader(message, assertive) {
+    var region = assertive ? ensureAriaLiveRegionAssertive() : ensureAriaLiveRegion();
+    // Clear previous content
+    region.textContent = "";
+    // Use a longer delay to ensure screen readers are ready
+    setTimeout(function() {
+      region.textContent = message;
+      // Clear again after announcement to allow re-announcement
+      setTimeout(function() {
+        region.textContent = "";
+      }, 1000);
+    }, assertive ? 300 : 200);
+  }
+
+  // --- Focus Trap -------------------------------------------------------------
+  function trapFocus(container, firstFocusable, lastFocusable) {
+    if (!container) return;
+    
+    var focusableElements = container.querySelectorAll(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    
+    if (focusableElements.length === 0) return;
+    
+    firstFocusable = firstFocusable || focusableElements[0];
+    lastFocusable = lastFocusable || focusableElements[focusableElements.length - 1];
+    
+    container.addEventListener("keydown", function(e) {
+      if (e.key !== "Tab") return;
+      
+      if (e.shiftKey) {
+        // Shift + Tab
+        if (document.activeElement === firstFocusable) {
+          e.preventDefault();
+          lastFocusable.focus();
+        }
+      } else {
+        // Tab
+        if (document.activeElement === lastFocusable) {
+          e.preventDefault();
+          firstFocusable.focus();
+        }
+      }
+    });
+  }
+
+  // --- Context-Aware Intelligence ---------------------------------------------
+  function analyzePageContext() {
+    var context = {
+      hasLongTables: false,
+      hasForms: false,
+      hasDashboard: false,
+      hasLongFormText: false
+    };
+    
+    // Check for long tables (>10 rows)
+    var tables = document.querySelectorAll("table");
+    for (var i = 0; i < tables.length; i++) {
+      var rows = tables[i].querySelectorAll("tr");
+      if (rows.length > 10) {
+        context.hasLongTables = true;
+        break;
+      }
+    }
+    
+    // Check for forms
+    var forms = document.querySelectorAll("form, input, select, textarea");
+    if (forms.length > 0) {
+      context.hasForms = true;
+    }
+    
+    // Check for dashboard patterns (tables, charts, grids)
+    var dashboardIndicators = document.querySelectorAll(
+      "table, [class*='dashboard'], [class*='chart'], [class*='grid'], [id*='dashboard']"
+    );
+    if (dashboardIndicators.length > 3) {
+      context.hasDashboard = true;
+    }
+    
+    // Check for long-form text (articles, blog posts)
+    var articles = document.querySelectorAll("article, [role='article'], main p");
+    var totalTextLength = 0;
+    for (var j = 0; j < articles.length; j++) {
+      totalTextLength += articles[j].textContent.length;
+    }
+    if (totalTextLength > 2000) {
+      context.hasLongFormText = true;
+    }
+    
+    return context;
+  }
+  
+  function getContextRecommendations(context) {
+    var recommendations = [];
+    
+    if (context.hasDashboard) {
+      recommendations.push({
+        preset: "callCenterMode",
+        name: "Call Center / Ops Mode",
+        reason: "This page appears to be a dashboard with multiple data visualizations."
+      });
+    }
+    
+    if (context.hasLongTables) {
+      recommendations.push({
+        preset: "tableOptimized",
+        name: "Text Spacing + Reading Ruler",
+        reason: "This page contains long tables that may benefit from improved spacing."
+      });
+    }
+    
+    if (context.hasForms) {
+      recommendations.push({
+        preset: "formOptimized",
+        name: "Readable Font + Large Cursor",
+        reason: "This page contains forms that may benefit from clearer fonts and a larger cursor."
+      });
+    }
+    
+    if (context.hasLongFormText) {
+      recommendations.push({
+        preset: "readingMode",
+        name: "Reading Mode",
+        reason: "This page contains long-form text optimized for reading."
+      });
+    }
+    
+    return recommendations;
+  }
+  
+  function showRecommendationBanner(recommendations, quickFixesPanel, onChange, cfg) {
+    if (!recommendations || recommendations.length === 0) return;
+    
+    var banner = document.createElement("div");
+    banner.id = "a11y-recommendation-banner";
+    banner.className = "a11y-recommendation-banner";
+    banner.setAttribute("role", "region");
+    banner.setAttribute("aria-label", "Accessibility recommendations");
+    banner.style.cssText = 
+      "background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); " +
+      "border: 1px solid #90caf9; border-radius: 8px; padding: 1rem; " +
+      "margin-bottom: 1rem; font-family: system-ui, sans-serif;";
+    
+    var title = document.createElement("div");
+    title.textContent = COPY.recommendations.title;
+    title.style.cssText = "font-weight: 600; margin-bottom: 0.5rem; color: #1976d2;";
+    
+    var rec = recommendations[0]; // Show first recommendation
+    var reason = document.createElement("div");
+    reason.textContent = rec.reason;
+    reason.style.cssText = "font-size: 13px; color: #424242; margin-bottom: 0.75rem;";
+    
+    var buttonContainer = document.createElement("div");
+    buttonContainer.style.cssText = "display: flex; gap: 0.5rem;";
+    
+    var applyBtn = document.createElement("button");
+    applyBtn.textContent = COPY.recommendations.apply + " " + rec.name;
+    applyBtn.style.cssText = 
+      "background: #1976d2; color: white; border: none; " +
+      "padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; " +
+      "font-size: 13px; font-weight: 500;";
+    applyBtn.addEventListener("click", function() {
+      // Apply preset based on recommendation
+      var settings = {};
+      if (rec.preset === "readingMode") {
+        settings = { spacing: "comfortable", readingRulerEnabled: true, readableFont: true, reduceMotion: true, fontScale: 1.1 };
+      } else if (rec.preset === "callCenterMode") {
+        settings = { reduceMotion: true, spacing: "comfortable", cursorEnabled: true, cursorSize: "medium", readableFont: true, fontScale: 1.1 };
+      } else if (rec.preset === "formOptimized") {
+        settings = { readableFont: true, cursorEnabled: true, cursorSize: "medium", spacing: "comfortable" };
+      } else if (rec.preset === "tableOptimized") {
+        settings = { spacing: "comfortable", readingRulerEnabled: true, fontScale: 1.1 };
+      }
+      onChange(settings);
+      emit(cfg, "recommendation_accepted", { recommendation: rec });
+      banner.remove();
+    });
+    
+    var dismissBtn = document.createElement("button");
+    dismissBtn.textContent = COPY.recommendations.dismiss;
+    dismissBtn.style.cssText = 
+      "background: transparent; color: #1976d2; border: 1px solid #1976d2; " +
+      "padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; " +
+      "font-size: 13px;";
+    dismissBtn.addEventListener("click", function() {
+      banner.remove();
+    });
+    
+    buttonContainer.appendChild(applyBtn);
+    buttonContainer.appendChild(dismissBtn);
+    
+    banner.appendChild(title);
+    banner.appendChild(reason);
+    banner.appendChild(buttonContainer);
+    
+    // Insert at the top of Quick Fixes panel
+    var firstChild = quickFixesPanel.firstChild;
+    if (firstChild) {
+      quickFixesPanel.insertBefore(banner, firstChild);
+    } else {
+      quickFixesPanel.appendChild(banner);
+    }
+  }
+
+  // --- First Visit Detection & Nudge -----------------------------------------
+  function showFirstVisitNudge(cfg, toggle) {
+    var firstVisitKey = "__a11yWidgetFirstVisit__";
+    var hasVisited = Store.get(firstVisitKey);
+    
+    if (hasVisited) return; // Already shown
+    
+    // Mark as visited
+    Store.set(firstVisitKey, { visited: true, timestamp: Date.now() });
+    
+    // Create nudge banner
+    var nudge = document.createElement("div");
+    nudge.id = "a11y-first-visit-nudge";
+    nudge.setAttribute("role", "alert");
+    nudge.setAttribute("aria-live", "polite");
+    nudge.style.cssText = 
+      "position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); " +
+      "background: #0066cc; color: white; padding: 12px 20px; border-radius: 8px; " +
+      "box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 2147483001; " +
+      "font-family: system-ui, sans-serif; font-size: 14px; max-width: 90%; " +
+      "display: flex; align-items: center; gap: 12px; animation: a11y-nudge-in 0.3s ease;";
+    
+    var message = document.createElement("span");
+    message.textContent = COPY.firstVisit.message;
+    message.style.flex = "1";
+    
+    var dismissBtn = document.createElement("button");
+    dismissBtn.textContent = COPY.firstVisit.dismiss;
+    dismissBtn.style.cssText = 
+      "background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); " +
+      "color: white; padding: 4px 12px; border-radius: 4px; cursor: pointer; " +
+      "font-size: 12px; font-weight: 600;";
+    dismissBtn.setAttribute("aria-label", "Dismiss accessibility tools notification");
+    
+    dismissBtn.addEventListener("click", function() {
+      nudge.style.animation = "a11y-nudge-out 0.3s ease";
+      setTimeout(function() {
+        if (nudge.parentNode) nudge.parentNode.removeChild(nudge);
+      }, 300);
+    });
+    
+    // Make nudge clickable to open widget
+    message.style.cursor = "pointer";
+    message.style.textDecoration = "underline";
+    message.addEventListener("click", function() {
+      toggle.click();
+      if (nudge.parentNode) nudge.parentNode.removeChild(nudge);
+    });
+    
+    nudge.appendChild(message);
+    nudge.appendChild(dismissBtn);
+    
+    // Add animation styles if not exists
+    if (!document.getElementById("a11y-nudge-styles")) {
+      var style = document.createElement("style");
+      style.id = "a11y-nudge-styles";
+      style.textContent = 
+        "@keyframes a11y-nudge-in { " +
+        "  from { opacity: 0; transform: translateX(-50%) translateY(20px); } " +
+        "  to { opacity: 1; transform: translateX(-50%) translateY(0); } " +
+        "} " +
+        "@keyframes a11y-nudge-out { " +
+        "  from { opacity: 1; transform: translateX(-50%) translateY(0); } " +
+        "  to { opacity: 0; transform: translateX(-50%) translateY(20px); } " +
+        "}";
+      document.head.appendChild(style);
+    }
+    
+    document.body.appendChild(nudge);
+    
+    // Auto-dismiss after 10 seconds
+    setTimeout(function() {
+      if (nudge.parentNode) {
+        nudge.style.animation = "a11y-nudge-out 0.3s ease";
+        setTimeout(function() {
+          if (nudge.parentNode) nudge.parentNode.removeChild(nudge);
+        }, 300);
+      }
+    }, 10000);
+    
+    // Announce to screen readers
+    announceToScreenReader(COPY.announcements.optionsAvailable);
+  }
+
   // --- Storage (localStorage with cookie fallback) --------------------------
   var Store = {
     get: function (key) {
@@ -112,6 +502,115 @@
       document.cookie = key + "=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax";
     }
   };
+
+  // --- User Preference Sync --------------------------------------------------
+  function syncPreferencesToProfile(cfg, preferences) {
+    // Check if user is authenticated
+    if (!window.__a11yAuth || typeof window.__a11yAuth.getToken !== "function") {
+      return Promise.resolve(false);
+    }
+    
+    var token = window.__a11yAuth.getToken();
+    if (!token) {
+      return Promise.resolve(false);
+    }
+    
+    // Sync to backend
+    if (cfg.telemetryEndpoint && typeof fetch !== "undefined") {
+      var apiBase = cfg.telemetryEndpoint.replace("/api/telemetry", "");
+      return fetch(apiBase + "/api/user/preferences", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + token
+        },
+        body: JSON.stringify({
+          siteId: cfg.siteId,
+          preferences: preferences
+        })
+      }).then(function(response) {
+        if (response.ok) {
+          showSaveConfirmation();
+          return true;
+        }
+        return false;
+      }).catch(function() {
+        return false;
+      });
+    }
+    
+    return Promise.resolve(false);
+  }
+  
+  function loadPreferencesFromProfile(cfg) {
+    // Check if user is authenticated
+    if (!window.__a11yAuth || typeof window.__a11yAuth.getToken !== "function") {
+      return Promise.resolve(null);
+    }
+    
+    var token = window.__a11yAuth.getToken();
+    if (!token) {
+      return Promise.resolve(null);
+    }
+    
+    // Load from backend
+    if (cfg.telemetryEndpoint && typeof fetch !== "undefined") {
+      var apiBase = cfg.telemetryEndpoint.replace("/api/telemetry", "");
+      return fetch(apiBase + "/api/user/preferences?siteId=" + encodeURIComponent(cfg.siteId), {
+        headers: {
+          "Authorization": "Bearer " + token
+        }
+      }).then(function(response) {
+        if (response.ok) {
+          return response.json().then(function(data) {
+            return data.preferences;
+          });
+        }
+        return null;
+      }).catch(function() {
+        return null;
+      });
+    }
+    
+    return Promise.resolve(null);
+  }
+  
+  function showSaveConfirmation() {
+    var badge = document.getElementById("a11y-save-badge");
+    if (badge) {
+      badge.remove();
+    }
+    
+    badge = document.createElement("div");
+    badge.id = "a11y-save-badge";
+    badge.textContent = COPY.announcements.preferencesSaved;
+    badge.style.cssText = 
+      "position: fixed; bottom: 20px; right: 20px; " +
+      "background: #28a745; color: white; padding: 8px 16px; " +
+      "border-radius: 4px; font-size: 12px; z-index: 2147483005; " +
+      "box-shadow: 0 2px 8px rgba(0,0,0,0.2); animation: a11y-badge-in 0.3s ease;";
+    
+    document.body.appendChild(badge);
+    
+    setTimeout(function() {
+      if (badge.parentNode) {
+        badge.style.animation = "a11y-badge-out 0.3s ease";
+        setTimeout(function() {
+          if (badge.parentNode) badge.parentNode.removeChild(badge);
+        }, 300);
+      }
+    }, 3000);
+    
+    // Add animation if not exists
+    if (!document.getElementById("a11y-badge-styles")) {
+      var style = document.createElement("style");
+      style.id = "a11y-badge-styles";
+      style.textContent = 
+        "@keyframes a11y-badge-in { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } } " +
+        "@keyframes a11y-badge-out { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(20px); } }";
+      document.head.appendChild(style);
+    }
+  }
 
   // --- IndexedDB Icon Storage ------------------------------------------------
   var IconDB = {
@@ -775,6 +1274,23 @@
     return false;
   }
 
+  function clearPresetSelection(scope) {
+    var root = scope || document;
+    try {
+      var applied = root.querySelectorAll(".a11y-widget-preset-btn.applied");
+      for (var i = 0; i < applied.length; i++) {
+        applied[i].classList.remove("applied");
+        applied[i].setAttribute("aria-pressed", "false");
+      }
+      var toast = document.getElementById("a11y-preset-toast");
+      if (toast && toast.parentNode) {
+        toast.parentNode.removeChild(toast);
+      }
+    } catch (e) {
+      // Ignore cleanup failures so reset never blocks preference restoration.
+    }
+  }
+
   function clearMarkedSurfaces() {
     var marked = document.querySelectorAll("[data-a11y-managed-surface='1']");
     for (var i = 0; i < marked.length; i++) {
@@ -865,7 +1381,7 @@
     }
     setUpdateStatus(statusEl, "Checking latest version...", false);
 
-    var probeUrl = CDN_BASE + "a11y-widget.js?_a11y_check=" + Date.now();
+    var probeUrl = CDN_BASE + "a11y-widget-v1.6.6.js?_a11y_check=" + Date.now();
     var supportsFetch = typeof fetch !== "undefined";
 
     function finish(buttonText) {
@@ -875,16 +1391,43 @@
     }
 
     if (!supportsFetch) {
-      setUpdateStatus(statusEl, "Cannot verify automatically in this browser. Reloading...", false);
-      setTimeout(function() { window.location.reload(); }, 600);
+      setUpdateStatus(statusEl, "Cannot verify automatically in this browser.", false);
+      finish("🔁 Reload to Update");
+      if (buttonEl) {
+        buttonEl.onclick = function () { window.location.reload(); };
+      }
       return;
     }
 
-    fetch(probeUrl, { method: "HEAD", cache: "no-store" })
-      .then(function(response) {
-        if (!response.ok) throw new Error("Update check failed with status " + response.status);
+    var controller;
+    var timeoutId;
+    var signal;
+    try {
+      controller = new AbortController();
+      signal = controller.signal;
+      timeoutId = setTimeout(function () { controller.abort(); }, 8000);
+    } catch (e) {
+      signal = undefined;
+    }
 
-        var signature = response.headers.get("etag") || response.headers.get("last-modified") || String(Date.now());
+    var fetchOpts = { method: "HEAD", cache: "no-store" };
+    if (signal) fetchOpts.signal = signal;
+
+    fetch(probeUrl, fetchOpts)
+      .then(function(response) {
+        if (timeoutId) clearTimeout(timeoutId);
+        if (!response.ok) throw new Error("HTTP " + response.status);
+
+        var signature = response.headers.get("etag") || response.headers.get("last-modified") || "";
+        if (!signature) {
+          setUpdateStatus(statusEl, "Server did not provide version info. Use the button below to refresh.", false);
+          finish("🔁 Reload to Update");
+          if (buttonEl) {
+            buttonEl.onclick = function () { window.location.reload(); };
+          }
+          return;
+        }
+
         var previousSignature = null;
         try {
           previousSignature = window.localStorage.getItem(WIDGET_VERSION_SIGNATURE_KEY);
@@ -892,20 +1435,27 @@
         } catch (e) {}
 
         if (previousSignature && previousSignature !== signature) {
-          setUpdateStatus(statusEl, "Update found. Reloading...", false);
+          setUpdateStatus(statusEl, "Update found! Reloading...", false);
+          finish("⏳ Reloading...");
+          if (buttonEl) buttonEl.disabled = true;
           setTimeout(function() { window.location.reload(); }, 700);
           return;
         }
 
         setUpdateStatus(statusEl, "You are using the latest available widget build.", false);
-      })
-      .catch(function() {
-        // Fallback behavior: reload so users can still pull fresh assets when HEAD is blocked.
-        setUpdateStatus(statusEl, "Unable to verify remotely. Reloading to fetch latest assets...", false);
-        setTimeout(function() { window.location.reload(); }, 700);
-      })
-      .finally(function() {
         finish("🔄 Check for Updates");
+      })
+      .catch(function(err) {
+        if (timeoutId) clearTimeout(timeoutId);
+        var isTimeout = err && err.name === "AbortError";
+        var msg = isTimeout
+          ? "Check timed out. You can reload the page to fetch the latest assets."
+          : "Unable to verify remotely. You can reload the page to fetch the latest assets.";
+        setUpdateStatus(statusEl, msg, false);
+        finish("🔁 Reload to Update");
+        if (buttonEl) {
+          buttonEl.onclick = function () { window.location.reload(); };
+        }
       });
   }
 
@@ -1150,45 +1700,80 @@
   }
 
   // --- Screen Mask Handler ----------------------------------------------------
+  // Uses an SVG-based inverted mask so the dim overlay reliably covers all
+  // content including <video>, <canvas>, and iframe surfaces.
   var screenMaskElement = null;
   var screenMaskHandler = null;
 
   function createScreenMask(prefs) {
-    if (screenMaskElement) {
-      screenMaskElement.remove();
-    }
-    if (screenMaskHandler) {
-      document.removeEventListener("mousemove", screenMaskHandler);
-    }
-    
+    removeScreenMask();
+
+    var opacity = prefs.screenMaskOpacity || 0.5;
+    var radius = prefs.screenMaskRadius || 200;
+
     screenMaskElement = document.createElement("div");
     screenMaskElement.id = "a11y-screen-mask";
-    screenMaskElement.style.cssText = 
+    screenMaskElement.style.cssText =
       "position: fixed; " +
       "pointer-events: none; " +
       "z-index: 2147482998; " +
-      "top: 0; " +
-      "left: 0; " +
-      "width: 100%; " +
-      "height: 100%; " +
-      "background: rgba(0, 0, 0, " + (prefs.screenMaskOpacity || 0.5) + "); " +
-      "display: none; " +
-      "clip-path: circle(" + (prefs.screenMaskRadius || 200) + "px at 50% 50%);";
+      "top: 0; left: 0; " +
+      "width: 100vw; height: 100vh; " +
+      "display: none;";
+
+    // Inline SVG mask — a full-viewport rectangle with a transparent circle cut-out.
+    // Works in all modern browsers; the circle position is updated on mousemove.
+    var svgNS = "http://www.w3.org/2000/svg";
+    var svg = document.createElementNS(svgNS, "svg");
+    svg.setAttribute("width", "100%");
+    svg.setAttribute("height", "100%");
+    svg.style.cssText = "position: absolute; top: 0; left: 0; width: 100%; height: 100%;";
+
+    var defs = document.createElementNS(svgNS, "defs");
+    var mask = document.createElementNS(svgNS, "mask");
+    mask.setAttribute("id", "a11y-mask-hole");
+
+    var maskBg = document.createElementNS(svgNS, "rect");
+    maskBg.setAttribute("width", "100%");
+    maskBg.setAttribute("height", "100%");
+    maskBg.setAttribute("fill", "white");
+
+    var circle = document.createElementNS(svgNS, "circle");
+    circle.setAttribute("cx", "50%");
+    circle.setAttribute("cy", "50%");
+    circle.setAttribute("r", String(radius));
+    circle.setAttribute("fill", "black");
+
+    mask.appendChild(maskBg);
+    mask.appendChild(circle);
+    defs.appendChild(mask);
+    svg.appendChild(defs);
+
+    var overlay = document.createElementNS(svgNS, "rect");
+    overlay.setAttribute("width", "100%");
+    overlay.setAttribute("height", "100%");
+    overlay.setAttribute("fill", "rgba(0,0,0," + opacity + ")");
+    overlay.setAttribute("mask", "url(#a11y-mask-hole)");
+    svg.appendChild(overlay);
+
+    screenMaskElement.appendChild(svg);
     document.body.appendChild(screenMaskElement);
-    
+
     screenMaskHandler = function(e) {
       var html = document.documentElement;
       var enabled = html.getAttribute("data-a11y-screen-mask") === "1";
       if (enabled && screenMaskElement) {
-        var radius = parseInt(html.style.getPropertyValue("--a11y-screen-mask-radius") || "200px", 10);
+        var r = parseInt(html.style.getPropertyValue("--a11y-screen-mask-radius") || String(radius), 10);
         screenMaskElement.style.display = "block";
-        screenMaskElement.style.clipPath = "circle(" + radius + "px at " + e.clientX + "px " + e.clientY + "px)";
+        circle.setAttribute("cx", String(e.clientX));
+        circle.setAttribute("cy", String(e.clientY));
+        circle.setAttribute("r", String(r));
       } else if (screenMaskElement) {
         screenMaskElement.style.display = "none";
       }
     };
-    
-    document.addEventListener("mousemove", screenMaskHandler);
+
+    document.addEventListener("mousemove", screenMaskHandler, { passive: true });
   }
 
   function removeScreenMask() {
@@ -1218,7 +1803,7 @@
     
     // Create magnifier container (the lens)
     magnifierElement = document.createElement("div");
-    magnifierElement.id = "a11y-magnifier";
+    magnifierElement.id = "a11y-magnifier-lens";
     magnifierElement.setAttribute("aria-hidden", "true");
     magnifierElement.style.cssText = 
       "position: fixed; " +
@@ -1301,26 +1886,12 @@
       // Show magnifier
       magnifierElement.style.display = "block";
       
-      // Position magnifier near cursor (offset to not block view)
-      var offsetX = 30;
-      var offsetY = -30;
-      var magX = e.clientX + offsetX + size/2;
-      var magY = e.clientY + offsetY - size/2;
-      
-      // Keep within viewport bounds
-      if (magX + size/2 > window.innerWidth) {
-        magX = e.clientX - offsetX - size/2;
-      }
-      if (magY - size/2 < 0) {
-        magY = e.clientY - offsetY + size/2;
-      }
-      if (magX - size/2 < 0) {
-        magX = size/2 + 10;
-      }
-      if (magY + size/2 > window.innerHeight) {
-        magY = window.innerHeight - size/2 - 10;
-      }
-      
+      // Center the lens on the pointer, while keeping it inside the viewport.
+      var magX = e.clientX - size / 2;
+      var magY = e.clientY - size / 2;
+      magX = clamp(magX, 10, Math.max(10, window.innerWidth - size - 10));
+      magY = clamp(magY, 10, Math.max(10, window.innerHeight - size - 10));
+
       magnifierElement.style.left = magX + "px";
       magnifierElement.style.top = magY + "px";
       
@@ -1337,7 +1908,7 @@
       var elementUnder = document.elementFromPoint(e.clientX, e.clientY);
       magnifierElement.style.display = "block";
       
-      if (elementUnder && !elementUnder.closest("#a11y-magnifier") && !elementUnder.closest("#a11y-widget-root")) {
+      if (elementUnder && !elementUnder.closest("#a11y-magnifier-lens") && !elementUnder.closest("#a11y-widget-root")) {
         // Clone and render content in magnifier
         renderMagnifiedArea(e.clientX, e.clientY, currentZoom, size);
       }
@@ -1387,8 +1958,8 @@
     elementsInArea.forEach(function(el) {
       try {
         // Skip the magnifier and widget
-        if (el.id === "a11y-magnifier" || el.id === "a11y-widget-root" || 
-            el.closest("#a11y-magnifier") || el.closest("#a11y-widget-root")) {
+        if (el.id === "a11y-magnifier-lens" || el.id === "a11y-widget-root" || 
+            el.closest("#a11y-magnifier-lens") || el.closest("#a11y-widget-root")) {
           return;
         }
         
@@ -1519,11 +2090,19 @@
       }, 150);
     };
     
-    // Handle hover states
+    // Handle hover states (skip widget controls so native cursor works there)
     customCursorHoverHandler = function(e) {
       if (!customCursorElement) return;
-      
+
       var target = e.target;
+
+      // Hide custom cursor while hovering inside widget so native pointer works
+      var widgetRoot = document.getElementById("a11y-widget-root");
+      if (widgetRoot && widgetRoot.contains(target)) {
+        customCursorElement.style.display = "none";
+        return;
+      }
+      customCursorElement.style.display = "block";
       var isInteractive = (
         target.tagName === "A" ||
         target.tagName === "BUTTON" ||
@@ -1805,7 +2384,7 @@
     while ((node = walker.nextNode())) {
       if (!node.parentElement || isWidgetElement(node.parentElement)) continue;
       var parent = node.parentElement;
-      if (parent && (parent.tagName === "SCRIPT" || parent.tagName === "STYLE" || parent.tagName === "NOSCRIPT")) {
+      if (parent && (parent.tagName === "SCRIPT" || parent.tagName === "STYLE" || parent.tagName === "NOSCRIPT" || parent.tagName === "CODE" || parent.tagName === "PRE")) {
         continue;
       }
 
@@ -1820,9 +2399,14 @@
       });
     }
 
-    // 2) Common UI attributes and button input values
-    var attrNodes = surface.querySelectorAll("[placeholder],[title],[aria-label],[alt],input[type='button'][value],input[type='submit'][value],input[type='reset'][value]");
-    var attrs = ["placeholder", "title", "aria-label", "alt"];
+    // 2) Expanded set of translatable attributes
+    var attrSelector = [
+      "[placeholder]", "[title]", "[aria-label]", "[alt]",
+      "[aria-description]", "[data-tooltip]",
+      "input[type='button'][value]", "input[type='submit'][value]", "input[type='reset'][value]"
+    ].join(",");
+    var attrNodes = surface.querySelectorAll(attrSelector);
+    var attrs = ["placeholder", "title", "aria-label", "alt", "aria-description", "data-tooltip"];
     for (var i = 0; i < attrNodes.length; i++) {
       var el = attrNodes[i];
       if (isWidgetElement(el)) continue;
@@ -1855,6 +2439,65 @@
           }
         }
       }
+    }
+
+    // 3) <option> text inside <select> elements
+    var options = surface.querySelectorAll("select option");
+    for (var oi = 0; oi < options.length; oi++) {
+      var opt = options[oi];
+      if (isWidgetElement(opt)) continue;
+      var optText = opt.textContent || "";
+      if (!isTranslatableText(optText)) continue;
+      if (opt.firstChild && opt.firstChild.nodeType === 3) {
+        targets.push({
+          type: "text",
+          node: opt.firstChild,
+          text: optText.trim(),
+          original: optText
+        });
+      }
+    }
+  }
+
+  // --- Translation MutationObserver for dynamic content ----------------------
+  var translationObserver = null;
+
+  function startTranslationObserver(prefs) {
+    stopTranslationObserver();
+    if (!prefs.translationEnabled || prefs.translationLanguage === "en") return;
+    if (typeof MutationObserver === "undefined") return;
+
+    var targetLang = prefs.translationLanguage;
+    var debounceTimer = null;
+
+    translationObserver = new MutationObserver(function(mutations) {
+      if (!prefs.translationEnabled) return;
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(function() {
+        var newTargets = [];
+        for (var m = 0; m < mutations.length; m++) {
+          var added = mutations[m].addedNodes;
+          for (var n = 0; n < added.length; n++) {
+            var node = added[n];
+            if (node.nodeType === 1 && !isWidgetElement(node)) {
+              collectTranslationTargets(node, newTargets);
+            }
+          }
+        }
+        if (newTargets.length > 0) {
+          translationNodes = translationNodes.concat(newTargets);
+          translateBatch(newTargets, targetLang, 0, newTargets.length);
+        }
+      }, 300);
+    });
+
+    translationObserver.observe(document.body, { childList: true, subtree: true });
+  }
+
+  function stopTranslationObserver() {
+    if (translationObserver) {
+      translationObserver.disconnect();
+      translationObserver = null;
     }
   }
 
@@ -1908,6 +2551,9 @@
 
     // Translate in batches to reduce API calls
     translateBatch(translationNodes, targetLang, 0, totalNodes);
+
+    // Start observing for dynamically added content
+    startTranslationObserver(prefs);
   }
 
   function translateBatch(nodes, targetLang, startIndex, totalNodes) {
@@ -2014,6 +2660,7 @@
 
   function removeTranslation() {
     hideTranslationStatus();
+    stopTranslationObserver();
 
     // Restore translated text/attributes.
     for (var i = translatedEntries.length - 1; i >= 0; i--) {
@@ -2083,20 +2730,27 @@
     return isInput || isTextarea || isContentEditable;
   }
 
-  function setupKeyboardShortcut(cfg, openPanel, closePanel, toggle) {
-    if (!cfg.keyboardShortcut || cfg.keyboardShortcut === false) return;
-    
-    var shortcutConfig = parseShortcut(cfg.keyboardShortcut);
-    if (!shortcutConfig || !shortcutConfig.key) return;
+  function setupKeyboardShortcut(cfg, openPanel, closePanel, toggle, onReset) {
+    var resetShortcutConfig = parseShortcut("Alt+D");
+    var shortcutConfig = null;
+
+    if (cfg.keyboardShortcut && cfg.keyboardShortcut !== false) {
+      shortcutConfig = parseShortcut(cfg.keyboardShortcut);
+    }
     
     document.addEventListener("keydown", function(e) {
       // Don't activate if user is typing in an input field
       if (isInputFocused()) return;
       
-      // Don't activate if only modifier keys are pressed
-      if (!shortcutConfig.key) return;
+      if (onReset && resetShortcutConfig && matchesShortcut(e, resetShortcutConfig)) {
+        e.preventDefault();
+        e.stopPropagation();
+        onReset();
+        announceToScreenReader(COPY.announcements.settingsReset);
+        return;
+      }
       
-      if (matchesShortcut(e, shortcutConfig)) {
+      if (shortcutConfig && shortcutConfig.key && matchesShortcut(e, shortcutConfig)) {
         e.preventDefault();
         e.stopPropagation();
         
@@ -2228,6 +2882,11 @@
       controls.globalModeBgColorTextInput.value = prefs.globalModeBgColor || "#ffffff";
     }
     
+    // Toolbar mode checkbox
+    if (controls.toolbarModeCheckbox !== undefined) {
+      controls.toolbarModeCheckbox.checked = !!prefs.toolbarMode;
+    }
+
     // Update dynamic controls visibility
     if (controls.updateTTSControls && controls.textToSpeechCheckbox) {
       controls.updateTTSControls(controls.textToSpeechCheckbox.checked);
@@ -2349,6 +3008,7 @@
     '</svg>';
     
     var shortcutText = cfg.keyboardShortcut ? " (" + cfg.keyboardShortcut + ")" : "";
+    var shortcutHint = cfg.keyboardShortcut ? "Press " + cfg.keyboardShortcut + " to open" : "";
     var toggle = el("button", {
       id: "a11y-widget-toggle",
       type: "button",
@@ -2357,8 +3017,26 @@
       "aria-label": "Open accessibility settings" + shortcutText,
       "aria-haspopup": "dialog",
       "aria-keyshortcuts": cfg.keyboardShortcut || undefined,
-      title: "Accessibility Settings" + shortcutText,
+      "data-a11y-widget-version": "1.6.6",
+      title: (shortcutHint || "Accessibility Settings") + " - Widget v1.6.6",
       html: logoSVG
+    });
+    
+    // Add keyboard focus tracking for enhanced focus ring
+    var isKeyboardUser = false;
+    document.addEventListener("keydown", function() {
+      isKeyboardUser = true;
+    });
+    document.addEventListener("mousedown", function() {
+      isKeyboardUser = false;
+    });
+    toggle.addEventListener("focus", function() {
+      if (isKeyboardUser) {
+        toggle.classList.add("keyboard-focused");
+      }
+    });
+    toggle.addEventListener("blur", function() {
+      toggle.classList.remove("keyboard-focused");
     });
     
     // Apply icon customization after button is created
@@ -2389,19 +3067,136 @@
     ]);
 
     var content = el("div", { id: "a11y-widget-content" });
+    
+    // Tab navigation for progressive disclosure
+    var tabContainer = el("div", { id: "a11y-widget-tabs", class: "a11y-widget-tabs" });
+    var tabList = el("div", { role: "tablist", "aria-label": "Accessibility settings categories", class: "a11y-widget-tab-list" });
+    
+    var quickFixesTab = el("button", {
+      type: "button",
+      role: "tab",
+      "aria-selected": "true",
+      "aria-controls": "a11y-tab-quick-fixes",
+      id: "a11y-tab-quick-fixes-btn",
+      class: "a11y-widget-tab active",
+      text: "Quick Fixes"
+    });
+    
+    var readingTab = el("button", {
+      type: "button",
+      role: "tab",
+      "aria-selected": "false",
+      "aria-controls": "a11y-tab-reading",
+      id: "a11y-tab-reading-btn",
+      class: "a11y-widget-tab",
+      text: "Reading & Focus"
+    });
+    
+    var advancedTab = el("button", {
+      type: "button",
+      role: "tab",
+      "aria-selected": "false",
+      "aria-controls": "a11y-tab-advanced",
+      id: "a11y-tab-advanced-btn",
+      class: "a11y-widget-tab",
+      text: "Advanced Tools"
+    });
+    
+    tabList.appendChild(quickFixesTab);
+    tabList.appendChild(readingTab);
+    tabList.appendChild(advancedTab);
+    tabContainer.appendChild(tabList);
+    
+    // Tab panels
+    var quickFixesPanel = el("div", {
+      id: "a11y-tab-quick-fixes",
+      role: "tabpanel",
+      "aria-labelledby": "a11y-tab-quick-fixes-btn",
+      class: "a11y-widget-tab-panel active"
+    });
+    
+    var readingPanel = el("div", {
+      id: "a11y-tab-reading",
+      role: "tabpanel",
+      "aria-labelledby": "a11y-tab-reading-btn",
+      class: "a11y-widget-tab-panel",
+      hidden: ""
+    });
+    
+    var advancedPanel = el("div", {
+      id: "a11y-tab-advanced",
+      role: "tabpanel",
+      "aria-labelledby": "a11y-tab-advanced-btn",
+      class: "a11y-widget-tab-panel",
+      hidden: ""
+    });
+    
+    // Tab switching function
+    function switchTab(selectedTab, selectedPanel) {
+      // Update all tabs
+      var tabs = tabList.querySelectorAll(".a11y-widget-tab");
+      var panels = [quickFixesPanel, readingPanel, advancedPanel];
+      
+      for (var i = 0; i < tabs.length; i++) {
+        tabs[i].setAttribute("aria-selected", "false");
+        tabs[i].classList.remove("active");
+      }
+      
+      for (var j = 0; j < panels.length; j++) {
+        panels[j].setAttribute("hidden", "");
+        panels[j].classList.remove("active");
+      }
+      
+      // Activate selected tab and panel
+      selectedTab.setAttribute("aria-selected", "true");
+      selectedTab.classList.add("active");
+      selectedPanel.removeAttribute("hidden");
+      selectedPanel.classList.add("active");
+      
+      // Focus first control in panel
+      setTimeout(function() {
+        var firstControl = selectedPanel.querySelector("select, input, button, [tabindex]:not([tabindex='-1'])");
+        if (firstControl) firstControl.focus();
+      }, 50);
+    }
+    
+    quickFixesTab.addEventListener("click", function() { switchTab(quickFixesTab, quickFixesPanel); });
+    readingTab.addEventListener("click", function() { switchTab(readingTab, readingPanel); });
+    advancedTab.addEventListener("click", function() { switchTab(advancedTab, advancedPanel); });
+    
+    // Keyboard navigation for tabs
+    tabList.addEventListener("keydown", function(e) {
+      var tabs = Array.from(tabList.querySelectorAll(".a11y-widget-tab"));
+      var currentIndex = tabs.indexOf(e.target);
+      
+      if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+        e.preventDefault();
+        var nextIndex = e.key === "ArrowRight" 
+          ? (currentIndex + 1) % tabs.length
+          : (currentIndex - 1 + tabs.length) % tabs.length;
+        tabs[nextIndex].focus();
+        tabs[nextIndex].click();
+      }
+    });
 
     panel.appendChild(header);
+    panel.appendChild(tabContainer);
     panel.appendChild(content);
+    
+    // Append panels to content
+    content.appendChild(quickFixesPanel);
+    content.appendChild(readingPanel);
+    content.appendChild(advancedPanel);
 
     // Contrast
     if (cfg.features.contrast) {
       var contrastRow = el("div", { class: "a11y-widget-row" });
-      contrastRow.appendChild(el("label", { for: "a11y-contrast", text: "🎨 Contrast Mode" }));
-      var select = el("select", { id: "a11y-contrast", name: "contrast", "aria-label": "Select contrast mode" });
+      contrastRow.appendChild(el("label", { for: "a11y-contrast", text: "🎨 " + COPY.contrast }));
+      var select = el("select", { id: "a11y-contrast", name: "contrast", class: "a11y-widget-select", "aria-label": "Select contrast mode" });
       controls.contrastSelect = select;
       var opts = [
         ["default", "Default"],
-        ["high", "High contrast"],
+        ["high", COPY.highContrast],
         ["dark", "Dark theme"],
         ["light", "Light theme"]
       ];
@@ -2410,18 +3205,21 @@
         if (prefs.contrast === opts[i][0]) o.selected = true;
         select.appendChild(o);
       }
+      select.value = prefs.contrast || "default";
       select.addEventListener("change", function () {
+        var mode = select.value === "high" ? COPY.highContrast : select.value;
+        announceToScreenReader(COPY.announcements.contrastChanged + " " + mode);
         onChange({ contrast: select.value });
       });
       contrastRow.appendChild(select);
       contrastRow.appendChild(el("div", { class: "a11y-widget-help", text: "Adjust color contrast for better visibility. Applies to widget and declared surfaces." }));
-      content.appendChild(contrastRow);
+      quickFixesPanel.appendChild(contrastRow);
     }
 
     // Text size range 100–160
     if (cfg.features.fontScale) {
       var sizeRow = el("div", { class: "a11y-widget-row" });
-      var sizeLabel = el("label", { for: "a11y-font", class: "a11y-widget-label", text: "📏 Text Size" });
+      var sizeLabel = el("label", { for: "a11y-font", class: "a11y-widget-label", text: "📏 " + COPY.textSize });
       sizeRow.appendChild(sizeLabel);
       var rangeWrapper = el("div", { class: "a11y-widget-range-wrapper" });
       var range = el("input", {
@@ -2450,6 +3248,7 @@
         var v = clamp(Number(range.value), 1.0, 1.6);
         range.setAttribute("aria-valuenow", String(Math.round(v * 100)));
         val.textContent = Math.round(v * 100) + "%";
+        announceToScreenReader(COPY.announcements.textSizeChanged + " " + Math.round(v * 100) + "%");
         onChange({ fontScale: v });
       });
       rangeWrapper.appendChild(range);
@@ -2460,13 +3259,13 @@
         class: "a11y-widget-help", 
         text: "Scale text from 100% (normal) to 160% (large) for better readability." 
       }));
-      content.appendChild(sizeRow);
+      quickFixesPanel.appendChild(sizeRow);
     }
 
     // Spacing preset dropdown
     if (cfg.features.spacing) {
       var spacingRow = el("div", { class: "a11y-widget-row" });
-      spacingRow.appendChild(el("label", { for: "a11y-spacing", text: "📐 Text Spacing" }));
+      spacingRow.appendChild(el("label", { for: "a11y-spacing", text: "📐 " + COPY.textSpacing }));
       var spacingSelect = el("select", { 
         id: "a11y-spacing", 
         name: "spacing", 
@@ -2490,9 +3289,9 @@
       spacingRow.appendChild(spacingSelect);
       spacingRow.appendChild(el("div", { 
         class: "a11y-widget-help", 
-        text: "Adjust line height, letter spacing, word spacing, and paragraph spacing for easier reading." 
+        text: COPY.textSpacing + ". Adjust line height, letter spacing, word spacing, and paragraph spacing for easier reading." 
       }));
-      content.appendChild(spacingRow);
+      quickFixesPanel.appendChild(spacingRow);
     }
 
     // Toggles (native checkbox)
@@ -2528,29 +3327,28 @@
     if (cfg.features.readableFont) {
       var readableRow = toggleRow(
         "a11y-readable-font",
-        "🔤 Readable Font",
+        "🔤 " + COPY.readableFont,
         prefs.readableFont,
         function (v) { onChange({ readableFont: v }); },
         "Switch to a system-friendly sans-serif font that's easier to read. Applies to declared surfaces."
       );
       controls.readableFontCheckbox = readableRow.checkbox;
-      content.appendChild(readableRow.row);
+      quickFixesPanel.appendChild(readableRow.row);
     }
 
     if (cfg.features.reduceMotion) {
       var motionRow = toggleRow(
         "a11y-reduce-motion",
-        "⏸️ Reduce Motion",
+        "⏸️ " + COPY.reduceMotion,
         prefs.reduceMotion,
         function (v) { onChange({ reduceMotion: v }); },
-        "Disable animations, transitions, and motion effects. Helps users sensitive to motion."
+        COPY.reduceMotion + ". Disable animations, transitions, and motion effects. Helps users sensitive to motion."
       );
       controls.reduceMotionCheckbox = motionRow.checkbox;
-      content.appendChild(motionRow.row);
+      quickFixesPanel.appendChild(motionRow.row);
     }
 
     // Global Mode Toggle
-    content.appendChild(el("div", { class: "a11y-divider" }));
     var globalModeRow = toggleRow(
       "a11y-global-mode",
       "🌐 Global Mode",
@@ -2568,7 +3366,7 @@
       "Apply transformations to entire website (fonts, colors, sizes). When disabled, only affects declared surfaces."
     );
     controls.globalModeCheckbox = globalModeRow.checkbox;
-    content.appendChild(globalModeRow.row);
+    advancedPanel.appendChild(globalModeRow.row);
     
     // Global Mode Controls Container (shown/hidden based on globalMode)
     var globalModeControlsContainer = el("div", { 
@@ -2663,7 +3461,7 @@
     bgColorRow.appendChild(colorWrapper);
     globalModeControlsContainer.appendChild(bgColorRow);
     
-    content.appendChild(globalModeControlsContainer);
+    advancedPanel.appendChild(globalModeControlsContainer);
     controls.globalModeControlsContainer = globalModeControlsContainer;
     
     // Function to show/hide global mode controls
@@ -2675,14 +3473,16 @@
     controls.updateGlobalModeControls = updateGlobalModeControls;
 
     // Reading & Focus Aids Section
-    content.appendChild(el("div", { class: "a11y-divider" }));
+    // Track if any features are added to readingPanel
+    var readingFeaturesCount = 0;
+    
+    // Add label to readingPanel (not main content)
     var readingLabel = el("div", { text: "📖 Reading & Focus Aids", class: "a11y-widget-help" });
     readingLabel.style.fontSize = "12px";
     readingLabel.style.fontWeight = "650";
     readingLabel.style.opacity = "1";
     readingLabel.style.marginBottom = "0.4rem";
     readingLabel.style.color = "#111";
-    content.appendChild(readingLabel);
 
     // Text-to-Speech
     if (cfg.features.textToSpeech) {
@@ -2699,7 +3499,12 @@
         "Read website text aloud with customizable voice settings."
       );
       controls.textToSpeechCheckbox = ttsRow.checkbox;
-      content.appendChild(ttsRow.row);
+      // Add label if this is the first feature
+      if (readingFeaturesCount === 0) {
+        readingPanel.appendChild(readingLabel);
+      }
+      readingPanel.appendChild(ttsRow.row);
+      readingFeaturesCount++;
       
       // TTS Controls container (will be shown/hidden)
       var ttsControlsContainer = el("div", { 
@@ -2759,7 +3564,7 @@
       ttsButtons.appendChild(readPageBtn);
       ttsButtons.appendChild(stopBtn);
       ttsControlsContainer.appendChild(ttsButtons);
-      content.appendChild(ttsControlsContainer);
+      readingPanel.appendChild(ttsControlsContainer);
       controls.ttsControlsContainer = ttsControlsContainer;
       
       // Function to show/hide TTS controls
@@ -2781,20 +3586,30 @@
         "Horizontal line that follows your cursor to focus on one line of text."
       );
       controls.readingRulerCheckbox = rulerRow.checkbox;
-      content.appendChild(rulerRow.row);
+      // Add label if this is the first feature
+      if (readingFeaturesCount === 0) {
+        readingPanel.appendChild(readingLabel);
+      }
+      readingPanel.appendChild(rulerRow.row);
+      readingFeaturesCount++;
     }
 
     // Screen Mask
     if (cfg.features.screenMask) {
       var maskRow = toggleRow(
         "a11y-screen-mask",
-        "🎭 Screen Mask",
+        "🎭 " + COPY.screenMask,
         prefs.screenMaskEnabled,
         function (v) { onChange({ screenMaskEnabled: v }); },
-        "Dim distractions around the focused area to improve concentration."
+        COPY.screenMask + ". Dim distractions around the focused area to improve concentration."
       );
       controls.screenMaskCheckbox = maskRow.checkbox;
-      content.appendChild(maskRow.row);
+      // Add label if this is the first feature
+      if (readingFeaturesCount === 0) {
+        readingPanel.appendChild(readingLabel);
+      }
+      readingPanel.appendChild(maskRow.row);
+      readingFeaturesCount++;
     }
 
     // Text-Only Mode
@@ -2807,7 +3622,12 @@
         "Strip away images and layout, showing only text content for easier reading."
       );
       controls.textOnlyModeCheckbox = textOnlyRow.checkbox;
-      content.appendChild(textOnlyRow.row);
+      // Add label if this is the first feature
+      if (readingFeaturesCount === 0) {
+        readingPanel.appendChild(readingLabel);
+      }
+      readingPanel.appendChild(textOnlyRow.row);
+      readingFeaturesCount++;
     }
 
     // Margins
@@ -2824,7 +3644,12 @@
         "Add adjustable margins for better readability."
       );
       controls.marginsCheckbox = marginsRow.checkbox;
-      content.appendChild(marginsRow.row);
+      // Add label if this is the first feature
+      if (readingFeaturesCount === 0) {
+        readingPanel.appendChild(readingLabel);
+      }
+      readingPanel.appendChild(marginsRow.row);
+      readingFeaturesCount++;
       
       // Margins slider container (will be shown/hidden)
       var marginsControlsContainer = el("div", { 
@@ -2846,7 +3671,7 @@
         onChange({ marginsSize: Number(marginsRange.value) });
       });
       marginsControlsContainer.appendChild(marginsRange);
-      content.appendChild(marginsControlsContainer);
+      readingPanel.appendChild(marginsControlsContainer);
       controls.marginsControlsContainer = marginsControlsContainer;
       
       // Function to show/hide margins controls
@@ -2858,15 +3683,21 @@
       controls.updateMarginsControls = updateMarginsControls;
     }
 
-    // Tools Section
-    content.appendChild(el("div", { class: "a11y-divider" }));
-    var toolsLabel = el("div", { text: "🛠️ Tools", class: "a11y-widget-help" });
+    // Hide Reading & Focus tab if it has no features
+    if (readingFeaturesCount === 0) {
+      readingTab.style.display = "none";
+      readingTab.setAttribute("hidden", "");
+      readingPanel.setAttribute("hidden", "");
+    }
+
+    // Tools Section - moved to Advanced Tools tab
+    var toolsLabel = el("div", { text: "🛠️ Advanced Tools", class: "a11y-widget-help" });
     toolsLabel.style.fontSize = "12px";
     toolsLabel.style.fontWeight = "650";
     toolsLabel.style.opacity = "1";
     toolsLabel.style.marginBottom = "0.4rem";
     toolsLabel.style.color = "#111";
-    content.appendChild(toolsLabel);
+    advancedPanel.appendChild(toolsLabel);
 
     // Cursor Options
     if (cfg.features.cursorOptions) {
@@ -2881,7 +3712,7 @@
         "Increase cursor size for better visibility."
       );
       controls.cursorCheckbox = cursorRow.checkbox;
-      content.appendChild(cursorRow.row);
+      advancedPanel.appendChild(cursorRow.row);
 
       var cursorSizeControlsContainer = el("div", { 
         id: "a11y-cursor-size-controls",
@@ -2968,7 +3799,7 @@
         class: "a11y-widget-help", 
         text: "Pick a cursor size that is easy to track." 
       }));
-      content.appendChild(cursorSizeControlsContainer);
+      advancedPanel.appendChild(cursorSizeControlsContainer);
       controls.cursorSizeControlsContainer = cursorSizeControlsContainer;
 
       function updateCursorSizeControls(enabled) {
@@ -2993,7 +3824,7 @@
         "Zoom parts of the page on hover for closer inspection."
       );
       controls.magnifierCheckbox = magnifierRow.checkbox;
-      content.appendChild(magnifierRow.row);
+      advancedPanel.appendChild(magnifierRow.row);
       
       // Magnifier zoom slider container (will be shown/hidden)
       var magnifierControlsContainer = el("div", { 
@@ -3029,7 +3860,7 @@
       });
       
       magnifierControlsContainer.appendChild(magnifierZoomSlider);
-      content.appendChild(magnifierControlsContainer);
+      advancedPanel.appendChild(magnifierControlsContainer);
       controls.magnifierControlsContainer = magnifierControlsContainer;
       
       // Function to show/hide magnifier controls
@@ -3051,7 +3882,7 @@
         "Double-click a word to see its definition."
       );
       controls.dictionaryCheckbox = dictRow.checkbox;
-      content.appendChild(dictRow.row);
+      advancedPanel.appendChild(dictRow.row);
     }
 
     // Translation
@@ -3068,7 +3899,7 @@
         "Translate page content into different languages."
       );
       controls.translationCheckbox = transRow.checkbox;
-      content.appendChild(transRow.row);
+      advancedPanel.appendChild(transRow.row);
       
       // Translation language selector container (will be shown/hidden)
       var translationControlsContainer = el("div", { 
@@ -3098,7 +3929,7 @@
         onChange({ translationLanguage: langSelect.value });
       });
       translationControlsContainer.appendChild(langSelect);
-      content.appendChild(translationControlsContainer);
+      advancedPanel.appendChild(translationControlsContainer);
       controls.translationControlsContainer = translationControlsContainer;
       
       // Function to show/hide translation controls
@@ -3112,7 +3943,6 @@
 
     // Presets
     if (cfg.features.presets) {
-      content.appendChild(el("div", { class: "a11y-divider" }));
       var presetRow = el("div", { class: "a11y-widget-row" });
       var presetLabel = el("div", { text: "Quick Presets", class: "a11y-widget-help" });
       presetLabel.style.fontSize = "12px";
@@ -3126,12 +3956,10 @@
       // Helper function to add visual feedback to preset buttons
       function applyPresetFeedback(btn, presetContainer) {
         // Remove applied class from all buttons
-        var allBtns = presetContainer.querySelectorAll(".a11y-widget-preset-btn");
-        for (var i = 0; i < allBtns.length; i++) {
-          allBtns[i].classList.remove("applied");
-        }
+        clearPresetSelection(presetContainer);
         // Add applied class to clicked button
         btn.classList.add("applied");
+        btn.setAttribute("aria-pressed", "true");
         // Show confirmation toast
         showPresetToast("✓ " + btn.textContent.trim() + " preset applied!");
       }
@@ -3166,114 +3994,171 @@
         }, 2000);
       }
 
+      // Helper function to create preset button with description
+      function createPresetButton(icon, name, description, settings, ariaLabel) {
+        var presetContainer = el("div", { class: "a11y-widget-preset-container" });
+        var btn = el("button", { 
+          type: "button", 
+          class: "a11y-widget-preset-btn", 
+          text: icon + " " + name,
+          "aria-pressed": "false",
+          "aria-label": ariaLabel || "Apply " + name + " preset"
+        });
+        var desc = el("div", { 
+          class: "a11y-widget-preset-desc",
+          text: description,
+          style: "font-size: 11px; color: #666; margin-top: 4px; line-height: 1.3;"
+        });
+        presetContainer.appendChild(btn);
+        presetContainer.appendChild(desc);
+        btn.addEventListener("click", function () {
+          applyPresetFeedback(btn, presets);
+          announceToScreenReader(COPY.announcements.presetApplied + " " + name);
+          onChange(settings);
+          emit(cfg, "preset_applied", { 
+            presetId: name.toLowerCase().replace(/\s+/g, "-"),
+            presetName: name,
+            settings: settings
+          });
+        });
+        return presetContainer;
+      }
+
       // Core Presets - Based on WCAG 2.1 and accessibility research
-      // Reduced to 6 essential presets to avoid overwhelming users
+      // Enhanced with descriptions and new guided modes
       
       // 1. Low Vision Preset - WCAG 2.1 SC 1.4.3, 1.4.4, 1.4.12
       // Combines: High contrast + Large text (150%) + Comfortable spacing + Readable font
       // Research: 150% text size is WCAG recommended minimum for low vision users
-      var lowVision = el("button", { 
-        type: "button", 
-        class: "a11y-widget-preset-btn", 
-        text: "🔍 Low Vision",
-        "aria-label": "Apply low vision preset: high contrast, 150% text size, comfortable spacing, readable font"
-      });
-      lowVision.addEventListener("click", function () {
-        applyPresetFeedback(lowVision, presets);
-        onChange({ 
+      var lowVision = createPresetButton(
+        "🔍",
+        "Low Vision",
+        COPY.presets.lowVision,
+        { 
           contrast: "high", 
-          fontScale: 1.5,  // 150% - WCAG recommended for low vision
+          fontScale: 1.4,
           spacing: "comfortable", 
           readableFont: true,
           reduceMotion: true
-        });
-      });
+        },
+        "Apply low vision preset: high contrast, 140% text size, comfortable spacing, readable font"
+      );
       
       // 2. Dyslexia-Friendly Preset - Based on dyslexia research
       // Research: Increased spacing (0.05em+ letter, 0.12em word) improves reading speed
       // Note: High contrast can worsen dyslexia, so default contrast is used
-      var dyslexia = el("button", { 
-        type: "button", 
-        class: "a11y-widget-preset-btn", 
-        text: "📖 Dyslexia",
-        "aria-label": "Apply dyslexia-friendly preset: readable font, maximum spacing, 120% text size, reduced motion"
-      });
-      dyslexia.addEventListener("click", function () {
-        applyPresetFeedback(dyslexia, presets);
-        onChange({ 
+      var dyslexia = createPresetButton(
+        "📖",
+        "Dyslexia",
+        COPY.presets.dyslexia,
+        { 
           readableFont: true, 
-          spacing: "max",  // Maximum spacing helps with letter/word recognition
-          fontScale: 1.2,  // 120% - slightly larger helps without being overwhelming
+          spacing: "comfortable",
+          fontScale: 1.2,
           reduceMotion: true,
           contrast: "default"  // High contrast can worsen dyslexia symptoms
-        });
-      });
+        },
+        "Apply dyslexia-friendly preset: readable font, comfortable spacing, 120% text size, reduced motion"
+      );
       
       // 3. Reduced Motion Preset - WCAG 2.1 SC 2.3.3 (Level AAA)
       // Respects prefers-reduced-motion and helps users with vestibular disorders
-      var motion = el("button", { 
-        type: "button", 
-        class: "a11y-widget-preset-btn", 
-        text: "⏸️ Reduced Motion",
-        "aria-label": "Apply reduced motion preset: disable animations and transitions"
-      });
-      motion.addEventListener("click", function () {
-        applyPresetFeedback(motion, presets);
-        onChange({ 
+      var motion = createPresetButton(
+        "⏸️",
+        "Reduced Motion",
+        COPY.presets.reducedMotion,
+        { 
           reduceMotion: true
-        });
-      });
+        },
+        "Apply reduced motion preset: disable animations and transitions"
+      );
       
       // 4. High Contrast Preset - WCAG 2.1 SC 1.4.3 (Contrast Minimum - Level AA)
       // Helps users with low vision, color blindness, and in bright lighting
-      var highContrast = el("button", { 
-        type: "button", 
-        class: "a11y-widget-preset-btn", 
-        text: "🎨 High Contrast",
-        "aria-label": "Apply high contrast preset: enhanced color contrast for better visibility"
-      });
-      highContrast.addEventListener("click", function () {
-        applyPresetFeedback(highContrast, presets);
-        onChange({ 
+      var highContrast = createPresetButton(
+        "🎨",
+        "High Contrast",
+        COPY.presets.highContrast,
+        { 
           contrast: "high",
           readableFont: true  // Sans-serif improves readability with high contrast
-        });
-      });
+        },
+        "Apply high contrast preset: enhanced color contrast for better visibility"
+      );
       
       // 5. Large Text Preset - WCAG 2.1 SC 1.4.4 (Resize Text - Level AA)
       // 150% text size is WCAG recommended minimum for low vision users
-      var largeText = el("button", { 
-        type: "button", 
-        class: "a11y-widget-preset-btn", 
-        text: "🔤 Large Text",
-        "aria-label": "Apply large text preset: 150% text size with comfortable spacing"
-      });
-      largeText.addEventListener("click", function () {
-        applyPresetFeedback(largeText, presets);
-        onChange({ 
-          fontScale: 1.5,  // 150% - WCAG recommended minimum
+      var largeText = createPresetButton(
+        "🔤",
+        "Large Text",
+        COPY.presets.largeText,
+        { 
+          fontScale: 1.4,
           spacing: "comfortable",
           readableFont: true
-        });
-      });
+        },
+        "Apply large text preset: 140% text size with comfortable spacing"
+      );
       
       // 6. Dark Theme Preset - For light sensitivity and eye strain
       // Helps users with photophobia and reduces eye strain in low-light conditions
-      var darkTheme = el("button", { 
-        type: "button", 
-        class: "a11y-widget-preset-btn", 
-        text: "🌙 Dark Theme",
-        "aria-label": "Apply dark theme preset: dark background with light text for reduced eye strain"
-      });
-      darkTheme.addEventListener("click", function () {
-        applyPresetFeedback(darkTheme, presets);
-        onChange({ 
+      var darkTheme = createPresetButton(
+        "🌙",
+        "Dark Theme",
+        COPY.presets.darkTheme,
+        { 
           contrast: "dark",
           spacing: "comfortable",
           readableFont: true,
           reduceMotion: true
-        });
-      });
+        },
+        "Apply dark theme preset: dark background with light text for reduced eye strain"
+      );
+
+      // 7. Reading Mode - New guided mode for long reading sessions
+      var readingMode = createPresetButton(
+        "📚",
+        "Reading Mode",
+        COPY.presets.readingMode,
+        { 
+          spacing: "comfortable",
+          readingRulerEnabled: true,
+          readableFont: true,
+          reduceMotion: true,
+          fontScale: 1.1
+        },
+        "Apply reading mode preset: comfortable spacing, readable font, reduced motion, reading ruler ON"
+      );
+
+      // 8. Call Center / Ops Mode - New guided mode for dashboards
+      var callCenterMode = createPresetButton(
+        "💼",
+        "Call Center / Ops Mode",
+        COPY.presets.callCenterMode,
+        { 
+          reduceMotion: true,
+          spacing: "comfortable",
+          cursorEnabled: true,
+          cursorSize: "medium",
+          readableFont: true,
+          fontScale: 1.1
+        },
+        "Apply call center mode preset: reduce motion, comfortable spacing, readable font, medium cursor"
+      );
+
+      // 9. Quick Scan Mode - New guided mode for quick scanning
+      var quickScanMode = createPresetButton(
+        "⚡",
+        "Quick Scan Mode",
+        COPY.presets.quickScanMode,
+        { 
+          fontScale: 1.2,
+          spacing: "comfortable",
+          reduceMotion: true,
+          readableFont: true
+        },
+        "Apply quick scan mode preset: slightly larger text, comfortable spacing, no animations"
+      );
 
       presets.appendChild(lowVision);
       presets.appendChild(dyslexia);
@@ -3281,12 +4166,21 @@
       presets.appendChild(highContrast);
       presets.appendChild(largeText);
       presets.appendChild(darkTheme);
+      presets.appendChild(readingMode);
+      presets.appendChild(callCenterMode);
+      presets.appendChild(quickScanMode);
       presetRow.appendChild(presets);
-      content.appendChild(presetRow);
+      quickFixesPanel.appendChild(presetRow);
+      
+      // Show context-aware recommendations
+      var context = analyzePageContext();
+      var recommendations = getContextRecommendations(context);
+      if (recommendations.length > 0) {
+        showRecommendationBanner(recommendations, quickFixesPanel, onChange, cfg);
+      }
     }
 
     // Check for Updates button
-    content.appendChild(el("div", { class: "a11y-divider" }));
     var updateRow = el("div", { class: "a11y-widget-row" });
     var updateBtn = el("button", { 
       type: "button", 
@@ -3312,31 +4206,77 @@
     
     updateRow.appendChild(updateBtn);
     updateRow.appendChild(updateStatus);
-    content.appendChild(updateRow);
+    advancedPanel.appendChild(updateRow);
 
     // Widget Appearance and Icon Customization sections removed - archived in ARCHIVED_WIDGET_CUSTOMIZATION.js
 
     // Reset
     if (cfg.features.reset) {
-      content.appendChild(el("div", { class: "a11y-divider" }));
       var resetRow = el("div", { class: "a11y-widget-row" });
       var resetBtn = el("button", { 
         type: "button", 
         class: "a11y-widget-btn", 
         text: "🔄 Reset to Defaults",
-        "aria-label": "Reset all accessibility settings to default values"
+        "aria-label": "Reset all accessibility settings to default values",
+        "aria-keyshortcuts": "Alt+D",
+        title: "Reset to Defaults (Alt+D)"
       });
       resetBtn.style.width = "100%";
       resetBtn.style.marginTop = "0.3rem";
       resetBtn.style.padding = "0.6rem 0.75rem";
-      resetBtn.addEventListener("click", function () { enhancedOnReset(); });
       resetRow.appendChild(resetBtn);
       resetRow.appendChild(el("div", { class: "a11y-widget-help", text: "Restore all settings to their default values." }));
-      content.appendChild(resetRow);
+      
+      // Add reset buttons container
+      var resetButtonsContainer = el("div", { style: "display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap;" });
+      
+      // Reset to my defaults button (only if authenticated)
+      var resetToMyDefaultsBtn = el("button", {
+        type: "button",
+        class: "a11y-widget-btn",
+        text: COPY.reset.toMyDefaults,
+        style: "flex: 1; min-width: 120px; padding: 0.5rem; font-size: 12px;"
+      });
+      resetToMyDefaultsBtn.addEventListener("click", function() {
+        loadPreferencesFromProfile(cfg).then(function(savedPrefs) {
+          if (savedPrefs) {
+            var normalized = normalizePrefs(assign(assign({}, PREF_DEFAULTS), savedPrefs));
+            onChange(normalized);
+            announceToScreenReader("Settings restored to your saved preferences");
+          } else {
+            alert("No saved preferences found. Please save your preferences first.");
+          }
+        });
+      });
+      
+      // Reset to site defaults button
+      var resetToSiteDefaultsBtn = el("button", {
+        type: "button",
+        class: "a11y-widget-btn",
+        text: COPY.reset.toSiteDefaults,
+        style: "flex: 1; min-width: 120px; padding: 0.5rem; font-size: 12px;"
+      });
+      resetToSiteDefaultsBtn.addEventListener("click", function() {
+        announceToScreenReader(COPY.announcements.settingsReset);
+        enhancedOnReset();
+      });
+      
+      resetBtn.addEventListener("click", function () { 
+        announceToScreenReader(COPY.announcements.settingsReset);
+        enhancedOnReset(); 
+      });
+      
+      // Only show "Reset to my defaults" if user is authenticated
+      if (window.__a11yAuth && typeof window.__a11yAuth.getToken === "function" && window.__a11yAuth.getToken()) {
+        resetButtonsContainer.appendChild(resetToMyDefaultsBtn);
+      }
+      resetButtonsContainer.appendChild(resetToSiteDefaultsBtn);
+      resetRow.appendChild(resetButtonsContainer);
+      
+      quickFixesPanel.appendChild(resetRow);
     }
 
     // Toolbar Mode Toggle
-    content.appendChild(el("div", { class: "a11y-divider" }));
     var toolbarModeRow = toggleRow(
       "a11y-toolbar-mode",
       "📋 Toolbar Mode",
@@ -3348,10 +4288,9 @@
       "Switch to floating toolbar at the bottom of the page for quick access to all features."
     );
     controls.toolbarModeCheckbox = toolbarModeRow.checkbox;
-    content.appendChild(toolbarModeRow.row);
+    advancedPanel.appendChild(toolbarModeRow.row);
 
     // Keyboard Instructions Section
-    content.appendChild(el("div", { class: "a11y-divider" }));
     var keyboardSection = el("div", { class: "a11y-widget-row" });
     var keyboardLabel = el("div", { 
       text: "⌨️ Keyboard Shortcuts", 
@@ -3365,6 +4304,7 @@
     
     var shortcuts = [
       { key: cfg.keyboardShortcut || "Alt+A", desc: "Open/Close widget panel" },
+      { key: "Alt+D", desc: "Reset all settings to defaults" },
       { key: "Esc", desc: "Close widget panel" },
       { key: "Tab", desc: "Navigate between controls" },
       { key: "Enter / Space", desc: "Activate buttons and toggles" },
@@ -3394,7 +4334,175 @@
       text: "Use keyboard shortcuts for quick access to accessibility features.",
       style: "margin-top: 0.5rem; font-size: 11px;"
     }));
-    content.appendChild(keyboardSection);
+    advancedPanel.appendChild(keyboardSection);
+    
+    // Footer with trust statement and compliance link
+    var footer = el("div", { id: "a11y-widget-footer", class: "a11y-widget-footer" });
+    footer.style.cssText = "padding: 0.75rem var(--a11y-spacing-sm); border-top: 1px solid var(--a11y-color-border); font-size: 11px; color: var(--a11y-color-text-light); text-align: center;";
+    
+    var trustText = el("div", { text: COPY.trustStatement, style: "margin-bottom: 0.5rem;" });
+    footer.appendChild(trustText);
+    
+    var complianceLink = el("button", {
+      type: "button",
+      text: COPY.compliance.title,
+      style: "background: none; border: none; color: var(--a11y-color-secondary); text-decoration: underline; cursor: pointer; font-size: 11px; padding: 0;",
+      "aria-label": "Open accessibility compliance information"
+    });
+    complianceLink.addEventListener("click", function() {
+      showCompliancePanel(cfg, prefs);
+    });
+    footer.appendChild(complianceLink);
+    
+    panel.appendChild(footer);
+    
+    // Compliance Panel Function
+    function showCompliancePanel(cfg, prefs) {
+      emit(cfg, "compliance_panel_opened", {});
+      
+      var modal = document.createElement("div");
+      modal.id = "a11y-compliance-modal";
+      modal.setAttribute("role", "dialog");
+      modal.setAttribute("aria-modal", "true");
+      modal.setAttribute("aria-labelledby", "a11y-compliance-title");
+      modal.style.cssText = 
+        "position: fixed; top: 0; left: 0; right: 0; bottom: 0; " +
+        "background: rgba(0,0,0,0.5); z-index: 2147483004; " +
+        "display: flex; align-items: center; justify-content: center; padding: 1rem;";
+      
+      var dialog = document.createElement("div");
+      dialog.style.cssText = 
+        "background: white; border-radius: 8px; padding: 1.5rem; " +
+        "max-width: 600px; max-height: 80vh; overflow-y: auto; " +
+        "box-shadow: 0 8px 32px rgba(0,0,0,0.2); position: relative;";
+      
+      var title = document.createElement("h2");
+      title.id = "a11y-compliance-title";
+      title.textContent = COPY.compliance.title;
+      title.style.cssText = "margin: 0 0 1rem 0; padding-right: 2rem; font-size: 18px; font-weight: 700;";
+      
+      var wcagStatement = document.createElement("p");
+      wcagStatement.textContent = COPY.compliance.wcagStatement;
+      wcagStatement.style.cssText = "margin-bottom: 1rem; line-height: 1.6;";
+      
+      var featuresTitle = document.createElement("h3");
+      featuresTitle.textContent = COPY.compliance.featuresTitle;
+      featuresTitle.style.cssText = "font-size: 14px; font-weight: 600; margin: 1rem 0 0.5rem 0;";
+      
+      var featuresList = document.createElement("ul");
+      featuresList.style.cssText = "margin: 0 0 1rem 1.5rem; line-height: 1.8;";
+      var features = [
+        "Text size adjustment (100%-160%)",
+        "Contrast modes (high, dark, light)",
+        "Text spacing controls",
+        "Readable font toggle",
+        "Motion reduction",
+        "Text-to-speech",
+        "Reading ruler",
+        "Screen mask",
+        "Text-only mode",
+        "Adjustable margins",
+        "Large cursor options",
+        "Page magnifier",
+        "Dictionary lookup",
+        "Language translation"
+      ];
+      for (var i = 0; i < features.length; i++) {
+        var li = document.createElement("li");
+        li.textContent = features[i];
+        featuresList.appendChild(li);
+      }
+      
+      var shortcutsTitle = document.createElement("h3");
+      shortcutsTitle.textContent = COPY.compliance.shortcutsTitle;
+      shortcutsTitle.style.cssText = "font-size: 14px; font-weight: 600; margin: 1rem 0 0.5rem 0;";
+      
+      var shortcutsList = document.createElement("ul");
+      shortcutsList.style.cssText = "margin: 0 0 1rem 1.5rem; line-height: 1.8;";
+      shortcutsList.innerHTML = 
+        "<li>" + (cfg.keyboardShortcut || "Alt+A") + " - Open/Close widget</li>" +
+        "<li>Alt+D - Reset all settings to defaults</li>" +
+        "<li>Esc - Close widget</li>" +
+        "<li>Tab - Navigate controls</li>" +
+        "<li>Arrow Keys - Navigate tabs and dropdowns</li>";
+      
+      var lastUpdated = document.createElement("p");
+      lastUpdated.textContent = COPY.compliance.lastUpdated + " " + new Date().toLocaleDateString();
+      lastUpdated.style.cssText = "font-size: 12px; color: #666; margin: 1rem 0;";
+      
+      var exportBtn = document.createElement("button");
+      exportBtn.textContent = COPY.compliance.exportButton;
+      exportBtn.style.cssText = 
+        "background: var(--a11y-color-secondary); color: white; " +
+        "border: none; padding: 0.5rem 1rem; border-radius: 4px; " +
+        "cursor: pointer; font-size: 13px; margin-top: 0.5rem;";
+      exportBtn.addEventListener("click", function() {
+        var snapshot = {
+          timestamp: new Date().toISOString(),
+          preferences: prefs,
+          features: cfg.features,
+          siteId: cfg.siteId
+        };
+        var blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: "application/json" });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement("a");
+        a.href = url;
+        a.download = "a11y-settings-" + Date.now() + ".json";
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+      
+      var closeBtn = document.createElement("button");
+      closeBtn.textContent = "×";
+      closeBtn.type = "button";
+      closeBtn.style.cssText = 
+        "position: absolute; top: 1rem; right: 1rem; " +
+        "background: transparent; border: none; font-size: 28px; line-height: 1; " +
+        "cursor: pointer; color: #666; width: 36px; height: 36px; " +
+        "display: flex; align-items: center; justify-content: center; " +
+        "border-radius: 4px; padding: 0; z-index: 10; " +
+        "transition: background-color 0.2s, color 0.2s;";
+      closeBtn.setAttribute("aria-label", "Close accessibility information");
+      closeBtn.addEventListener("mouseenter", function() {
+        closeBtn.style.backgroundColor = "#f0f0f0";
+        closeBtn.style.color = "#000";
+      });
+      closeBtn.addEventListener("mouseleave", function() {
+        closeBtn.style.backgroundColor = "transparent";
+        closeBtn.style.color = "#666";
+      });
+      closeBtn.addEventListener("click", function() {
+        if (modal && modal.parentNode) {
+          modal.parentNode.removeChild(modal);
+        }
+      });
+      
+      dialog.appendChild(closeBtn);
+      dialog.appendChild(title);
+      dialog.appendChild(wcagStatement);
+      dialog.appendChild(featuresTitle);
+      dialog.appendChild(featuresList);
+      dialog.appendChild(shortcutsTitle);
+      dialog.appendChild(shortcutsList);
+      dialog.appendChild(lastUpdated);
+      dialog.appendChild(exportBtn);
+      modal.appendChild(dialog);
+      
+      document.body.appendChild(modal);
+      
+      // Focus trap for modal
+      setTimeout(function() {
+        closeBtn.focus();
+        trapFocus(dialog, closeBtn, exportBtn);
+      }, 100);
+      
+      // Close on Escape
+      modal.addEventListener("keydown", function(e) {
+        if (e.key === "Escape") {
+          document.body.removeChild(modal);
+        }
+      });
+    }
 
     // Open/close behaviour
     var opener = null;
@@ -3405,13 +4513,16 @@
       var shortcutText = cfg.keyboardShortcut ? " (" + cfg.keyboardShortcut + ")" : "";
       toggle.setAttribute("aria-label", "Close accessibility settings" + shortcutText);
       // focus first input safely (skip close button)
-      var content = panel.querySelector("#a11y-widget-content");
-      var first = content ? content.querySelector("select, input, button, [tabindex]:not([tabindex='-1'])") : null;
+      var activePanel = panel.querySelector(".a11y-widget-tab-panel.active");
+      var first = activePanel ? activePanel.querySelector("select, input, button, [tabindex]:not([tabindex='-1'])") : null;
       if (first) {
         setTimeout(function() {
           first.focus();
         }, 100);
       }
+      // Set up focus trap
+      trapFocus(panel, first, panel.querySelector("#a11y-widget-close"));
+      announceToScreenReader(COPY.announcements.widgetOpened);
       emit(cfg, "widget_open", {});
     }
 
@@ -3425,6 +4536,7 @@
           opener.focus();
         }, 100);
       }
+      announceToScreenReader(COPY.announcements.widgetClosed);
       emit(cfg, "widget_close", {});
     }
 
@@ -3502,14 +4614,38 @@
       }
     };
 
-    // Create enhanced onReset that updates UI controls
+    // Create enhanced onReset that updates UI controls and cleans up active features
     var enhancedOnReset = function() {
+      // Tear down active visual features before prefs revert
+      removeCustomCursor();
+      removeScreenMask();
+      removeMagnifier();
+      removeTranslation();
+      if (typeof stopSpeech === "function") stopSpeech();
+      clearPresetSelection(root);
+
       onReset();
-      updateUIControls(controls, normalizePrefs(assign({}, PREF_DEFAULTS)));
+      var defaults = normalizePrefs(assign({}, PREF_DEFAULTS));
+      updateUIControls(controls, defaults);
+
+      // Toolbar mode: disable if it was on
+      if (controls.toolbar) {
+        toggleToolbarMode(false, root, controls, cfg, defaults, enhancedOnChange);
+      }
+
+      // Explicitly reset toolbar dropdown visual state
+      var dropdownMenus = document.querySelectorAll(".a11y-toolbar-dropdown-menu");
+      for (var i = 0; i < dropdownMenus.length; i++) {
+        dropdownMenus[i].style.display = "none";
+        var items = dropdownMenus[i].querySelectorAll(".a11y-toolbar-dropdown-item");
+        for (var j = 0; j < items.length; j++) {
+          items[j].classList.remove("active");
+        }
+      }
     };
 
     // Setup keyboard shortcut
-    setupKeyboardShortcut(cfg, openPanel, closePanel, toggle);
+    setupKeyboardShortcut(cfg, openPanel, closePanel, toggle, enhancedOnReset);
 
     // Toolbar Mode Toggle Function
     function toggleToolbarMode(enabled, root, controls, cfg, prefs, onChange) {
@@ -4182,17 +5318,48 @@
     
     var cfg = getConfig();
 
+    // QA / deploy verification: check in console `window.__A11Y_WIDGET_BUILD__` and Network for this filename (not legacy a11y-widget.js).
+    window.__A11Y_WIDGET_BUILD__ = "a11y-widget-v1.6.6.js";
+
     // Namespace guard
     if (window.__a11yWidget && window.__a11yWidget.__loaded) return;
 
     // Auto-load CSS from GitHub repository
     ensureCSS();
     
+    // Create ARIA live regions early to ensure they're ready for announcements
+    if (document.body) {
+      ensureAriaLiveRegion();
+      ensureAriaLiveRegionAssertive();
+    } else {
+      // Wait for body if not ready
+      document.addEventListener("DOMContentLoaded", function() {
+        ensureAriaLiveRegion();
+        ensureAriaLiveRegionAssertive();
+      });
+    }
+    
     // Set up dictionary handler once (it checks enabled state internally)
     setupDictionaryHandler();
 
+    // Load preferences: try localStorage first (synchronous), then try user profile (async)
     var stored = Store.get(cfg.storageKey);
     var prefs = normalizePrefs(assign(assign({}, PREF_DEFAULTS), stored || {}));
+    
+    // Try to load from user profile asynchronously and update if found
+    loadPreferencesFromProfile(cfg).then(function(profilePrefs) {
+      if (profilePrefs) {
+        var updatedPrefs = normalizePrefs(assign(assign({}, PREF_DEFAULTS), profilePrefs));
+        applyPrefs(updatedPrefs);
+        Store.set(cfg.storageKey, updatedPrefs);
+        // Update widget if already mounted
+        if (window.__a11yWidget && window.__a11yWidget.setPrefs) {
+          window.__a11yWidget.setPrefs(updatedPrefs);
+        }
+      }
+    }).catch(function() {
+      // Silently fail - localStorage preferences are already applied
+    });
 
     // Apply prefs + mark surfaces early
     applyPrefs(prefs);
@@ -4251,7 +5418,26 @@
             if (toggle) renderIcon(prefs, toggle);
           }
           Store.set(cfg.storageKey, prefs);
+          // Sync to user profile if authenticated
+          syncPreferencesToProfile(cfg, prefs);
           emit(cfg, "setting_change", { keys: Object.keys(delta) });
+          
+          // Emit feature_toggled events for individual feature changes
+          for (var key in delta) {
+            if (delta.hasOwnProperty(key)) {
+              var value = delta[key];
+              // Map preference keys to feature names
+              var featureKey = key;
+              // Emit feature_toggled event for boolean toggles and key changes
+              if (typeof value === 'boolean' || typeof value === 'string' || typeof value === 'number') {
+                emit(cfg, "feature_toggled", { 
+                  featureKey: featureKey, 
+                  featureValue: value 
+                });
+              }
+            }
+          }
+          
           // Update UI controls after preferences change
           if (widget.updateControls) {
             widget.updateControls(prefs);
@@ -4279,6 +5465,23 @@
 
       document.body.appendChild(widget.root);
 
+      // Ensure ARIA live regions are created before announcing
+      ensureAriaLiveRegion();
+      ensureAriaLiveRegionAssertive();
+
+      // Show first-visit nudge
+      var toggle = document.getElementById("a11y-widget-toggle");
+      if (toggle) {
+        showFirstVisitNudge(cfg, toggle);
+      }
+
+      // Announce to screen readers that accessibility options are available
+      // Use assertive for initial announcement to ensure it's always heard
+      // Use setTimeout to ensure DOM is fully ready and screen readers can detect the announcement
+      setTimeout(function() {
+        announceToScreenReader(COPY.announcements.optionsAvailable, true);
+      }, 800);
+
       // open on init if configured
       if (cfg.initialOpen) {
         try { widget.open(); } catch (e) {}
@@ -4287,6 +5490,7 @@
       window.__a11yWidget = {
         __loaded: true,
         config: cfg,
+        getBuild: function () { return window.__A11Y_WIDGET_BUILD__ || "a11y-widget-v1.6.6.js"; },
         getPrefs: function () { return assign({}, prefs); },
         setPrefs: function (next) {
           prefs = normalizePrefs(assign(prefs, next || {}));
@@ -4305,6 +5509,7 @@
           Store.set(cfg.storageKey, prefs);
         },
         reset: function () {
+          clearPresetSelection();
           prefs = normalizePrefs(assign({}, PREF_DEFAULTS));
           applyPrefs(prefs);
           markSurfaces(cfg.surfaces, prefs.globalMode || cfg.globalMode || false);

@@ -131,7 +131,7 @@ For future updates:
 ### 3. CDN Compatibility
 
 **Important**: CDN usage remains unchanged and independent:
-- CDN users continue using: `https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.1.0/...`
+- CDN users continue using: `https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.6/...`
 - npm users use: `@careerdriver/a11y-widget`
 - Both methods work independently
 - No breaking changes to CDN behavior

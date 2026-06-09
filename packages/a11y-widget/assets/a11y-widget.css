@@ -77,6 +77,23 @@ html[data-a11y]{
   line-height: inherit;
 }
 
+/* Stronger text scaling for component-heavy apps with explicit utility classes. */
+html[data-a11y] [data-a11y-surface="true"] :where(
+  p, li, a, button, input, select, textarea, label,
+  h1, h2, h3, h4, h5, h6,
+  span, small, strong, em, b, i,
+  td, th, dt, dd, figcaption,
+  [class*="text"], [class*="Text"],
+  [class*="label"], [class*="Label"],
+  [class*="title"], [class*="Title"],
+  [class*="name"], [class*="Name"],
+  [class*="badge"], [class*="Badge"],
+  [class*="button"], [class*="Button"]
+):not(#a11y-widget-root):not(#a11y-widget-root *) {
+  font-size: calc(1em * var(--a11y-font-scale)) !important;
+  line-height: var(--a11y-line-height);
+}
+
 /* Global Mode: Apply transformations to entire website */
 html[data-a11y][data-a11y-global-mode="1"] {
   /* Override all fonts globally */
@@ -388,8 +405,40 @@ html[data-a11y][data-a11y-text-only="1"] [data-a11y-surface="true"] object {
   display: none !important;
 }
 
-html[data-a11y][data-a11y-text-only="1"] [data-a11y-surface="true"] {
+html[data-a11y][data-a11y-text-only="1"] [data-a11y-surface="true"],
+html[data-a11y][data-a11y-text-only="1"] [data-a11y-surface="true"] *:not(#a11y-widget-root):not(#a11y-widget-root *) {
   background-image: none !important;
+}
+
+html[data-a11y][data-a11y-text-only="1"] [data-a11y-surface="true"] :where(
+  [aria-hidden="true"]:empty,
+  [class*="icon"]:empty,
+  [class*="Icon"]:empty,
+  [class*="avatar"]:empty,
+  [class*="Avatar"]:empty,
+  [class*="logo"]:empty,
+  [class*="Logo"]:empty,
+  [data-icon],
+  [role="img"]
+):not(#a11y-widget-root):not(#a11y-widget-root *) {
+  display: none !important;
+}
+
+html[data-a11y][data-a11y-text-only="1"] [data-a11y-surface="true"] :where(
+  [class*="icon"] svg,
+  [class*="Icon"] svg,
+  [class*="avatar"] svg,
+  [class*="Avatar"] svg,
+  [class*="logo"] svg,
+  [class*="Logo"] svg,
+  .lucide,
+  .fa,
+  .fas,
+  .far,
+  .fab,
+  .material-icons
+):not(#a11y-widget-root):not(#a11y-widget-root *) {
+  display: none !important;
 }
 
 /* Margins */
@@ -529,7 +578,7 @@ html[data-a11y][data-a11y-contrast="high"] #a11y-custom-cursor::after {
 }
 
 /* Magnifier - handled by JavaScript overlay */
-#a11y-magnifier {
+#a11y-magnifier-lens {
   position: fixed;
   pointer-events: none;
   z-index: 2147482997;
@@ -543,7 +592,7 @@ html[data-a11y][data-a11y-contrast="high"] #a11y-custom-cursor::after {
   background: white;
 }
 
-#a11y-magnifier::before {
+#a11y-magnifier-lens::before {
   content: attr(data-zoom) "x";
   position: absolute;
   top: 50%;
@@ -626,6 +675,25 @@ html[data-a11y][data-a11y-contrast="dark"] [data-a11y-surface="true"] {
   color: #e6edf3 !important;
 }
 
+html[data-a11y][data-a11y-contrast="dark"] body[data-a11y-surface="true"] > :not(#a11y-widget-root),
+html[data-a11y][data-a11y-contrast="dark"] [data-a11y-surface="true"] :where(
+  header, nav, main, aside, footer, section, article,
+  div, ul, ol, li, form, fieldset,
+  table, thead, tbody, tr, td, th,
+  [class*="card"], [class*="Card"],
+  [class*="panel"], [class*="Panel"],
+  [class*="container"], [class*="Container"],
+  [class*="box"], [class*="Box"],
+  [class*="dropdown"], [class*="Dropdown"],
+  [class*="menu"], [class*="Menu"],
+  [class*="popover"], [class*="Popover"],
+  [class*="modal"], [class*="Modal"]
+):not(#a11y-widget-root):not(#a11y-widget-root *) {
+  background-color: #0d1117 !important;
+  color: #e6edf3 !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+}
+
 html[data-a11y][data-a11y-contrast="dark"] [data-a11y-surface="true"] p,
 html[data-a11y][data-a11y-contrast="dark"] [data-a11y-surface="true"] li,
 html[data-a11y][data-a11y-contrast="dark"] [data-a11y-surface="true"] span,
@@ -646,6 +714,20 @@ html[data-a11y][data-a11y-contrast="dark"] [data-a11y-surface="true"] h6 {
 
 html[data-a11y][data-a11y-contrast="dark"] [data-a11y-surface="true"] a {
   color: #58a6ff !important;
+}
+
+html[data-a11y][data-a11y-contrast="dark"] [data-a11y-surface="true"] :where(
+  p, span, small, strong, em, label,
+  h1, h2, h3, h4, h5, h6,
+  button, [role="button"], input, select, textarea,
+  [class*="text"], [class*="Text"],
+  [class*="label"], [class*="Label"],
+  [class*="title"], [class*="Title"],
+  [class*="name"], [class*="Name"],
+  [class*="badge"], [class*="Badge"]
+):not(#a11y-widget-root):not(#a11y-widget-root *) {
+  color: #e6edf3 !important;
+  -webkit-text-fill-color: #e6edf3 !important;
 }
 
 html[data-a11y][data-a11y-contrast="dark"] [data-a11y-surface="true"] button,
@@ -843,6 +925,77 @@ html[data-a11y][data-a11y-contrast="dark"] [data-a11y-surface="true"] ol{
 
 html[data-a11y][data-a11y-contrast="dark"] [data-a11y-surface="true"] li::marker{
   color: #58a6ff !important;
+}
+
+/* Dark theme: final contrast refinements for app UIs and dashboards. */
+html[data-a11y][data-a11y-contrast="dark"] [data-a11y-surface="true"] :where(
+  input, textarea, select
+):not(#a11y-widget-root):not(#a11y-widget-root *){
+  background-color: #0f1724 !important;
+  color: #f8fafc !important;
+  -webkit-text-fill-color: #f8fafc !important;
+  border-color: rgba(148, 163, 184, 0.55) !important;
+  color-scheme: dark;
+}
+
+html[data-a11y][data-a11y-contrast="dark"] [data-a11y-surface="true"] :where(
+  input, textarea, select
+):not(#a11y-widget-root):not(#a11y-widget-root *):focus{
+  border-color: #79c0ff !important;
+  outline: 2px solid #79c0ff !important;
+  outline-offset: 2px;
+}
+
+html[data-a11y][data-a11y-contrast="dark"] [data-a11y-surface="true"] select option{
+  background-color: #0f1724 !important;
+  color: #f8fafc !important;
+}
+
+html[data-a11y][data-a11y-contrast="dark"] [data-a11y-surface="true"] :where(
+  button, [role="button"], .btn, a.button, [class*="Button"], [class*="button"]
+):not(#a11y-widget-root):not(#a11y-widget-root *){
+  background-color: #1f6feb !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  border-color: #79c0ff !important;
+}
+
+html[data-a11y][data-a11y-contrast="dark"] [data-a11y-surface="true"] :where(
+  button:hover, [role="button"]:hover, .btn:hover, a.button:hover,
+  [class*="Button"]:hover, [class*="button"]:hover
+):not(#a11y-widget-root):not(#a11y-widget-root *){
+  background-color: #388bfd !important;
+  color: #ffffff !important;
+}
+
+html[data-a11y][data-a11y-contrast="dark"] [data-a11y-surface="true"] :where(
+  [class*="card"], [class*="Card"], [class*="panel"], [class*="Panel"],
+  [class*="modal"], [class*="Modal"], [class*="popover"], [class*="Popover"],
+  [class*="dropdown"], [class*="Dropdown"], [class*="menu"], [class*="Menu"]
+):not(#a11y-widget-root):not(#a11y-widget-root *){
+  background-color: #161b22 !important;
+  color: #f0f6fc !important;
+  border-color: rgba(240, 246, 252, 0.18) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35) !important;
+}
+
+html[data-a11y][data-a11y-global-mode="1"][data-a11y-contrast="dark"] body :where(
+  input, textarea, select
+):not(#a11y-widget-root):not(#a11y-widget-root *){
+  background-color: #0f1724 !important;
+  color: #f8fafc !important;
+  -webkit-text-fill-color: #f8fafc !important;
+  border-color: rgba(148, 163, 184, 0.55) !important;
+  color-scheme: dark;
+}
+
+html[data-a11y][data-a11y-global-mode="1"][data-a11y-contrast="dark"] body :where(
+  button, [role="button"], .btn
+):not(#a11y-widget-root):not(#a11y-widget-root *){
+  background-color: #1f6feb !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  border-color: #79c0ff !important;
 }
 
 /* Light Theme Mode - High contrast light background */
@@ -1566,10 +1719,14 @@ html.a11y-widget-hidden .accessibility-widget {
   border: 1px solid var(--a11y-color-border-dark);
   border-radius: var(--a11y-radius);
   font-size: 14px;
+  line-height: 1.4;
+  min-height: 44px;
   background: var(--a11y-color-bg);
   cursor: pointer;
   font-family: var(--a11y-font-family);
   color: var(--a11y-color-text);
+  -webkit-text-fill-color: var(--a11y-color-text);
+  color-scheme: light;
   transition: all 0.2s ease;
   appearance: none;
   -webkit-appearance: none;
@@ -1578,6 +1735,13 @@ html.a11y-widget-hidden .accessibility-widget {
   background-repeat: no-repeat;
   background-position: right 0.75rem center;
   padding-right: 2.5rem;
+}
+
+#a11y-widget-panel select option,
+#a11y-widget-panel select optgroup{
+  background: #ffffff;
+  color: #111111;
+  -webkit-text-fill-color: #111111;
 }
 
 #a11y-widget-panel select:hover{
@@ -1931,27 +2095,34 @@ html[data-a11y][data-a11y-contrast="dark"] .a11y-widget-btn:hover{
   background: #30363d !important;
 }
 html[data-a11y][data-a11y-contrast="dark"] #a11y-widget-panel select{
-  background: #161b22 !important;
-  color: #e6edf3 !important;
-  border-color: rgba(255,255,255,0.25) !important;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23e6edf3' d='M6 9L1 4h10z'/%3E%3C/svg%3E") !important;
+  background-color: #161b22 !important;
+  color: #f0f6fc !important;
+  -webkit-text-fill-color: #f0f6fc !important;
+  border-color: rgba(240,246,252,0.34) !important;
+  color-scheme: dark;
+  box-shadow: inset 0 0 0 1px rgba(240,246,252,0.08) !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23f0f6fc' d='M6 9L1 4h10z'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 0.75rem center !important;
 }
 
 html[data-a11y][data-a11y-contrast="dark"] #a11y-widget-panel select:hover{
   background-color: #21262d !important;
-  border-color: rgba(255,255,255,0.35) !important;
+  border-color: rgba(240,246,252,0.48) !important;
 }
 
 html[data-a11y][data-a11y-contrast="dark"] #a11y-widget-panel select:focus{
-  border-color: #0066cc !important;
-  outline-color: #0066cc !important;
+  border-color: #79c0ff !important;
+  outline-color: #79c0ff !important;
   background-color: #161b22 !important;
 }
 
 /* Ensure select dropdown options are visible in dark theme */
-html[data-a11y][data-a11y-contrast="dark"] #a11y-widget-panel select option{
+html[data-a11y][data-a11y-contrast="dark"] #a11y-widget-panel select option,
+html[data-a11y][data-a11y-contrast="dark"] #a11y-widget-panel select optgroup{
   background: #161b22 !important;
-  color: #e6edf3 !important;
+  color: #f0f6fc !important;
+  -webkit-text-fill-color: #f0f6fc !important;
 }
 
 html[data-a11y][data-a11y-contrast="dark"] #a11y-widget-panel input[type="range"]{

@@ -1,16 +1,16 @@
-/*! a11y-widget.js — Accessibility Widget v1.1.0 (IIFE, no deps)
+/*! a11y-widget.js — Accessibility Widget v1.6.6 (IIFE, no deps)
     Scope: widget UI + configured surfaces only.
     No claims of full-site ADA compliance.
     
     GitHub Repository: https://github.com/braieswabe/A11-Widget
     CDN: https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/
     
-    Version 1.1.0 Changelog:
+    Version 1.6.6 Changelog:
     - Fixed cursor visibility with enhanced outline
     - Improved cursor initialization
     - Enhanced cursor styling with better contrast
 
-    QA Remediation (v1.6.5 release):
+    QA Remediation (v1.6.6 release):
     - Hardened checkForUpdates with timeout, deterministic states, fallback reload button
     - Reset to Defaults now fully restores contrast/theme UI + tears down active features
     - Screen Mask reworked with SVG inverted mask for reliable video/canvas coverage
@@ -352,13 +352,13 @@
       // Apply preset based on recommendation
       var settings = {};
       if (rec.preset === "readingMode") {
-        settings = { textOnlyMode: true, spacing: "comfortable", readingRulerEnabled: true, readableFont: true, reduceMotion: true, fontScale: 1.1 };
+        settings = { spacing: "comfortable", readingRulerEnabled: true, readableFont: true, reduceMotion: true, fontScale: 1.1 };
       } else if (rec.preset === "callCenterMode") {
-        settings = { reduceMotion: true, contrast: "high", cursorEnabled: true, cursorSize: "large", readableFont: true };
+        settings = { reduceMotion: true, spacing: "comfortable", cursorEnabled: true, cursorSize: "medium", readableFont: true, fontScale: 1.1 };
       } else if (rec.preset === "formOptimized") {
-        settings = { readableFont: true, cursorEnabled: true, cursorSize: "large" };
+        settings = { readableFont: true, cursorEnabled: true, cursorSize: "medium", spacing: "comfortable" };
       } else if (rec.preset === "tableOptimized") {
-        settings = { spacing: "max", readingRulerEnabled: true };
+        settings = { spacing: "comfortable", readingRulerEnabled: true, fontScale: 1.1 };
       }
       onChange(settings);
       emit(cfg, "recommendation_accepted", { recommendation: rec });
@@ -1274,6 +1274,23 @@
     return false;
   }
 
+  function clearPresetSelection(scope) {
+    var root = scope || document;
+    try {
+      var applied = root.querySelectorAll(".a11y-widget-preset-btn.applied");
+      for (var i = 0; i < applied.length; i++) {
+        applied[i].classList.remove("applied");
+        applied[i].setAttribute("aria-pressed", "false");
+      }
+      var toast = document.getElementById("a11y-preset-toast");
+      if (toast && toast.parentNode) {
+        toast.parentNode.removeChild(toast);
+      }
+    } catch (e) {
+      // Ignore cleanup failures so reset never blocks preference restoration.
+    }
+  }
+
   function clearMarkedSurfaces() {
     var marked = document.querySelectorAll("[data-a11y-managed-surface='1']");
     for (var i = 0; i < marked.length; i++) {
@@ -1364,7 +1381,7 @@
     }
     setUpdateStatus(statusEl, "Checking latest version...", false);
 
-    var probeUrl = CDN_BASE + "a11y-widget-v1.1.0.js?_a11y_check=" + Date.now();
+    var probeUrl = CDN_BASE + "a11y-widget-v1.6.6.js?_a11y_check=" + Date.now();
     var supportsFetch = typeof fetch !== "undefined";
 
     function finish(buttonText) {
@@ -1786,7 +1803,7 @@
     
     // Create magnifier container (the lens)
     magnifierElement = document.createElement("div");
-    magnifierElement.id = "a11y-magnifier";
+    magnifierElement.id = "a11y-magnifier-lens";
     magnifierElement.setAttribute("aria-hidden", "true");
     magnifierElement.style.cssText = 
       "position: fixed; " +
@@ -1869,26 +1886,12 @@
       // Show magnifier
       magnifierElement.style.display = "block";
       
-      // Position magnifier near cursor (offset to not block view)
-      var offsetX = 30;
-      var offsetY = -30;
-      var magX = e.clientX + offsetX + size/2;
-      var magY = e.clientY + offsetY - size/2;
-      
-      // Keep within viewport bounds
-      if (magX + size/2 > window.innerWidth) {
-        magX = e.clientX - offsetX - size/2;
-      }
-      if (magY - size/2 < 0) {
-        magY = e.clientY - offsetY + size/2;
-      }
-      if (magX - size/2 < 0) {
-        magX = size/2 + 10;
-      }
-      if (magY + size/2 > window.innerHeight) {
-        magY = window.innerHeight - size/2 - 10;
-      }
-      
+      // Center the lens on the pointer, while keeping it inside the viewport.
+      var magX = e.clientX - size / 2;
+      var magY = e.clientY - size / 2;
+      magX = clamp(magX, 10, Math.max(10, window.innerWidth - size - 10));
+      magY = clamp(magY, 10, Math.max(10, window.innerHeight - size - 10));
+
       magnifierElement.style.left = magX + "px";
       magnifierElement.style.top = magY + "px";
       
@@ -1905,7 +1908,7 @@
       var elementUnder = document.elementFromPoint(e.clientX, e.clientY);
       magnifierElement.style.display = "block";
       
-      if (elementUnder && !elementUnder.closest("#a11y-magnifier") && !elementUnder.closest("#a11y-widget-root")) {
+      if (elementUnder && !elementUnder.closest("#a11y-magnifier-lens") && !elementUnder.closest("#a11y-widget-root")) {
         // Clone and render content in magnifier
         renderMagnifiedArea(e.clientX, e.clientY, currentZoom, size);
       }
@@ -1955,8 +1958,8 @@
     elementsInArea.forEach(function(el) {
       try {
         // Skip the magnifier and widget
-        if (el.id === "a11y-magnifier" || el.id === "a11y-widget-root" || 
-            el.closest("#a11y-magnifier") || el.closest("#a11y-widget-root")) {
+        if (el.id === "a11y-magnifier-lens" || el.id === "a11y-widget-root" || 
+            el.closest("#a11y-magnifier-lens") || el.closest("#a11y-widget-root")) {
           return;
         }
         
@@ -2727,20 +2730,27 @@
     return isInput || isTextarea || isContentEditable;
   }
 
-  function setupKeyboardShortcut(cfg, openPanel, closePanel, toggle) {
-    if (!cfg.keyboardShortcut || cfg.keyboardShortcut === false) return;
-    
-    var shortcutConfig = parseShortcut(cfg.keyboardShortcut);
-    if (!shortcutConfig || !shortcutConfig.key) return;
+  function setupKeyboardShortcut(cfg, openPanel, closePanel, toggle, onReset) {
+    var resetShortcutConfig = parseShortcut("Alt+D");
+    var shortcutConfig = null;
+
+    if (cfg.keyboardShortcut && cfg.keyboardShortcut !== false) {
+      shortcutConfig = parseShortcut(cfg.keyboardShortcut);
+    }
     
     document.addEventListener("keydown", function(e) {
       // Don't activate if user is typing in an input field
       if (isInputFocused()) return;
       
-      // Don't activate if only modifier keys are pressed
-      if (!shortcutConfig.key) return;
+      if (onReset && resetShortcutConfig && matchesShortcut(e, resetShortcutConfig)) {
+        e.preventDefault();
+        e.stopPropagation();
+        onReset();
+        announceToScreenReader(COPY.announcements.settingsReset);
+        return;
+      }
       
-      if (matchesShortcut(e, shortcutConfig)) {
+      if (shortcutConfig && shortcutConfig.key && matchesShortcut(e, shortcutConfig)) {
         e.preventDefault();
         e.stopPropagation();
         
@@ -3007,7 +3017,8 @@
       "aria-label": "Open accessibility settings" + shortcutText,
       "aria-haspopup": "dialog",
       "aria-keyshortcuts": cfg.keyboardShortcut || undefined,
-      title: shortcutHint || "Accessibility Settings",
+      "data-a11y-widget-version": "1.6.6",
+      title: (shortcutHint || "Accessibility Settings") + " - Widget v1.6.6",
       html: logoSVG
     });
     
@@ -3181,7 +3192,7 @@
     if (cfg.features.contrast) {
       var contrastRow = el("div", { class: "a11y-widget-row" });
       contrastRow.appendChild(el("label", { for: "a11y-contrast", text: "🎨 " + COPY.contrast }));
-      var select = el("select", { id: "a11y-contrast", name: "contrast", "aria-label": "Select contrast mode" });
+      var select = el("select", { id: "a11y-contrast", name: "contrast", class: "a11y-widget-select", "aria-label": "Select contrast mode" });
       controls.contrastSelect = select;
       var opts = [
         ["default", "Default"],
@@ -3194,6 +3205,7 @@
         if (prefs.contrast === opts[i][0]) o.selected = true;
         select.appendChild(o);
       }
+      select.value = prefs.contrast || "default";
       select.addEventListener("change", function () {
         var mode = select.value === "high" ? COPY.highContrast : select.value;
         announceToScreenReader(COPY.announcements.contrastChanged + " " + mode);
@@ -3944,12 +3956,10 @@
       // Helper function to add visual feedback to preset buttons
       function applyPresetFeedback(btn, presetContainer) {
         // Remove applied class from all buttons
-        var allBtns = presetContainer.querySelectorAll(".a11y-widget-preset-btn");
-        for (var i = 0; i < allBtns.length; i++) {
-          allBtns[i].classList.remove("applied");
-        }
+        clearPresetSelection(presetContainer);
         // Add applied class to clicked button
         btn.classList.add("applied");
+        btn.setAttribute("aria-pressed", "true");
         // Show confirmation toast
         showPresetToast("✓ " + btn.textContent.trim() + " preset applied!");
       }
@@ -3991,6 +4001,7 @@
           type: "button", 
           class: "a11y-widget-preset-btn", 
           text: icon + " " + name,
+          "aria-pressed": "false",
           "aria-label": ariaLabel || "Apply " + name + " preset"
         });
         var desc = el("div", { 
@@ -4025,12 +4036,12 @@
         COPY.presets.lowVision,
         { 
           contrast: "high", 
-          fontScale: 1.5,  // 150% - WCAG recommended for low vision
+          fontScale: 1.4,
           spacing: "comfortable", 
           readableFont: true,
           reduceMotion: true
         },
-        "Apply low vision preset: high contrast, 150% text size, comfortable spacing, readable font"
+        "Apply low vision preset: high contrast, 140% text size, comfortable spacing, readable font"
       );
       
       // 2. Dyslexia-Friendly Preset - Based on dyslexia research
@@ -4042,12 +4053,12 @@
         COPY.presets.dyslexia,
         { 
           readableFont: true, 
-          spacing: "max",  // Maximum spacing helps with letter/word recognition
-          fontScale: 1.2,  // 120% - slightly larger helps without being overwhelming
+          spacing: "comfortable",
+          fontScale: 1.2,
           reduceMotion: true,
           contrast: "default"  // High contrast can worsen dyslexia symptoms
         },
-        "Apply dyslexia-friendly preset: readable font, maximum spacing, 120% text size, reduced motion"
+        "Apply dyslexia-friendly preset: readable font, comfortable spacing, 120% text size, reduced motion"
       );
       
       // 3. Reduced Motion Preset - WCAG 2.1 SC 2.3.3 (Level AAA)
@@ -4082,11 +4093,11 @@
         "Large Text",
         COPY.presets.largeText,
         { 
-          fontScale: 1.5,  // 150% - WCAG recommended minimum
+          fontScale: 1.4,
           spacing: "comfortable",
           readableFont: true
         },
-        "Apply large text preset: 150% text size with comfortable spacing"
+        "Apply large text preset: 140% text size with comfortable spacing"
       );
       
       // 6. Dark Theme Preset - For light sensitivity and eye strain
@@ -4110,14 +4121,13 @@
         "Reading Mode",
         COPY.presets.readingMode,
         { 
-          textOnlyMode: true,
           spacing: "comfortable",
           readingRulerEnabled: true,
           readableFont: true,
           reduceMotion: true,
           fontScale: 1.1
         },
-        "Apply reading mode preset: text-only, increased line height, reading ruler ON"
+        "Apply reading mode preset: comfortable spacing, readable font, reduced motion, reading ruler ON"
       );
 
       // 8. Call Center / Ops Mode - New guided mode for dashboards
@@ -4127,12 +4137,13 @@
         COPY.presets.callCenterMode,
         { 
           reduceMotion: true,
-          contrast: "high",
+          spacing: "comfortable",
           cursorEnabled: true,
-          cursorSize: "large",
-          readableFont: true
+          cursorSize: "medium",
+          readableFont: true,
+          fontScale: 1.1
         },
-        "Apply call center mode preset: reduce motion, high contrast, larger cursor"
+        "Apply call center mode preset: reduce motion, comfortable spacing, readable font, medium cursor"
       );
 
       // 9. Quick Scan Mode - New guided mode for quick scanning
@@ -4141,12 +4152,12 @@
         "Quick Scan Mode",
         COPY.presets.quickScanMode,
         { 
-          fontScale: 1.3,
-          spacing: "max",
+          fontScale: 1.2,
+          spacing: "comfortable",
           reduceMotion: true,
           readableFont: true
         },
-        "Apply quick scan mode preset: larger text, max spacing, no animations"
+        "Apply quick scan mode preset: slightly larger text, comfortable spacing, no animations"
       );
 
       presets.appendChild(lowVision);
@@ -4206,7 +4217,9 @@
         type: "button", 
         class: "a11y-widget-btn", 
         text: "🔄 Reset to Defaults",
-        "aria-label": "Reset all accessibility settings to default values"
+        "aria-label": "Reset all accessibility settings to default values",
+        "aria-keyshortcuts": "Alt+D",
+        title: "Reset to Defaults (Alt+D)"
       });
       resetBtn.style.width = "100%";
       resetBtn.style.marginTop = "0.3rem";
@@ -4291,6 +4304,7 @@
     
     var shortcuts = [
       { key: cfg.keyboardShortcut || "Alt+A", desc: "Open/Close widget panel" },
+      { key: "Alt+D", desc: "Reset all settings to defaults" },
       { key: "Esc", desc: "Close widget panel" },
       { key: "Tab", desc: "Navigate between controls" },
       { key: "Enter / Space", desc: "Activate buttons and toggles" },
@@ -4407,6 +4421,7 @@
       shortcutsList.style.cssText = "margin: 0 0 1rem 1.5rem; line-height: 1.8;";
       shortcutsList.innerHTML = 
         "<li>" + (cfg.keyboardShortcut || "Alt+A") + " - Open/Close widget</li>" +
+        "<li>Alt+D - Reset all settings to defaults</li>" +
         "<li>Esc - Close widget</li>" +
         "<li>Tab - Navigate controls</li>" +
         "<li>Arrow Keys - Navigate tabs and dropdowns</li>";
@@ -4607,6 +4622,7 @@
       removeMagnifier();
       removeTranslation();
       if (typeof stopSpeech === "function") stopSpeech();
+      clearPresetSelection(root);
 
       onReset();
       var defaults = normalizePrefs(assign({}, PREF_DEFAULTS));
@@ -4629,7 +4645,7 @@
     };
 
     // Setup keyboard shortcut
-    setupKeyboardShortcut(cfg, openPanel, closePanel, toggle);
+    setupKeyboardShortcut(cfg, openPanel, closePanel, toggle, enhancedOnReset);
 
     // Toolbar Mode Toggle Function
     function toggleToolbarMode(enabled, root, controls, cfg, prefs, onChange) {
@@ -5303,7 +5319,7 @@
     var cfg = getConfig();
 
     // QA / deploy verification: check in console `window.__A11Y_WIDGET_BUILD__` and Network for this filename (not legacy a11y-widget.js).
-    window.__A11Y_WIDGET_BUILD__ = "a11y-widget-v1.1.0.js";
+    window.__A11Y_WIDGET_BUILD__ = "a11y-widget-v1.6.6.js";
 
     // Namespace guard
     if (window.__a11yWidget && window.__a11yWidget.__loaded) return;
@@ -5474,7 +5490,7 @@
       window.__a11yWidget = {
         __loaded: true,
         config: cfg,
-        getBuild: function () { return window.__A11Y_WIDGET_BUILD__ || "a11y-widget-v1.1.0.js"; },
+        getBuild: function () { return window.__A11Y_WIDGET_BUILD__ || "a11y-widget-v1.6.6.js"; },
         getPrefs: function () { return assign({}, prefs); },
         setPrefs: function (next) {
           prefs = normalizePrefs(assign(prefs, next || {}));
@@ -5493,6 +5509,7 @@
           Store.set(cfg.storageKey, prefs);
         },
         reset: function () {
+          clearPresetSelection();
           prefs = normalizePrefs(assign({}, PREF_DEFAULTS));
           applyPrefs(prefs);
           markSurfaces(cfg.surfaces, prefs.globalMode || cfg.globalMode || false);

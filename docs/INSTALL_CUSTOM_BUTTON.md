@@ -22,7 +22,7 @@ Add the loader script globally in your `index.html` (or equivalent):
   <title>Your Site</title>
   
   <!-- Accessibility Widget Loader -->
-  <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.5/a11y-widget-loader-v1.6.1.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.6/a11y-widget-loader-v1.6.6.js" defer></script>
 </head>
 <body>
   <!-- Your content -->
@@ -179,7 +179,7 @@ function Header() {
 <head>
   <meta charset="UTF-8">
   <title>My App</title>
-  <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.5/a11y-widget-loader-v1.6.1.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.6.6/a11y-widget-loader-v1.6.6.js" defer></script>
 </head>
 <body>
   <div id="root"></div>
