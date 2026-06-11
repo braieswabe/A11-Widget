@@ -3471,7 +3471,8 @@
     updateIconCustomControls((prefs.iconStyle || "default") === "custom");
     iconPanel.appendChild(iconCustomPanel);
 
-    // Icon Upload Section
+    /*
+    // Icon Upload Section (disabled — preserve for re-enable)
     var uploadRow = el("div", { class: "a11y-widget-row" });
     uploadRow.appendChild(el("legend", { text: "Upload Custom Icon" }));
 
@@ -3622,6 +3623,7 @@
     }
 
     loadUploadedIcons();
+    */
 
     var iconResetRow = el("div", { class: "a11y-widget-row" });
     var iconResetBtn = el("button", { type: "button", class: "a11y-widget-btn", text: "Reset Icon Style", "aria-label": "Reset accessibility button icon style" });

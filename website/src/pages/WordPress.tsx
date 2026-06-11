@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import CodeBlock from '../components/CodeBlock'
-import { WIDGET_LOADER_URL, WIDGET_VERSION, WIDGET_LOADER_FILENAME, WIDGET_RUNTIME_FILENAME } from '../constants'
+import { WIDGET_LOADER_URL, WIDGET_VERSION, WIDGET_LOADER_FILENAME, WIDGET_RUNTIME_FILENAME, WIDGET_CDN_REF } from '../constants'
 import './Pages.css'
 
 const steps = [
@@ -294,7 +294,7 @@ export default function WordPress() {
               <li>Open browser DevTools (F12) → Console tab and look for errors</li>
               <li>
                 Check Network tab: <code>{WIDGET_LOADER_FILENAME}</code> (status 200), URL should include{' '}
-                <code>@main</code>, then <code>{WIDGET_RUNTIME_FILENAME}</code> and <code>a11y-widget.css</code>
+                <code>@{WIDGET_CDN_REF}</code>, then <code>{WIDGET_RUNTIME_FILENAME}</code> and <code>a11y-widget.css</code>
               </li>
               <li>Temporarily switch to a default theme (Twenty Twenty-Four) to rule out theme conflicts</li>
             </ol>
