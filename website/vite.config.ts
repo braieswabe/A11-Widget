@@ -112,6 +112,7 @@ export default defineConfig({
         const npmCoreJs = join(__dirname, '..', 'packages', 'a11y-widget', 'vendor', 'a11y-widget.core.js')
         const npmCss = join(__dirname, '..', 'packages', 'a11y-widget', 'assets', 'a11y-widget.css')
         const widgetJsVersioned = join(__dirname, '..', 'a11y-widget-v1.6.9.js')
+        const widgetLoaderVersioned = join(__dirname, '..', 'a11y-widget-loader-v1.6.9.js')
         const widgetJs = join(__dirname, '..', 'a11y-widget.js')
         const widgetCss = join(__dirname, '..', 'a11y-widget.css')
         const downloadsDir = join(__dirname, 'public', 'downloads')
@@ -124,6 +125,11 @@ export default defineConfig({
         } else if (existsSync(widgetJsVersioned)) {
           copyFileSync(widgetJsVersioned, join(distPath, 'a11y-widget-v1.6.9.js'))
           console.log('[Vite] Copied widget v1.6.9 fallback from root')
+        }
+
+        if (existsSync(widgetLoaderVersioned)) {
+          copyFileSync(widgetLoaderVersioned, join(distPath, 'a11y-widget-loader-v1.6.9.js'))
+          console.log('[Vite] Copied widget loader v1.6.9')
         }
 
         // Copy legacy `a11y-widget.js` for any direct links from the npm-synced runtime.
