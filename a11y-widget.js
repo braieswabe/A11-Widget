@@ -1,14 +1,14 @@
-/*! a11y-widget.js — Accessibility Widget v1.6.8 (IIFE, no deps)
+/*! a11y-widget.js — Accessibility Widget v1.6.9 (IIFE, no deps)
     Scope: widget UI + configured surfaces only.
     No claims of full-site ADA compliance.
     
     GitHub Repository: https://github.com/braieswabe/A11-Widget
     CDN: https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/
     
-    Version 1.6.8 Changelog:
-    - Fixed cursor visibility with enhanced outline
-    - Improved cursor initialization
-    - Enhanced cursor styling with better contrast
+    Version 1.6.9 Changelog:
+    - Restored Icon Style tab with full icon editing (design, size, colors, presets)
+    - Restored custom icon upload with IndexedDB persistence
+    - New default universal-access icon (blue circle with white figure)
 
     QA Remediation (v1.6.8 release):
     - Hardened checkForUpdates with timeout, deterministic states, fallback reload button
@@ -752,9 +752,13 @@
   var ICON_DESIGNS = {
     default: function() {
       return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">' +
-        '<circle cx="24" cy="24" r="22" fill="#0066cc" opacity="0.1"/>' +
-        '<path d="M 24 12 L 24 36 M 12 24 L 36 24" stroke="#0066cc" stroke-width="3" stroke-linecap="round"/>' +
-        '<circle cx="24" cy="24" r="8" fill="none" stroke="#0066cc" stroke-width="2"/>' +
+        '<circle cx="24" cy="24" r="22" fill="#21A1E1"/>' +
+        '<circle cx="24" cy="14" r="3.5" fill="#ffffff"/>' +
+        '<line x1="24" y1="17.5" x2="24" y2="26" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>' +
+        '<line x1="24" y1="20" x2="13" y2="22" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>' +
+        '<line x1="24" y1="20" x2="35" y2="22" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>' +
+        '<line x1="24" y1="26" x2="18" y2="34" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>' +
+        '<line x1="24" y1="26" x2="30" y2="34" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>' +
       '</svg>';
     },
     circleA: function() {
@@ -917,7 +921,7 @@
     // Icon customization
     iconSize: 48,                     // 32-80 pixels
     iconDesign: "default",            // default|circleA|universal|eye|gear|heart|shield|hand|star|checkmark
-    iconColor: "#0066cc",             // Primary color for built-in icon SVGs
+    iconColor: "#21A1E1",             // Primary color for built-in icon SVGs
     iconStyle: "default",             // default|minimal|bold|outline|custom
     iconCustomization: {
       backgroundColor: null,           // null = use default
@@ -1166,6 +1170,7 @@
     color = normalizeHexColor(color, PREF_DEFAULTS.iconColor);
     if (!svg || !color) return svg;
     return String(svg)
+      .replace(/#21A1E1/gi, color)
       .replace(/#0066cc/gi, color)
       .replace(/#0052a3/gi, color)
       .replace(/#007bff/gi, color)
@@ -1175,44 +1180,14 @@
   }
 
   function getDefaultIconSVG() {
-    // Return the current default SVG logo
     return '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: 100%;">' +
-      '<defs>' +
-        '<linearGradient id="outerGrad" x1="0%" y1="0%" x2="100%" y2="100%">' +
-          '<stop offset="0%" stop-color="#6B8DD6"/>' +
-          '<stop offset="100%" stop-color="#8B6FD8"/>' +
-        '</linearGradient>' +
-        '<filter id="softShadow">' +
-          '<feGaussianBlur in="SourceAlpha" stdDeviation="2"/>' +
-          '<feOffset dx="0" dy="2" result="offsetblur"/>' +
-          '<feComponentTransfer><feFuncA type="linear" slope="0.3"/></feComponentTransfer>' +
-          '<feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>' +
-        '</filter>' +
-      '</defs>' +
-      '<circle cx="50" cy="50" r="45" fill="url(#outerGrad)" stroke="#5A7BC8" stroke-width="1.5" filter="url(#softShadow)"/>' +
-      '<circle cx="50" cy="50" r="33" fill="#FFFFFF" opacity="0.95"/>' +
-      '<g fill="#6B8DD6" stroke="#6B8DD6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' +
-        '<circle cx="50" cy="36" r="5.5" fill="#FFFFFF" stroke="#6B8DD6" stroke-width="2"/>' +
-        '<path d="M 46 38 Q 50 40, 54 38" stroke="#6B8DD6" stroke-width="2" fill="none" stroke-linecap="round"/>' +
-        '<circle cx="47.5" cy="35" r="1" fill="#6B8DD6"/>' +
-        '<circle cx="52.5" cy="35" r="1" fill="#6B8DD6"/>' +
-        '<line x1="50" y1="41.5" x2="50" y2="52" stroke-width="2.8"/>' +
-        '<line x1="50" y1="44" x2="40" y2="46" stroke-width="3"/>' +
-        '<line x1="50" y1="44" x2="60" y2="46" stroke-width="3"/>' +
-        '<line x1="50" y1="52" x2="44" y2="61" stroke-width="3"/>' +
-        '<line x1="50" y1="52" x2="56" y2="61" stroke-width="3"/>' +
-      '</g>' +
-      '<g fill="#FFD700" opacity="0.8">' +
-        '<circle cx="30" cy="25" r="1.5"/>' +
-        '<path d="M 30 25 L 30 22 M 30 25 L 30 28 M 30 25 L 27 25 M 30 25 L 33 25" stroke="#FFD700" stroke-width="1.5" stroke-linecap="round"/>' +
-        '<circle cx="75" cy="30" r="1.5"/>' +
-        '<path d="M 75 30 L 75 27 M 75 30 L 75 33 M 75 30 L 72 30 M 75 30 L 78 30" stroke="#FFD700" stroke-width="1.5" stroke-linecap="round"/>' +
-      '</g>' +
-      '<path d="M 65 28 Q 70 23, 75 28" stroke="#8B6FD8" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.7"/>' +
-      '<g fill="#6B8DD6" font-family="Arial, sans-serif" font-weight="bold">' +
-        '<text x="30" y="28" font-size="9" text-anchor="middle" fill="#6B8DD6">A</text>' +
-        '<path d="M 30 35 Q 30 32, 32 32 Q 34 32, 34 35 Q 34 32, 36 32 Q 38 32, 38 35 Q 38 38, 34 42 Q 30 38, 30 35" fill="#FF6B9D" opacity="0.8"/>' +
-      '</g>' +
+      '<circle cx="50" cy="50" r="46" fill="#21A1E1"/>' +
+      '<circle cx="50" cy="29" r="7" fill="#ffffff"/>' +
+      '<line x1="50" y1="36" x2="50" y2="54" stroke="#ffffff" stroke-width="6" stroke-linecap="round"/>' +
+      '<line x1="50" y1="42" x2="27" y2="46" stroke="#ffffff" stroke-width="6" stroke-linecap="round"/>' +
+      '<line x1="50" y1="42" x2="73" y2="46" stroke="#ffffff" stroke-width="6" stroke-linecap="round"/>' +
+      '<line x1="50" y1="54" x2="38" y2="71" stroke="#ffffff" stroke-width="6" stroke-linecap="round"/>' +
+      '<line x1="50" y1="54" x2="62" y2="71" stroke="#ffffff" stroke-width="6" stroke-linecap="round"/>' +
     '</svg>';
   }
 
@@ -1416,7 +1391,7 @@
     }
     setUpdateStatus(statusEl, "Checking latest version...", false);
 
-    var probeUrl = CDN_BASE + "a11y-widget-v1.6.8.js?_a11y_check=" + Date.now();
+    var probeUrl = CDN_BASE + "a11y-widget-v1.6.9.js?_a11y_check=" + Date.now();
     var supportsFetch = typeof fetch !== "undefined";
 
     function finish(buttonText) {
@@ -3093,8 +3068,8 @@
       "aria-label": "Open accessibility settings" + shortcutText,
       "aria-haspopup": "dialog",
       "aria-keyshortcuts": cfg.keyboardShortcut || undefined,
-      "data-a11y-widget-version": "1.6.8",
-      title: (shortcutHint || "Accessibility Settings") + " - Widget v1.6.8",
+      "data-a11y-widget-version": "1.6.9",
+      title: (shortcutHint || "Accessibility Settings") + " - Widget v1.6.9",
       html: logoSVG
     });
     
@@ -3178,8 +3153,7 @@
       text: "Advanced Tools"
     });
 
-    // Temporarily disabled: hide Icon Style tab while preserving the implementation for re-enable.
-    var enableIconStyleTab = false;
+    var enableIconStyleTab = true;
     var iconTab = el("button", {
       type: "button",
       role: "tab",
@@ -3496,6 +3470,158 @@
     });
     updateIconCustomControls((prefs.iconStyle || "default") === "custom");
     iconPanel.appendChild(iconCustomPanel);
+
+    // Icon Upload Section
+    var uploadRow = el("div", { class: "a11y-widget-row" });
+    uploadRow.appendChild(el("legend", { text: "Upload Custom Icon" }));
+
+    var fileInput = el("input", {
+      type: "file",
+      id: "a11y-icon-upload",
+      accept: "image/png,image/jpeg,image/svg+xml,image/gif,image/webp"
+    });
+    fileInput.style.display = "none";
+
+    var uploadBtn = el("button", {
+      type: "button",
+      class: "a11y-widget-btn",
+      text: "Choose Icon File"
+    });
+    uploadBtn.addEventListener("click", function() {
+      fileInput.click();
+    });
+
+    fileInput.addEventListener("change", function(e) {
+      var file = e.target.files[0];
+      if (!file) return;
+
+      if (file.size > 500 * 1024) {
+        alert("Icon file must be smaller than 500KB");
+        return;
+      }
+
+      if (!file.type.match(/^image\/(png|jpeg|svg\+xml|gif|webp)$/)) {
+        alert("Please select a valid image file (PNG, JPEG, SVG, GIF, or WebP)");
+        return;
+      }
+
+      var reader = new FileReader();
+      reader.onload = function(ev) {
+        var dataUrl = ev.target.result;
+        IconDB.saveIcon(dataUrl, file.name).then(function(iconId) {
+          var updatedPrefs = assign({}, prefs);
+          updatedPrefs.iconId = iconId;
+          onChange({ iconId: iconId });
+          var toggle = document.getElementById("a11y-widget-toggle");
+          renderIcon(updatedPrefs, toggle);
+          loadUploadedIcons();
+        }).catch(function(err) {
+          console.error("Failed to save icon:", err);
+          alert("Failed to upload icon. Please try again.");
+        });
+      };
+      reader.readAsDataURL(file);
+      fileInput.value = "";
+    });
+
+    uploadRow.appendChild(uploadBtn);
+    uploadRow.appendChild(fileInput);
+    uploadRow.appendChild(el("div", {
+      class: "a11y-widget-help",
+      text: "Upload PNG, JPEG, SVG, GIF, or WebP image (max 500KB). Icon will persist across sessions."
+    }));
+    iconPanel.appendChild(uploadRow);
+
+    // Uploaded Icons List
+    var iconsListRow = el("div", { class: "a11y-widget-row", id: "a11y-uploaded-icons" });
+    iconsListRow.appendChild(el("legend", { text: "Your Uploaded Icons" }));
+    var iconsList = el("div", { id: "a11y-icons-list" });
+    iconsListRow.appendChild(iconsList);
+    iconPanel.appendChild(iconsListRow);
+
+    function loadUploadedIcons() {
+      IconDB.listIcons().then(function(icons) {
+        iconsList.innerHTML = "";
+        if (icons.length === 0) {
+          iconsList.appendChild(el("div", {
+            class: "a11y-widget-help",
+            text: "No uploaded icons yet. Upload an icon above to get started."
+          }));
+          return;
+        }
+        icons.forEach(function(icon) {
+          var iconItem = el("div", {
+            class: "a11y-widget-field",
+            style: "display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; border: 1px solid var(--a11y-color-border); border-radius: var(--a11y-radius); margin-bottom: 0.5rem;"
+          });
+
+          IconDB.getIcon(icon.iconId).then(function(dataUrl) {
+            if (dataUrl) {
+              var img = el("img", {
+                src: dataUrl,
+                alt: icon.name,
+                style: "width: 32px; height: 32px; object-fit: contain; border-radius: 4px;"
+              });
+              iconItem.appendChild(img);
+            }
+          }).catch(function() {});
+
+          var nameSpan = el("span", { text: icon.name, style: "flex: 1;" });
+          iconItem.appendChild(nameSpan);
+
+          var useBtn = el("button", {
+            type: "button",
+            class: "a11y-widget-btn",
+            text: "Use",
+            style: "padding: 0.25rem 0.5rem; font-size: 12px;"
+          });
+          useBtn.addEventListener("click", function() {
+            var updatedPrefs = assign({}, prefs);
+            updatedPrefs.iconId = icon.iconId;
+            onChange({ iconId: icon.iconId });
+            var toggle = document.getElementById("a11y-widget-toggle");
+            renderIcon(updatedPrefs, toggle);
+          });
+          iconItem.appendChild(useBtn);
+
+          var deleteBtn = el("button", {
+            type: "button",
+            class: "a11y-widget-btn",
+            text: "Delete",
+            style: "padding: 0.25rem 0.5rem; font-size: 12px; background: #dc3545; color: white;"
+          });
+          deleteBtn.addEventListener("click", function() {
+            if (confirm("Delete this icon?")) {
+              IconDB.deleteIcon(icon.iconId).then(function() {
+                loadUploadedIcons();
+                if (prefs.iconId === icon.iconId) {
+                  var updatedPrefs = assign({}, prefs);
+                  updatedPrefs.iconId = null;
+                  onChange({ iconId: null });
+                  var toggle = document.getElementById("a11y-widget-toggle");
+                  renderIcon(updatedPrefs, toggle);
+                }
+              }).catch(function(err) {
+                console.error("Failed to delete icon:", err);
+                alert("Failed to delete icon. Please try again.");
+              });
+            }
+          });
+          iconItem.appendChild(deleteBtn);
+
+          iconsList.appendChild(iconItem);
+        });
+      }).catch(function(err) {
+        console.error("Failed to load icons:", err);
+        iconsList.innerHTML = "";
+        iconsList.appendChild(el("div", {
+          class: "a11y-widget-help",
+          text: "Unable to load uploaded icons. IndexedDB may not be available."
+        }));
+      });
+    }
+
+    loadUploadedIcons();
 
     var iconResetRow = el("div", { class: "a11y-widget-row" });
     var iconResetBtn = el("button", { type: "button", class: "a11y-widget-btn", text: "Reset Icon Style", "aria-label": "Reset accessibility button icon style" });
@@ -5650,7 +5776,7 @@
     var cfg = getConfig();
 
     // QA / deploy verification: check in console `window.__A11Y_WIDGET_BUILD__` and Network for this filename (not legacy a11y-widget.js).
-    window.__A11Y_WIDGET_BUILD__ = "a11y-widget-v1.6.8.js";
+    window.__A11Y_WIDGET_BUILD__ = "a11y-widget-v1.6.9.js";
 
     // Namespace guard
     if (window.__a11yWidget && window.__a11yWidget.__loaded) return;
@@ -5824,7 +5950,7 @@
         open: function () { widget.open(); },
         close: function () { widget.close(); },
         toggle: function () { widget.toggle(); },
-        getBuild: function () { return window.__A11Y_WIDGET_BUILD__ || "a11y-widget-v1.6.8.js"; },
+        getBuild: function () { return window.__A11Y_WIDGET_BUILD__ || "a11y-widget-v1.6.9.js"; },
         getPrefs: function () { return assign({}, prefs); },
         setPrefs: function (next) {
           prefs = normalizePrefs(assign(prefs, next || {}));

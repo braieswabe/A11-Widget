@@ -370,12 +370,12 @@ initA11yWidget({ siteId: "example.com" });
 
 1. ✅ Update root `package.json` to use published version:
    ```json
-   "@careerdriver/a11y-widget": "^1.6.8"
+   "@careerdriver/a11y-widget": "^1.6.9"
    ```
 
 2. ✅ Update `website/package.json` to use published version:
    ```json
-   "@careerdriver/a11y-widget": "^1.6.8"
+   "@careerdriver/a11y-widget": "^1.6.9"
    ```
 
 3. ✅ Update README.md with npm installation instructions

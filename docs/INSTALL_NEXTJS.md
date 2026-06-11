@@ -27,7 +27,7 @@ export default function RootLayout({
       <head>
         {/* Just one line - widget loads automatically! */}
         <Script 
-          src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader-v1.6.8.js" 
+          src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader-v1.6.9.js" 
           strategy="afterInteractive"
         />
       </head>
@@ -61,7 +61,7 @@ export default function RootLayout({
           `}
         </Script>
         <Script 
-          src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader-v1.6.8.js" 
+          src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader-v1.6.9.js" 
           strategy="afterInteractive"
         />
       </head>

@@ -1,11 +1,10 @@
 // Current widget release label (display/docs) and live GitHub CDN ref
-export const WIDGET_VERSION = 'v1.6.8'
-// jsDelivr serves the versioned runtime reliably from main; the v1.6.8 tag is missing that file on CDN
-export const WIDGET_CDN_REF = 'main'
+export const WIDGET_VERSION = 'v1.6.9'
+export const WIDGET_CDN_REF = 'v1.6.9'
 
 // Filenames on the CDN for this release (keep in sync with repo root assets)
-export const WIDGET_LOADER_FILENAME = 'a11y-widget-loader-v1.6.8.js'
-export const WIDGET_RUNTIME_FILENAME = 'a11y-widget-v1.6.8.js'
+export const WIDGET_LOADER_FILENAME = 'a11y-widget-loader-v1.6.9.js'
+export const WIDGET_RUNTIME_FILENAME = 'a11y-widget-v1.6.9.js'
 
 // CDN base URL for the widget
 export const WIDGET_CDN_BASE = `https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@${WIDGET_CDN_REF}`

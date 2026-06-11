@@ -94,7 +94,7 @@ initA11yWidget({ siteId: "test.local" });
 - ✅ CDN URLs unchanged (hardcoded GitHub CDN paths remain)
 - ✅ npm usage does NOT affect CDN behavior
 
-**CDN Loader Code** (a11y-widget-loader-v1.6.8.js:652-654):
+**CDN Loader Code** (a11y-widget-loader-v1.6.9.js:652-654):
 ```javascript
 if (window.__a11yWidgetInit) {
   window.__a11yWidgetInit(window.__A11Y_WIDGET__);
@@ -107,7 +107,7 @@ if (window.__a11yWidgetInit) {
 ### ✅ Documentation Sanity Check - VERIFIED
 
 **Root README.md**:
-- ✅ CDN examples use correct version (`@v1.6.8`)
+- ✅ CDN examples use correct version (`@v1.6.9`)
 - ✅ NPM examples use placeholder (`@scope/a11y-widget`)
 - ✅ Both installation methods documented
 - ✅ Configuration examples match actual API
@@ -120,7 +120,7 @@ if (window.__a11yWidgetInit) {
 **Version Consistency**:
 - ✅ Widget version: `1.1.0`
 - ✅ Package version: `1.1.0`
-- ✅ CDN version tag: `@v1.6.8`
+- ✅ CDN version tag: `@v1.6.9`
 - ✅ All references consistent
 
 ## Summary
