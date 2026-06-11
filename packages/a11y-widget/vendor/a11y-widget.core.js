@@ -1,14 +1,14 @@
-/*! a11y-widget.js — Accessibility Widget v1.6.10 (IIFE, no deps)
+/*! a11y-widget.js — Accessibility Widget v1.6.9 (IIFE, no deps)
     Scope: widget UI + configured surfaces only.
     No claims of full-site ADA compliance.
     
     GitHub Repository: https://github.com/braieswabe/A11-Widget
     CDN: https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/
     
-    Version 1.6.10 Changelog:
-    - Restored Icon Style tab with full icon editing (design, size, colors, presets)
-    - Restored custom icon upload with IndexedDB persistence
+    Version 1.6.9 Changelog:
+    - Restored Icon Style tab with icon editing (design, size, colors, presets)
     - New default universal-access icon (blue circle with white figure)
+    - Custom icon upload UI disabled in panel (runtime support preserved)
 
     QA Remediation (v1.6.8 release):
     - Hardened checkForUpdates with timeout, deterministic states, fallback reload button
@@ -1391,7 +1391,7 @@
     }
     setUpdateStatus(statusEl, "Checking latest version...", false);
 
-    var probeUrl = CDN_BASE + "a11y-widget-v1.6.10.js?_a11y_check=" + Date.now();
+    var probeUrl = CDN_BASE + "a11y-widget-v1.6.9.js?_a11y_check=" + Date.now();
     var supportsFetch = typeof fetch !== "undefined";
 
     function finish(buttonText) {
@@ -3068,8 +3068,8 @@
       "aria-label": "Open accessibility settings" + shortcutText,
       "aria-haspopup": "dialog",
       "aria-keyshortcuts": cfg.keyboardShortcut || undefined,
-      "data-a11y-widget-version": "1.6.10",
-      title: (shortcutHint || "Accessibility Settings") + " - Widget v1.6.10",
+      "data-a11y-widget-version": "1.6.9",
+      title: (shortcutHint || "Accessibility Settings") + " - Widget v1.6.9",
       html: logoSVG
     });
     
@@ -5778,7 +5778,7 @@
     var cfg = getConfig();
 
     // QA / deploy verification: check in console `window.__A11Y_WIDGET_BUILD__` and Network for this filename (not legacy a11y-widget.js).
-    window.__A11Y_WIDGET_BUILD__ = "a11y-widget-v1.6.10.js";
+    window.__A11Y_WIDGET_BUILD__ = "a11y-widget-v1.6.9.js";
 
     // Namespace guard
     if (window.__a11yWidget && window.__a11yWidget.__loaded) return;
@@ -5952,7 +5952,7 @@
         open: function () { widget.open(); },
         close: function () { widget.close(); },
         toggle: function () { widget.toggle(); },
-        getBuild: function () { return window.__A11Y_WIDGET_BUILD__ || "a11y-widget-v1.6.10.js"; },
+        getBuild: function () { return window.__A11Y_WIDGET_BUILD__ || "a11y-widget-v1.6.9.js"; },
         getPrefs: function () { return assign({}, prefs); },
         setPrefs: function (next) {
           prefs = normalizePrefs(assign(prefs, next || {}));

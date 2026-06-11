@@ -6,9 +6,9 @@
     CDN: https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/
     
     Version 1.6.9 Changelog:
-    - Restored Icon Style tab with full icon editing (design, size, colors, presets)
-    - Restored custom icon upload with IndexedDB persistence
+    - Restored Icon Style tab with icon editing (design, size, colors, presets)
     - New default universal-access icon (blue circle with white figure)
+    - Custom icon upload UI disabled in panel (runtime support preserved)
 
     QA Remediation (v1.6.8 release):
     - Hardened checkForUpdates with timeout, deterministic states, fallback reload button
