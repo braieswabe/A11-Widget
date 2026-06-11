@@ -82,7 +82,7 @@ If your API is hosted at a different domain, configure the auth API base:
 <script>
   window.__A11Y_AUTH_API_BASE__ = "https://your-api-domain.com/api/auth";
 </script>
-<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader-v1.6.9.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader-v1.6.10.js" defer></script>
 ```
 
 ## Step 7: Test the System
@@ -98,7 +98,7 @@ If your API is hosted at a different domain, configure the auth API base:
 
 1. Include the widget loader on a test page:
 ```html
-<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader-v1.6.9.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader-v1.6.10.js" defer></script>
 ```
 
 2. The login modal should appear

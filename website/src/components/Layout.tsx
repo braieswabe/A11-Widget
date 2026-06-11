@@ -160,7 +160,7 @@ export default function Layout({ children }: LayoutProps) {
       
       document.head.appendChild(cssLink)
 
-      // Load widget script directly (updated v1.6.9 tabbed widget)
+      // Load widget script directly (updated v1.6.10 tabbed widget)
       const widgetScript = document.createElement('script')
       widgetScript.id = 'a11y-widget-script'
       
