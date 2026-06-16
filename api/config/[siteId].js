@@ -1,4 +1,5 @@
 import { getDb } from '../utils/db.js';
+import { validateWidgetAccess } from '../utils/license.js';
 
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') {
@@ -9,13 +10,18 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { siteId } = req.query;
+  const { siteId, licenseKey, apiKey } = req.query;
 
   if (!siteId) {
     return res.status(400).json({ error: 'Missing siteId' });
   }
 
   try {
+    const access = await validateWidgetAccess(req, { siteId, licenseKey, apiKey });
+    if (!access.allowed) {
+      return res.status(access.status || 403).json({ error: access.error });
+    }
+
     const sql = getDb();
     const result = await sql`
       SELECT config FROM site_configs WHERE site_id = ${siteId}
@@ -33,4 +39,3 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Internal server error' });
   }
 }
-

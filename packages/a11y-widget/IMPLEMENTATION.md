@@ -2,12 +2,12 @@
 
 ## Changes Made
 
-### 1. Widget Core Patch (a11y-widget.js & a11y-widget-v1.6.10.js)
+### 1. Widget Core Patch (a11y-widget.js & a11y-widget-v1.7.0.js)
 - Removed auto-execution: Changed `init();` at end to expose `window.__a11yWidgetInit = init;`
 - Added config parameter: `init(userConfig)` now accepts optional config and merges with `window.__A11Y_WIDGET__`
 - No other logic changes
 
-### 2. CDN Loader Update (a11y-widget-loader-v1.6.10.js)
+### 2. CDN Loader Update (a11y-widget-loader-v1.7.0.js)
 - Updated `script.onload` handler to call `window.__a11yWidgetInit(window.__A11Y_WIDGET__)` after script loads
 - Maintains auto-initialization behavior for CDN usage
 
@@ -19,7 +19,7 @@ packages/a11y-widget/
 │   ├── init.js           # Init wrapper with SSR guards
 │   └── types.d.ts        # TypeScript definitions
 ├── vendor/
-│   └── a11y-widget.core.js  # Widget core (copied from a11y-widget-v1.6.10.js)
+│   └── a11y-widget.core.js  # Widget core (copied from a11y-widget-v1.7.0.js)
 ├── assets/
 │   └── a11y-widget.css   # CSS file
 ├── package.json
@@ -42,7 +42,7 @@ packages/a11y-widget/
 <script>
   window.__A11Y_WIDGET__ = { siteId: "example.com" };
 </script>
-<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader-v1.6.10.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.7.0/a11y-widget-loader-v1.7.0.js" defer></script>
 ```
 
 ### NPM (New - Additional Option)

@@ -91,7 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   function logout() {
     if (token) {
-      fetch('/api/admin/login', {
+      fetch('/api/auth/logout', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`

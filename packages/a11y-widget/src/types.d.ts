@@ -9,6 +9,16 @@ export interface A11yWidgetConfig {
   initialOpen?: boolean;
   enableTelemetry?: boolean;
   telemetryEndpoint?: string | null;
+  translateEndpoint?: string | null;
+  heartbeatEndpoint?: string | null;
+  errorEndpoint?: string | null;
+  supportEndpoint?: string | null;
+  supportEnabled?: boolean;
+  heartbeatIntervalMs?: number;
+  licenseKey?: string | null;
+  apiKey?: string | null;
+  featureOrder?: string[];
+  hiddenFeatures?: string[];
   keyboardShortcut?: string | null;
   globalMode?: boolean;
   surfaces?: string[];

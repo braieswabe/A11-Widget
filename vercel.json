@@ -36,11 +36,11 @@
         },
         {
           "key": "Access-Control-Allow-Methods",
-          "value": "GET, POST, OPTIONS"
+          "value": "GET, POST, PATCH, PUT, DELETE, OPTIONS"
         },
         {
           "key": "Access-Control-Allow-Headers",
-          "value": "Content-Type"
+          "value": "Content-Type, Authorization, X-A11Y-API-Key, X-A11Y-License-Key, X-Cron-Secret"
         }
       ]
     },
@@ -106,4 +106,3 @@
     }
   ]
 }
-

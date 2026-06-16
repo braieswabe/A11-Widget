@@ -41,6 +41,16 @@
     initialOpen: false,
     enableTelemetry: false,
     telemetryEndpoint: null,         // Optional: backend endpoint for telemetry
+    translateEndpoint: null,
+    heartbeatEndpoint: null,
+    errorEndpoint: null,
+    supportEndpoint: null,
+    supportEnabled: true,
+    heartbeatIntervalMs: 300000,
+    licenseKey: null,
+    apiKey: null,
+    featureOrder: null,
+    hiddenFeatures: null,
     keyboardShortcut: "Alt+A",       // Global keyboard shortcut to open/close widget (Alt+A, Ctrl+Alt+A, or null to disable)
     globalMode: false,               // If true, apply transformations to entire website (not just declared surfaces)
     surfaces: ["body"],              // CSS selectors to mark as data-a11y-surface="true" (ignored if globalMode is true)
@@ -907,6 +917,8 @@
     magnifierEnabled: false,
     magnifierZoom: 2.0,              // Zoom level (1.5–5.0)
     toolbarMode: false,               // Toolbar mode (floating bottom toolbar)
+    featureOrder: [],
+    hiddenFeatures: [],
     // Widget appearance customization
     widgetTheme: "default",           // default|light|dark|high-contrast|compact|spacious|custom
     widgetCustomization: {
@@ -950,6 +962,8 @@
     if (!!p.cursorEnabled && !cursorSize) {
       cursorSize = "medium";
     }
+    var featureOrder = Array.isArray(p.featureOrder) ? p.featureOrder.filter(function(item) { return typeof item === "string"; }) : [];
+    var hiddenFeatures = Array.isArray(p.hiddenFeatures) ? p.hiddenFeatures.filter(function(item) { return typeof item === "string"; }) : [];
     var out = {
       contrast: (p.contrast === "high" || p.contrast === "dark" || p.contrast === "light") ? p.contrast : "default",
       fontScale: clamp(Number(p.fontScale || 1.0), 1.0, 1.6),
@@ -983,6 +997,8 @@
       magnifierEnabled: !!p.magnifierEnabled,
       magnifierZoom: clamp(Number(p.magnifierZoom || 2.0), 1.5, 5.0),
       toolbarMode: !!p.toolbarMode,
+      featureOrder: featureOrder,
+      hiddenFeatures: hiddenFeatures,
       globalMode: !!p.globalMode,
       // Widget appearance customization
       widgetTheme: (p.widgetTheme && WIDGET_THEMES[p.widgetTheme]) ? p.widgetTheme : "default",
@@ -1003,6 +1019,119 @@
       iconId: p.iconId || null
     };
     return out;
+  }
+
+  var CUSTOMIZABLE_FEATURES = [
+    { id: "presets", label: "Quick Presets", panel: "quick", selectors: [".a11y-widget-presets"] },
+    { id: "contrast", label: "Contrast", panel: "quick", selectors: ["#a11y-contrast"] },
+    { id: "fontScale", label: "Text Size", panel: "quick", selectors: ["#a11y-font"] },
+    { id: "spacing", label: "Text Spacing", panel: "quick", selectors: ["#a11y-spacing"] },
+    { id: "readableFont", label: "Readable Font", panel: "quick", selectors: ["#a11y-readable-font"] },
+    { id: "reduceMotion", label: "Reduce Motion", panel: "quick", selectors: ["#a11y-reduce-motion"] },
+    { id: "textToSpeech", label: "Text-to-Speech", panel: "reading", selectors: ["#a11y-text-to-speech", "#a11y-tts-controls"] },
+    { id: "readingRuler", label: "Reading Ruler", panel: "reading", selectors: ["#a11y-reading-ruler"] },
+    { id: "screenMask", label: "Screen Mask", panel: "reading", selectors: ["#a11y-screen-mask"] },
+    { id: "textOnlyMode", label: "Text-Only Mode", panel: "reading", selectors: ["#a11y-text-only-mode"] },
+    { id: "margins", label: "Adjustable Margins", panel: "reading", selectors: ["#a11y-margins", "#a11y-margins-controls"] },
+    { id: "globalMode", label: "Global Mode", panel: "advanced", selectors: ["#a11y-global-mode", "#a11y-global-mode-controls"] },
+    { id: "cursorOptions", label: "Large Cursor", panel: "advanced", selectors: ["#a11y-cursor", "#a11y-cursor-size-controls"] },
+    { id: "magnifier", label: "Page Magnifier", panel: "advanced", selectors: ["#a11y-magnifier", "#a11y-magnifier-controls"] },
+    { id: "dictionary", label: "Dictionary Lookup", panel: "advanced", selectors: ["#a11y-dictionary"] },
+    { id: "translation", label: "Translation", panel: "advanced", selectors: ["#a11y-translation", "#a11y-translation-controls"] }
+  ];
+
+  function getDefaultFeatureOrder(cfg) {
+    var order = [];
+    for (var i = 0; i < CUSTOMIZABLE_FEATURES.length; i++) {
+      var feature = CUSTOMIZABLE_FEATURES[i];
+      if (!cfg.features || cfg.features[feature.id] !== false) {
+        order.push(feature.id);
+      }
+    }
+    return order;
+  }
+
+  function normalizeFeatureOrder(order, cfg) {
+    var defaults = getDefaultFeatureOrder(cfg);
+    var seen = {};
+    var normalized = [];
+    if (Array.isArray(order)) {
+      for (var i = 0; i < order.length; i++) {
+        if (defaults.indexOf(order[i]) !== -1 && !seen[order[i]]) {
+          normalized.push(order[i]);
+          seen[order[i]] = true;
+        }
+      }
+    }
+    for (var j = 0; j < defaults.length; j++) {
+      if (!seen[defaults[j]]) normalized.push(defaults[j]);
+    }
+    return normalized;
+  }
+
+  function getFeatureDefinition(featureId) {
+    for (var i = 0; i < CUSTOMIZABLE_FEATURES.length; i++) {
+      if (CUSTOMIZABLE_FEATURES[i].id === featureId) return CUSTOMIZABLE_FEATURES[i];
+    }
+    return null;
+  }
+
+  function getFeatureNodes(root, featureId) {
+    var def = getFeatureDefinition(featureId);
+    var nodes = [];
+    if (!def || !root) return nodes;
+    for (var i = 0; i < def.selectors.length; i++) {
+      var matches = root.querySelectorAll(def.selectors[i]);
+      for (var j = 0; j < matches.length; j++) {
+        var node = matches[j].classList && matches[j].classList.contains("a11y-widget-row") ? matches[j] : matches[j].closest(".a11y-widget-row");
+        if (!node || nodes.indexOf(node) !== -1) continue;
+        node.setAttribute("data-a11y-feature-id", featureId);
+        nodes.push(node);
+      }
+    }
+    return nodes;
+  }
+
+  function applyFeatureLayout(root, prefs, cfg) {
+    if (!root) return;
+    var panelMap = {
+      quick: root.querySelector("#a11y-tab-quick-fixes"),
+      reading: root.querySelector("#a11y-tab-reading"),
+      advanced: root.querySelector("#a11y-tab-advanced")
+    };
+    var order = normalizeFeatureOrder((prefs && prefs.featureOrder && prefs.featureOrder.length ? prefs.featureOrder : cfg.featureOrder), cfg);
+    var hidden = (prefs && Array.isArray(prefs.hiddenFeatures) && prefs.hiddenFeatures.length ? prefs.hiddenFeatures : cfg.hiddenFeatures) || [];
+
+    for (var i = 0; i < order.length; i++) {
+      var def = getFeatureDefinition(order[i]);
+      var panel = def && panelMap[def.panel];
+      if (!panel) continue;
+      var nodes = getFeatureNodes(root, order[i]);
+      for (var n = 0; n < nodes.length; n++) {
+        nodes[n].style.display = hidden.indexOf(order[i]) !== -1 ? "none" : "";
+        panel.appendChild(nodes[n]);
+      }
+    }
+  }
+
+  function getFeatureDisableDelta(featureId) {
+    var delta = {};
+    if (featureId === "contrast") delta.contrast = "default";
+    if (featureId === "fontScale") delta.fontScale = 1.0;
+    if (featureId === "spacing") delta.spacing = "normal";
+    if (featureId === "readableFont") delta.readableFont = false;
+    if (featureId === "reduceMotion") delta.reduceMotion = false;
+    if (featureId === "globalMode") delta.globalMode = false;
+    if (featureId === "textToSpeech") delta.textToSpeechEnabled = false;
+    if (featureId === "readingRuler") delta.readingRulerEnabled = false;
+    if (featureId === "screenMask") delta.screenMaskEnabled = false;
+    if (featureId === "textOnlyMode") delta.textOnlyMode = false;
+    if (featureId === "margins") delta.marginsEnabled = false;
+    if (featureId === "cursorOptions") delta.cursorEnabled = false;
+    if (featureId === "magnifier") delta.magnifierEnabled = false;
+    if (featureId === "dictionary") delta.dictionaryEnabled = false;
+    if (featureId === "translation") delta.translationEnabled = false;
+    return delta;
   }
 
   // Helper function to get contrasting color (must be top-level for applyPrefs to access)
@@ -1352,6 +1481,32 @@
     }
   }
 
+  function hasHostAffectingPrefs(prefs) {
+    prefs = normalizePrefs(prefs || {});
+    return prefs.contrast !== PREF_DEFAULTS.contrast ||
+      prefs.fontScale !== PREF_DEFAULTS.fontScale ||
+      prefs.spacing !== PREF_DEFAULTS.spacing ||
+      prefs.readableFont !== PREF_DEFAULTS.readableFont ||
+      prefs.reduceMotion !== PREF_DEFAULTS.reduceMotion ||
+      prefs.globalMode !== PREF_DEFAULTS.globalMode ||
+      prefs.readingRulerEnabled !== PREF_DEFAULTS.readingRulerEnabled ||
+      prefs.screenMaskEnabled !== PREF_DEFAULTS.screenMaskEnabled ||
+      prefs.textOnlyMode !== PREF_DEFAULTS.textOnlyMode ||
+      prefs.marginsEnabled !== PREF_DEFAULTS.marginsEnabled ||
+      prefs.cursorEnabled !== PREF_DEFAULTS.cursorEnabled ||
+      prefs.dictionaryEnabled !== PREF_DEFAULTS.dictionaryEnabled ||
+      prefs.magnifierEnabled !== PREF_DEFAULTS.magnifierEnabled ||
+      prefs.translationEnabled !== PREF_DEFAULTS.translationEnabled;
+  }
+
+  function syncHostPreferenceScope(prefs, cfg) {
+    if (hasHostAffectingPrefs(prefs)) {
+      markSurfaces(cfg.surfaces, prefs.globalMode || cfg.globalMode || false);
+    } else {
+      clearMarkedSurfaces();
+    }
+  }
+
   // --- Telemetry ------------------------------------------------------------
   function emit(cfg, evt, payload) {
     if (!cfg.enableTelemetry) return;
@@ -1376,6 +1531,136 @@
         });
       }
     } catch (e) {}
+  }
+
+  function getApiBase(cfg) {
+    if (cfg.telemetryEndpoint) return cfg.telemetryEndpoint.replace(/\/api\/telemetry$/, "");
+    return "";
+  }
+
+  function getBrowserInfo() {
+    return {
+      userAgent: navigator.userAgent || "",
+      language: navigator.language || "",
+      platform: navigator.platform || "",
+      viewport: {
+        width: window.innerWidth || 0,
+        height: window.innerHeight || 0
+      }
+    };
+  }
+
+  function widgetEndpoint(cfg, key, fallbackPath) {
+    if (cfg[key]) return cfg[key];
+    var apiBase = getApiBase(cfg);
+    return apiBase ? apiBase + fallbackPath : null;
+  }
+
+  function postWidgetJson(cfg, endpoint, payload) {
+    if (!endpoint || typeof fetch === "undefined") return Promise.resolve(false);
+    var headers = { "Content-Type": "application/json" };
+    if (cfg.apiKey || cfg.licenseKey) {
+      headers["X-A11Y-API-Key"] = cfg.apiKey || cfg.licenseKey;
+    }
+    return fetch(endpoint, {
+      method: "POST",
+      headers: headers,
+      body: JSON.stringify(assign({
+        siteId: cfg.siteId,
+        url: window.location.href,
+        widgetVersion: window.__A11Y_WIDGET_BUILD__ || "a11y-widget-v1.6.10.js",
+        licenseKey: cfg.licenseKey || null,
+        apiKey: cfg.apiKey || null
+      }, payload || {}))
+    }).then(function(response) {
+      return response.ok;
+    }).catch(function() {
+      return false;
+    });
+  }
+
+  var recentWidgetErrors = [];
+  var reportingWidgetError = false;
+
+  function rememberWidgetError(errorInfo) {
+    recentWidgetErrors.push(assign({ ts: nowISO() }, errorInfo || {}));
+    if (recentWidgetErrors.length > 10) recentWidgetErrors.shift();
+  }
+
+  function reportWidgetError(cfg, errorInfo) {
+    rememberWidgetError(errorInfo);
+    if (reportingWidgetError) return Promise.resolve(false);
+    reportingWidgetError = true;
+    var endpoint = widgetEndpoint(cfg, "errorEndpoint", "/api/widget/errors");
+    return postWidgetJson(cfg, endpoint, assign({
+      severity: "error",
+      source: "widget",
+      browser: getBrowserInfo()
+    }, errorInfo || {})).then(function(result) {
+      reportingWidgetError = false;
+      return result;
+    }).catch(function() {
+      reportingWidgetError = false;
+      return false;
+    });
+  }
+
+  function setupWidgetErrorCapture(cfg) {
+    if (window.__a11yWidgetErrorCaptureInstalled) return;
+    window.__a11yWidgetErrorCaptureInstalled = true;
+    window.addEventListener("error", function(event) {
+      var target = event.target || {};
+      var isAssetError = target && (target.id === "a11y-widget-script" || target.id === "a11y-widget-stylesheet");
+      var message = event.message || (isAssetError ? "Widget asset failed to load" : "");
+      if (!message && !isAssetError) return;
+      reportWidgetError(cfg, {
+        severity: isAssetError ? "critical" : "error",
+        source: isAssetError ? "asset" : "window_error",
+        message: message,
+        stack: event.error && event.error.stack ? event.error.stack : null,
+        metadata: {
+          filename: event.filename || target.src || target.href || null,
+          lineno: event.lineno || null,
+          colno: event.colno || null
+        }
+      });
+    }, true);
+    window.addEventListener("unhandledrejection", function(event) {
+      var reason = event.reason || {};
+      reportWidgetError(cfg, {
+        severity: "error",
+        source: "unhandled_rejection",
+        message: reason.message || String(reason),
+        stack: reason.stack || null
+      });
+    });
+  }
+
+  function sendWidgetHeartbeat(cfg) {
+    var endpoint = widgetEndpoint(cfg, "heartbeatEndpoint", "/api/widget/heartbeat");
+    return postWidgetJson(cfg, endpoint, {
+      metadata: {
+        build: window.__A11Y_WIDGET_BUILD__ || "a11y-widget-v1.6.10.js",
+        position: cfg.position
+      }
+    });
+  }
+
+  function startWidgetHeartbeat(cfg) {
+    sendWidgetHeartbeat(cfg);
+    var interval = Math.max(60000, Number(cfg.heartbeatIntervalMs || 300000));
+    if (window.__a11yWidgetHeartbeatTimer) clearInterval(window.__a11yWidgetHeartbeatTimer);
+    window.__a11yWidgetHeartbeatTimer = setInterval(function() {
+      sendWidgetHeartbeat(cfg);
+    }, interval);
+  }
+
+  function submitSupportCase(cfg, payload) {
+    var endpoint = widgetEndpoint(cfg, "supportEndpoint", "/api/support/cases");
+    return postWidgetJson(cfg, endpoint, assign({
+      browser: getBrowserInfo(),
+      recentErrors: recentWidgetErrors.slice()
+    }, payload || {}));
   }
 
   var WIDGET_VERSION_SIGNATURE_KEY = "__a11y_widget_version_signature__";
@@ -2294,6 +2579,8 @@
   var translationInProgress = false;
   var translationStatusEl = null;
   var translatedEntries = [];
+  var translationSkipped = [];
+  var activeWidgetConfig = null;
 
   function showTranslationStatus(message, isError, isPersistent) {
     if (!translationStatusEl) {
@@ -2339,29 +2626,45 @@
     }
   }
 
-  function translateText(text, targetLang) {
+  function translateText(text, targetLang, cfg) {
     if (!text || !targetLang || targetLang === "en") return Promise.resolve(null);
-    
-    // Use MyMemory API with improved error handling
-    var apiUrl = "https://api.mymemory.translated.net/get?q=" + encodeURIComponent(text.substring(0, 500)) + "&langpair=en|" + targetLang;
-    
-    return fetch(apiUrl)
+
+    var endpoint = widgetEndpoint(cfg || {}, "translateEndpoint", "/api/translate");
+    if (!endpoint) return Promise.resolve(null);
+
+    var headers = { "Content-Type": "application/json" };
+    if (cfg && (cfg.apiKey || cfg.licenseKey)) {
+      headers["X-A11Y-API-Key"] = cfg.apiKey || cfg.licenseKey;
+    }
+
+    return fetch(endpoint, {
+      method: "POST",
+      headers: headers,
+      body: JSON.stringify({
+        siteId: cfg && cfg.siteId,
+        text: text,
+        sourceLang: "en",
+        targetLang: targetLang,
+        licenseKey: cfg && cfg.licenseKey,
+        apiKey: cfg && cfg.apiKey
+      })
+    })
       .then(function(response) {
         if (!response.ok) throw new Error("Translation failed");
         return response.json();
       })
       .then(function(data) {
-        if (data && data.responseData && data.responseData.translatedText) {
-          var translated = data.responseData.translatedText;
-          // Check for quota exceeded or error messages
-          if (translated.indexOf("MYMEMORY WARNING") === -1 && 
-              translated.indexOf("PLEASE SELECT TWO DISTINCT") === -1) {
-            return translated;
-          }
-        }
-        return null;
+        return data && (data.translatedText || (data.translations && data.translations[0])) || null;
       })
-      .catch(function() {
+      .catch(function(error) {
+        if (cfg) {
+          reportWidgetError(cfg, {
+            severity: "warning",
+            source: "translation",
+            message: error.message || "Translation failed",
+            metadata: { targetLang: targetLang, textSample: text.substring(0, 120) }
+          });
+        }
         return null;
       });
   }
@@ -2387,13 +2690,7 @@
   function collectTranslationTargets(surface, targets) {
     if (!surface || isWidgetElement(surface)) return;
 
-    // 1) Text nodes
-    var walker = document.createTreeWalker(
-      surface,
-      NodeFilter.SHOW_TEXT,
-      null,
-      false
-    );
+    var walker = document.createTreeWalker(surface, NodeFilter.SHOW_TEXT, null, false);
     var node;
     while ((node = walker.nextNode())) {
       if (!node.parentElement || isWidgetElement(node.parentElement)) continue;
@@ -2404,16 +2701,11 @@
 
       var originalText = node.textContent || "";
       if (!isTranslatableText(originalText)) continue;
-
-      targets.push({
-        type: "text",
-        node: node,
-        text: originalText.trim(),
-        original: originalText
-      });
+      targets.push({ type: "text", node: node, text: originalText.trim(), original: originalText });
     }
 
-    // 2) Expanded set of translatable attributes
+    if (!surface.querySelectorAll) return;
+
     var attrSelector = [
       "[placeholder]", "[title]", "[aria-label]", "[alt]",
       "[aria-description]", "[data-tooltip]",
@@ -2424,51 +2716,43 @@
     for (var i = 0; i < attrNodes.length; i++) {
       var el = attrNodes[i];
       if (isWidgetElement(el)) continue;
-
       for (var a = 0; a < attrs.length; a++) {
         var attr = attrs[a];
         var raw = el.getAttribute(attr);
-        if (!isTranslatableText(raw)) continue;
-        targets.push({
-          type: "attr",
-          element: el,
-          attr: attr,
-          text: raw.trim(),
-          original: raw
-        });
+        if (isTranslatableText(raw)) {
+          targets.push({ type: "attr", element: el, attr: attr, text: raw.trim(), original: raw });
+        }
       }
-
       if (el.tagName === "INPUT") {
         var inputType = (el.getAttribute("type") || "").toLowerCase();
-        if (inputType === "button" || inputType === "submit" || inputType === "reset") {
-          var valueText = el.getAttribute("value");
-          if (isTranslatableText(valueText)) {
-            targets.push({
-              type: "attr",
-              element: el,
-              attr: "value",
-              text: valueText.trim(),
-              original: valueText
-            });
-          }
+        var valueText = el.getAttribute("value");
+        if ((inputType === "button" || inputType === "submit" || inputType === "reset") && isTranslatableText(valueText)) {
+          targets.push({ type: "attr", element: el, attr: "value", text: valueText.trim(), original: valueText });
         }
       }
     }
 
-    // 3) <option> text inside <select> elements
     var options = surface.querySelectorAll("select option");
     for (var oi = 0; oi < options.length; oi++) {
       var opt = options[oi];
       if (isWidgetElement(opt)) continue;
       var optText = opt.textContent || "";
-      if (!isTranslatableText(optText)) continue;
-      if (opt.firstChild && opt.firstChild.nodeType === 3) {
-        targets.push({
-          type: "text",
-          node: opt.firstChild,
-          text: optText.trim(),
-          original: optText
-        });
+      if (isTranslatableText(optText) && opt.firstChild && opt.firstChild.nodeType === 3) {
+        targets.push({ type: "text", node: opt.firstChild, text: optText.trim(), original: optText });
+      }
+    }
+
+    var elementNodes = surface.querySelectorAll("*");
+    for (var sn = 0; sn < elementNodes.length; sn++) {
+      var candidate = elementNodes[sn];
+      if (isWidgetElement(candidate)) continue;
+      if (candidate.shadowRoot) collectTranslationTargets(candidate.shadowRoot, targets);
+      if (candidate.tagName === "IFRAME") {
+        translationSkipped.push({ type: "iframe", reason: "Iframe content may be cross-origin or separately rendered" });
+      } else if (candidate.tagName === "CANVAS") {
+        translationSkipped.push({ type: "canvas", reason: "Canvas-rendered text is not DOM-accessible" });
+      } else if (candidate.tagName === "IMG" && !candidate.getAttribute("alt")) {
+        translationSkipped.push({ type: "image", reason: "Image has no alt text to translate" });
       }
     }
   }
@@ -2476,7 +2760,7 @@
   // --- Translation MutationObserver for dynamic content ----------------------
   var translationObserver = null;
 
-  function startTranslationObserver(prefs) {
+  function startTranslationObserver(prefs, cfg) {
     stopTranslationObserver();
     if (!prefs.translationEnabled || prefs.translationLanguage === "en") return;
     if (typeof MutationObserver === "undefined") return;
@@ -2500,7 +2784,7 @@
         }
         if (newTargets.length > 0) {
           translationNodes = translationNodes.concat(newTargets);
-          translateBatch(newTargets, targetLang, 0, newTargets.length);
+          translateBatch(newTargets, targetLang, 0, newTargets.length, cfg);
         }
       }, 300);
     });
@@ -2546,6 +2830,7 @@
     // Clear previous translation state
     removeTranslation();
     translationNodes = [];
+    translationSkipped = [];
     translationInProgress = true;
 
     // Collect all translatable targets from surfaces.
@@ -2564,13 +2849,13 @@
     showTranslationStatus('<span style="animation: pulse 1s infinite">🌍</span> Translating to ' + getLanguageName(targetLang) + '... (0/' + totalNodes + ')', false, true);
 
     // Translate in batches to reduce API calls
-    translateBatch(translationNodes, targetLang, 0, totalNodes);
+    translateBatch(translationNodes, targetLang, 0, totalNodes, activeWidgetConfig);
 
     // Start observing for dynamically added content
-    startTranslationObserver(prefs);
+    startTranslationObserver(prefs, activeWidgetConfig);
   }
 
-  function translateBatch(nodes, targetLang, startIndex, totalNodes) {
+  function translateBatch(nodes, targetLang, startIndex, totalNodes, cfg) {
     var batchSize = 8; // Translate 8 nodes at a time
     var endIndex = Math.min(startIndex + batchSize, nodes.length);
     var batch = nodes.slice(startIndex, endIndex);
@@ -2595,7 +2880,7 @@
         }
 
         // Translate text
-        var promise = translateText(text, targetLang).then(function(result) {
+        var promise = translateText(text, targetLang, cfg).then(function(result) {
           if (result && result !== text) {
             translationCache[cacheKey] = result;
             return { item: item, translated: result };
@@ -2621,7 +2906,7 @@
       // Continue with next batch
       if (endIndex < nodes.length) {
         setTimeout(function() {
-          translateBatch(nodes, targetLang, endIndex, totalNodes);
+          translateBatch(nodes, targetLang, endIndex, totalNodes, cfg);
         }, 150); // Small delay to avoid rate limiting
       } else {
         translationInProgress = false;
@@ -3157,6 +3442,16 @@
       text: "Advanced Tools"
     });
 
+    var customizeTab = el("button", {
+      type: "button",
+      role: "tab",
+      "aria-selected": "false",
+      "aria-controls": "a11y-tab-customize",
+      id: "a11y-tab-customize-btn",
+      class: "a11y-widget-tab",
+      text: "Customize"
+    });
+
     var enableIconStyleTab = true;
     var iconTab = el("button", {
       type: "button",
@@ -3167,11 +3462,23 @@
       class: "a11y-widget-tab",
       text: "Icon Style"
     });
+
+    var supportTab = el("button", {
+      type: "button",
+      role: "tab",
+      "aria-selected": "false",
+      "aria-controls": "a11y-tab-support",
+      id: "a11y-tab-support-btn",
+      class: "a11y-widget-tab",
+      text: "Support"
+    });
     
     tabList.appendChild(quickFixesTab);
     tabList.appendChild(readingTab);
     tabList.appendChild(advancedTab);
+    tabList.appendChild(customizeTab);
     if (enableIconStyleTab) tabList.appendChild(iconTab);
+    if (cfg.supportEnabled !== false) tabList.appendChild(supportTab);
     tabContainer.appendChild(tabList);
     
     // Tab panels
@@ -3205,12 +3512,30 @@
       class: "a11y-widget-tab-panel",
       hidden: ""
     });
+
+    var customizePanel = el("div", {
+      id: "a11y-tab-customize",
+      role: "tabpanel",
+      "aria-labelledby": "a11y-tab-customize-btn",
+      class: "a11y-widget-tab-panel",
+      hidden: ""
+    });
+
+    var supportPanel = el("div", {
+      id: "a11y-tab-support",
+      role: "tabpanel",
+      "aria-labelledby": "a11y-tab-support-btn",
+      class: "a11y-widget-tab-panel",
+      hidden: ""
+    });
     
     // Tab switching function
     function switchTab(selectedTab, selectedPanel) {
       // Update all tabs
       var tabs = tabList.querySelectorAll(".a11y-widget-tab");
-      var panels = enableIconStyleTab ? [quickFixesPanel, readingPanel, advancedPanel, iconPanel] : [quickFixesPanel, readingPanel, advancedPanel];
+      var panels = [quickFixesPanel, readingPanel, advancedPanel, customizePanel];
+      if (enableIconStyleTab) panels.push(iconPanel);
+      if (cfg.supportEnabled !== false) panels.push(supportPanel);
       
       for (var i = 0; i < tabs.length; i++) {
         tabs[i].setAttribute("aria-selected", "false");
@@ -3238,7 +3563,9 @@
     quickFixesTab.addEventListener("click", function() { switchTab(quickFixesTab, quickFixesPanel); });
     readingTab.addEventListener("click", function() { switchTab(readingTab, readingPanel); });
     advancedTab.addEventListener("click", function() { switchTab(advancedTab, advancedPanel); });
+    customizeTab.addEventListener("click", function() { switchTab(customizeTab, customizePanel); });
     if (enableIconStyleTab) iconTab.addEventListener("click", function() { switchTab(iconTab, iconPanel); });
+    if (cfg.supportEnabled !== false) supportTab.addEventListener("click", function() { switchTab(supportTab, supportPanel); });
     
     // Keyboard navigation for tabs
     tabList.addEventListener("keydown", function(e) {
@@ -3263,7 +3590,9 @@
     content.appendChild(quickFixesPanel);
     content.appendChild(readingPanel);
     content.appendChild(advancedPanel);
+    content.appendChild(customizePanel);
     if (enableIconStyleTab) content.appendChild(iconPanel);
+    if (cfg.supportEnabled !== false) content.appendChild(supportPanel);
 
     // Icon customization
     var iconIntro = el("div", { class: "a11y-widget-row" });
@@ -3780,6 +4109,176 @@
       }
       return { row: row, checkbox: cb };
     }
+
+    function getCurrentWidgetPrefs() {
+      return normalizePrefs(assign(assign({}, PREF_DEFAULTS), Store.get(cfg.storageKey) || prefs || {}));
+    }
+
+    function renderCustomizePanel() {
+      customizePanel.innerHTML = "";
+      var current = getCurrentWidgetPrefs();
+      var order = normalizeFeatureOrder(current.featureOrder && current.featureOrder.length ? current.featureOrder : cfg.featureOrder, cfg);
+      var hidden = Array.isArray(current.hiddenFeatures) ? current.hiddenFeatures.slice() : [];
+
+      customizePanel.appendChild(el("div", { class: "a11y-widget-row" }, [
+        el("legend", { text: "Personalize tool order" }),
+        el("div", { class: "a11y-widget-help", text: "Move the tools you use most to the top, hide unused tools, or add them back later. Support always stays available." })
+      ]));
+
+      var list = el("div", { class: "a11y-widget-customize-list" });
+
+      function commit(nextOrder, nextHidden, extraDelta) {
+        var delta = assign({
+          featureOrder: nextOrder,
+          hiddenFeatures: nextHidden
+        }, extraDelta || {});
+        onChange(delta);
+        setTimeout(renderCustomizePanel, 0);
+      }
+
+      for (var i = 0; i < order.length; i++) {
+        (function(index) {
+          var featureId = order[index];
+          var def = getFeatureDefinition(featureId);
+          if (!def) return;
+          var isHidden = hidden.indexOf(featureId) !== -1;
+          var item = el("div", {
+            class: "a11y-widget-row",
+            style: "display: grid; grid-template-columns: 1fr auto; gap: 0.5rem; align-items: center;"
+          });
+          item.appendChild(el("div", {}, [
+            el("div", { text: def.label, style: "font-weight: 650; font-size: 13px;" }),
+            el("div", { class: "a11y-widget-help", text: isHidden ? "Hidden from your widget" : "Visible in your widget" })
+          ]));
+          var actions = el("div", { style: "display: flex; gap: 0.25rem; flex-wrap: wrap; justify-content: flex-end;" });
+          var upBtn = el("button", { type: "button", class: "a11y-widget-btn", text: "↑", "aria-label": "Move " + def.label + " up" });
+          upBtn.disabled = index === 0;
+          upBtn.addEventListener("click", function() {
+            if (index === 0) return;
+            var next = order.slice();
+            var tmp = next[index - 1];
+            next[index - 1] = next[index];
+            next[index] = tmp;
+            commit(next, hidden);
+          });
+          var downBtn = el("button", { type: "button", class: "a11y-widget-btn", text: "↓", "aria-label": "Move " + def.label + " down" });
+          downBtn.disabled = index === order.length - 1;
+          downBtn.addEventListener("click", function() {
+            if (index === order.length - 1) return;
+            var next = order.slice();
+            var tmp = next[index + 1];
+            next[index + 1] = next[index];
+            next[index] = tmp;
+            commit(next, hidden);
+          });
+          var visibilityBtn = el("button", {
+            type: "button",
+            class: "a11y-widget-btn",
+            text: isHidden ? "Show" : "Hide",
+            "aria-label": (isHidden ? "Show " : "Hide ") + def.label
+          });
+          visibilityBtn.addEventListener("click", function() {
+            var nextHidden = hidden.slice();
+            var extra = {};
+            if (isHidden) {
+              nextHidden = nextHidden.filter(function(item) { return item !== featureId; });
+            } else {
+              if (nextHidden.indexOf(featureId) === -1) nextHidden.push(featureId);
+              extra = getFeatureDisableDelta(featureId);
+            }
+            commit(order, nextHidden, extra);
+          });
+          actions.appendChild(upBtn);
+          actions.appendChild(downBtn);
+          actions.appendChild(visibilityBtn);
+          item.appendChild(actions);
+          list.appendChild(item);
+        })(i);
+      }
+
+      customizePanel.appendChild(list);
+      var resetLayoutBtn = el("button", {
+        type: "button",
+        class: "a11y-widget-btn",
+        text: "Reset Tool Layout",
+        style: "width: 100%; margin-top: 0.5rem;"
+      });
+      resetLayoutBtn.addEventListener("click", function() {
+        commit([], []);
+      });
+      customizePanel.appendChild(resetLayoutBtn);
+    }
+
+    function renderSupportPanel() {
+      supportPanel.innerHTML = "";
+      supportPanel.appendChild(el("div", { class: "a11y-widget-row" }, [
+        el("legend", { text: "Support" }),
+        el("div", { class: "a11y-widget-help", text: "Report a widget bug or page accessibility issue. Technical details are included automatically." })
+      ]));
+
+      var form = el("form", { class: "a11y-widget-row" });
+      var typeLabel = el("label", { for: "a11y-support-type", text: "Issue type" });
+      var typeSelect = el("select", { id: "a11y-support-type", class: "a11y-widget-select" });
+      var types = [["bug", "Bug"], ["translation", "Translation"], ["accessibility", "Accessibility"], ["display", "Display"], ["performance", "Performance"], ["other", "Other"]];
+      for (var st = 0; st < types.length; st++) {
+        typeSelect.appendChild(el("option", { value: types[st][0], text: types[st][1] }));
+      }
+      var emailLabel = el("label", { for: "a11y-support-email", text: "Email (optional)", style: "margin-top: 0.75rem; display: block;" });
+      var emailInput = el("input", { id: "a11y-support-email", type: "email", class: "a11y-widget-select", placeholder: "you@example.com" });
+      var messageLabel = el("label", { for: "a11y-support-message", text: "What happened?", style: "margin-top: 0.75rem; display: block;" });
+      var messageInput = el("textarea", {
+        id: "a11y-support-message",
+        class: "a11y-widget-select",
+        rows: "5",
+        required: "required",
+        placeholder: "Describe the bug, error, or accessibility issue."
+      });
+      var status = el("div", { class: "a11y-widget-help", "aria-live": "polite", style: "margin-top: 0.5rem;" });
+      var submitBtn = el("button", { type: "submit", class: "a11y-widget-btn", text: "Send Support Case", style: "width: 100%; margin-top: 0.75rem;" });
+
+      form.appendChild(typeLabel);
+      form.appendChild(typeSelect);
+      form.appendChild(emailLabel);
+      form.appendChild(emailInput);
+      form.appendChild(messageLabel);
+      form.appendChild(messageInput);
+      form.appendChild(submitBtn);
+      form.appendChild(status);
+      form.addEventListener("submit", function(e) {
+        e.preventDefault();
+        var message = messageInput.value.trim();
+        if (message.length < 5) {
+          status.textContent = "Please describe the issue before submitting.";
+          status.style.color = "#b42318";
+          return;
+        }
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Sending...";
+        status.textContent = "";
+        submitSupportCase(cfg, {
+          issueType: typeSelect.value,
+          message: message,
+          contactEmail: emailInput.value.trim() || null
+        }).then(function(ok) {
+          if (ok) {
+            messageInput.value = "";
+            status.style.color = "";
+            status.textContent = "Support case sent. Thank you.";
+          } else {
+            status.style.color = "#b42318";
+            status.textContent = "Unable to send right now. Please try again later.";
+          }
+        }).finally(function() {
+          submitBtn.disabled = false;
+          submitBtn.textContent = "Send Support Case";
+        });
+      });
+
+      supportPanel.appendChild(form);
+    }
+
+    renderCustomizePanel();
+    if (cfg.supportEnabled !== false) renderSupportPanel();
 
     if (cfg.features.readableFont) {
       var readableRow = toggleRow(
@@ -5276,9 +5775,14 @@
 
       // Toolbar buttons with icons
       var toolbarButtons = [];
+      var toolbarPrefs = normalizePrefs(assign(assign({}, PREF_DEFAULTS), Store.get(cfg.storageKey) || prefs || {}));
+      var toolbarHidden = toolbarPrefs.hiddenFeatures || [];
+      function toolbarFeatureVisible(featureId) {
+        return toolbarHidden.indexOf(featureId) === -1;
+      }
 
       // Contrast Mode Button
-      if (cfg.features.contrast) {
+      if (cfg.features.contrast && toolbarFeatureVisible("contrast")) {
         var contrastBtn = createToolbarButton("🎨", "Contrast Mode", function() {
           var currentPrefs = Store.get(cfg.storageKey) || {};
           var normalized = normalizePrefs(assign(assign({}, PREF_DEFAULTS), currentPrefs));
@@ -5291,7 +5795,7 @@
       }
 
       // Text Size Button (with +/-)
-      if (cfg.features.fontScale) {
+      if (cfg.features.fontScale && toolbarFeatureVisible("fontScale")) {
         var fontSizeDown = createToolbarButton("−", "Decrease Text Size", function() {
           var currentPrefs = Store.get(cfg.storageKey) || {};
           var normalized = normalizePrefs(assign(assign({}, PREF_DEFAULTS), currentPrefs));
@@ -5309,7 +5813,7 @@
       }
 
       // Text Spacing Button
-      if (cfg.features.spacing) {
+      if (cfg.features.spacing && toolbarFeatureVisible("spacing")) {
         var spacingBtn = createToolbarButton("📐", "Text Spacing", function() {
           var currentPrefs = Store.get(cfg.storageKey) || {};
           var normalized = normalizePrefs(assign(assign({}, PREF_DEFAULTS), currentPrefs));
@@ -5322,7 +5826,7 @@
       }
 
       // Readable Font Toggle
-      if (cfg.features.readableFont) {
+      if (cfg.features.readableFont && toolbarFeatureVisible("readableFont")) {
         var readableFontBtn = createToolbarButton("🔤", "Readable Font", function() {
           var currentPrefs = Store.get(cfg.storageKey) || {};
           var normalized = normalizePrefs(assign(assign({}, PREF_DEFAULTS), currentPrefs));
@@ -5332,7 +5836,7 @@
       }
 
       // Reduce Motion Toggle
-      if (cfg.features.reduceMotion) {
+      if (cfg.features.reduceMotion && toolbarFeatureVisible("reduceMotion")) {
         var motionBtn = createToolbarButton("⏸️", "Reduce Motion", function() {
           var currentPrefs = Store.get(cfg.storageKey) || {};
           var normalized = normalizePrefs(assign(assign({}, PREF_DEFAULTS), currentPrefs));
@@ -5342,7 +5846,7 @@
       }
 
       // Text-to-Speech - Read selected text when clicked
-      if (cfg.features.textToSpeech) {
+      if (cfg.features.textToSpeech && toolbarFeatureVisible("textToSpeech")) {
         var ttsBtn = createToolbarButton("🔊", "Text-to-Speech", function() {
           var selectedText = getSelectedText();
           if (selectedText && selectedText.trim().length > 0) {
@@ -5368,7 +5872,7 @@
       // Translation Toggle - REMOVED: Duplicate global feature (available in settings panel)
 
       // Reading Ruler Toggle
-      if (cfg.features.readingRuler) {
+      if (cfg.features.readingRuler && toolbarFeatureVisible("readingRuler")) {
         var rulerBtn = createToolbarButton("📏", "Reading Ruler", function() {
           var currentPrefs = Store.get(cfg.storageKey) || {};
           var normalized = normalizePrefs(assign(assign({}, PREF_DEFAULTS), currentPrefs));
@@ -5378,7 +5882,7 @@
       }
 
       // Screen Mask Toggle
-      if (cfg.features.screenMask) {
+      if (cfg.features.screenMask && toolbarFeatureVisible("screenMask")) {
         var maskBtn = createToolbarButton("👁️", "Screen Mask", function() {
           var currentPrefs = Store.get(cfg.storageKey) || {};
           var normalized = normalizePrefs(assign(assign({}, PREF_DEFAULTS), currentPrefs));
@@ -5388,7 +5892,7 @@
       }
 
       // Text Only Mode Toggle
-      if (cfg.features.textOnlyMode) {
+      if (cfg.features.textOnlyMode && toolbarFeatureVisible("textOnlyMode")) {
         var textOnlyBtn = createToolbarButton("📄", "Text Only Mode", function() {
           var currentPrefs = Store.get(cfg.storageKey) || {};
           var normalized = normalizePrefs(assign(assign({}, PREF_DEFAULTS), currentPrefs));
@@ -5398,7 +5902,7 @@
       }
 
       // Margins Dropdown
-      if (cfg.features.margins) {
+      if (cfg.features.margins && toolbarFeatureVisible("margins")) {
         var currentPrefsMargins = Store.get(cfg.storageKey) || {};
         var normalizedMargins = normalizePrefs(assign(assign({}, PREF_DEFAULTS), currentPrefsMargins));
         var marginsOptions = [
@@ -5428,7 +5932,7 @@
       }
 
       // Cursor Options Dropdown
-      if (cfg.features.cursorOptions) {
+      if (cfg.features.cursorOptions && toolbarFeatureVisible("cursorOptions")) {
         var currentPrefsCursor = Store.get(cfg.storageKey) || {};
         var normalizedCursor = normalizePrefs(assign(assign({}, PREF_DEFAULTS), currentPrefsCursor));
         var cursorOptions = [
@@ -5478,6 +5982,7 @@
         { label: "Font: Verdana", value: "font-verdana" },
         { label: "Font: System", value: "font-system" }
       ];
+      if (toolbarFeatureVisible("globalMode")) {
       var globalModeDropdown = createDropdown(
         globalModeOptions,
         normalizedGlobal.globalMode ? (normalizedGlobal.globalModeBgColor === "#f5f5f5" ? "bg-lightgray" : 
@@ -5556,9 +6061,10 @@
         }
       );
       toolbarButtons.push(globalModeDropdown);
+      }
 
       // Dictionary Toggle
-      if (cfg.features.dictionary) {
+      if (cfg.features.dictionary && toolbarFeatureVisible("dictionary")) {
         var dictBtn = createToolbarButton("📖", "Dictionary", function() {
           var currentPrefs = Store.get(cfg.storageKey) || {};
           var normalized = normalizePrefs(assign(assign({}, PREF_DEFAULTS), currentPrefs));
@@ -5568,7 +6074,7 @@
       }
 
       // Magnifier Toggle
-      if (cfg.features.magnifier) {
+      if (cfg.features.magnifier && toolbarFeatureVisible("magnifier")) {
         var magnifierBtn = createToolbarButton("🔍", "Magnifier", function() {
           var currentPrefs = Store.get(cfg.storageKey) || {};
           var normalized = normalizePrefs(assign(assign({}, PREF_DEFAULTS), currentPrefs));
@@ -5683,13 +6189,20 @@
       }
     }, 2000);
 
+    applyFeatureLayout(root, prefs, cfg);
+
     return { 
       root: root, 
       open: openPanel, 
       close: closePanel,
       toggle: togglePanel,
       controls: controls,
-      updateControls: function(prefs) { updateUIControls(controls, prefs); }
+      refreshCustomize: renderCustomizePanel,
+      updateControls: function(nextPrefs) {
+        updateUIControls(controls, nextPrefs);
+        applyFeatureLayout(root, nextPrefs, cfg);
+        renderCustomizePanel();
+      }
     };
   }
 
@@ -5735,6 +6248,17 @@
     cfg.position = (cfg.position === "left") ? "left" : "right";
     cfg.zIndex = Number(cfg.zIndex) || DEFAULTS.zIndex;
     cfg.surfaces = (cfg.surfaces && cfg.surfaces.length) ? cfg.surfaces : ["body"];
+    cfg.featureOrder = Array.isArray(cfg.featureOrder) ? cfg.featureOrder : null;
+    cfg.hiddenFeatures = Array.isArray(cfg.hiddenFeatures) ? cfg.hiddenFeatures : null;
+    cfg.supportEnabled = cfg.supportEnabled !== false;
+    cfg.heartbeatIntervalMs = Math.max(60000, Number(cfg.heartbeatIntervalMs || DEFAULTS.heartbeatIntervalMs));
+    if (cfg.telemetryEndpoint) {
+      var apiBase = getApiBase(cfg);
+      cfg.translateEndpoint = cfg.translateEndpoint || (apiBase ? apiBase + "/api/translate" : null);
+      cfg.heartbeatEndpoint = cfg.heartbeatEndpoint || (apiBase ? apiBase + "/api/widget/heartbeat" : null);
+      cfg.errorEndpoint = cfg.errorEndpoint || (apiBase ? apiBase + "/api/widget/errors" : null);
+      cfg.supportEndpoint = cfg.supportEndpoint || (apiBase ? apiBase + "/api/support/cases" : null);
+    }
 
     return cfg;
   }
@@ -5780,6 +6304,7 @@
     }
     
     var cfg = getConfig();
+    activeWidgetConfig = cfg;
 
     // QA / deploy verification: check in console `window.__A11Y_WIDGET_BUILD__` and Network for this filename (not legacy a11y-widget.js).
     window.__A11Y_WIDGET_BUILD__ = "a11y-widget-v1.6.10.js";
@@ -5804,6 +6329,8 @@
     
     // Set up dictionary handler once (it checks enabled state internally)
     setupDictionaryHandler();
+    setupWidgetErrorCapture(cfg);
+    startWidgetHeartbeat(cfg);
 
     // Load preferences: try localStorage first (synchronous), then try user profile (async)
     var stored = Store.get(cfg.storageKey);
@@ -5813,22 +6340,19 @@
     loadPreferencesFromProfile(cfg).then(function(profilePrefs) {
       if (profilePrefs) {
         var updatedPrefs = normalizePrefs(assign(assign({}, PREF_DEFAULTS), profilePrefs));
-        applyPrefs(updatedPrefs);
-        Store.set(cfg.storageKey, updatedPrefs);
-        // Update widget if already mounted
-        if (window.__a11yWidget && window.__a11yWidget.setPrefs) {
-          window.__a11yWidget.setPrefs(updatedPrefs);
+        prefs = updatedPrefs;
+        // Keep controls in sync without applying host-page changes during initialization.
+        if (window.__a11yWidget && window.__a11yWidget.__widget && window.__a11yWidget.__widget.updateControls) {
+          window.__a11yWidget.__widget.updateControls(prefs);
         }
       }
     }).catch(function() {
-      // Silently fail - localStorage preferences are already applied
+      // Silently fail - localStorage preferences are still available in the widget state
     });
 
-    // Apply prefs + mark surfaces early
-    applyPrefs(prefs);
-    // Check if globalMode is enabled in config or preferences
-    var useGlobalMode = cfg.globalMode || prefs.globalMode || false;
-    markSurfaces(cfg.surfaces, useGlobalMode);
+    // Do not apply stored/profile preferences on initialization. The host page
+    // should change only after an explicit widget control action.
+    clearMarkedSurfaces();
     
     // Apply widget customization after DOM is ready
     if (document.readyState === "loading") {
@@ -5865,10 +6389,7 @@
         function (delta) {
           prefs = normalizePrefs(assign(prefs, delta));
           applyPrefs(prefs);
-          // Re-mark surfaces if globalMode changed
-          if (delta.globalMode !== undefined) {
-            markSurfaces(cfg.surfaces, prefs.globalMode || cfg.globalMode || false);
-          }
+          syncHostPreferenceScope(prefs, cfg);
           // Apply widget customization if appearance settings changed
           if (delta.widgetTheme !== undefined || delta.widgetCustomization !== undefined) {
             var root = document.getElementById("a11y-widget-root");
@@ -5909,7 +6430,7 @@
         function () {
           prefs = normalizePrefs(assign({}, PREF_DEFAULTS));
           applyPrefs(prefs);
-          markSurfaces(cfg.surfaces, prefs.globalMode || cfg.globalMode || false);
+          clearMarkedSurfaces();
           // Reset widget customization
           var root = document.getElementById("a11y-widget-root");
           var toggle = document.getElementById("a11y-widget-toggle");
@@ -5952,6 +6473,7 @@
 
       window.__a11yWidget = {
         __loaded: true,
+        __widget: widget,
         config: cfg,
         open: function () { widget.open(); },
         close: function () { widget.close(); },
@@ -5961,6 +6483,7 @@
         setPrefs: function (next) {
           prefs = normalizePrefs(assign(prefs, next || {}));
           applyPrefs(prefs);
+          syncHostPreferenceScope(prefs, cfg);
           // Apply widget customization if appearance settings changed
           if (next && (next.widgetTheme !== undefined || next.widgetCustomization !== undefined)) {
             var root = document.getElementById("a11y-widget-root");
@@ -5978,7 +6501,7 @@
           clearPresetSelection();
           prefs = normalizePrefs(assign({}, PREF_DEFAULTS));
           applyPrefs(prefs);
-          markSurfaces(cfg.surfaces, prefs.globalMode || cfg.globalMode || false);
+          clearMarkedSurfaces();
           var root = document.getElementById("a11y-widget-root");
           var toggle = document.getElementById("a11y-widget-toggle");
           if (root) {

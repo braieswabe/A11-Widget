@@ -36,6 +36,14 @@ export default function Layout({ children }: LayoutProps) {
       keyboardShortcut: 'Alt+A',
       enableTelemetry: true,
       telemetryEndpoint: `${apiBase}/api/telemetry`,
+      translateEndpoint: `${apiBase}/api/translate`,
+      heartbeatEndpoint: `${apiBase}/api/widget/heartbeat`,
+      errorEndpoint: `${apiBase}/api/widget/errors`,
+      supportEndpoint: `${apiBase}/api/support/cases`,
+      supportEnabled: true,
+      heartbeatIntervalMs: 300000,
+      licenseKey: import.meta.env.VITE_A11Y_LICENSE_KEY || undefined,
+      apiKey: import.meta.env.VITE_A11Y_API_KEY || undefined,
       initialOpen: false,
       features: {
         contrast: true,
@@ -160,7 +168,7 @@ export default function Layout({ children }: LayoutProps) {
       
       document.head.appendChild(cssLink)
 
-      // Load widget script directly (updated v1.6.10 tabbed widget)
+      // Load widget script directly (updated v1.7.0 tabbed widget)
       const widgetScript = document.createElement('script')
       widgetScript.id = 'a11y-widget-script'
       
@@ -520,10 +528,15 @@ export default function Layout({ children }: LayoutProps) {
           </button>
           <ul className={`nav-links ${mobileMenuOpen ? 'active' : ''}`}>
             <li><Link to="/" className={isActive('/') ? 'active' : ''}>Home</Link></li>
-            <li><Link to="/features" className={isActive('/features') ? 'active' : ''}>Features</Link></li>
-            <li><Link to="/getting-started" className={isActive('/getting-started') ? 'active' : ''}>Installation</Link></li>
-            <li><Link to="/wordpress" className={isActive('/wordpress') ? 'active' : ''}>WordPress</Link></li>
-            <li><Link to="/download" className={isActive('/download') ? 'active' : ''}>Download</Link></li>
+            {admin && (
+              <>
+                <li><Link to="/features" className={isActive('/features') ? 'active' : ''}>Features</Link></li>
+                <li><Link to="/getting-started" className={isActive('/getting-started') ? 'active' : ''}>Installation</Link></li>
+                <li><Link to="/wordpress" className={isActive('/wordpress') ? 'active' : ''}>WordPress</Link></li>
+                <li><Link to="/download" className={isActive('/download') ? 'active' : ''}>Download</Link></li>
+                <li><Link to="/admin/monitoring" className={isActive('/admin/monitoring') ? 'active' : ''}>Monitoring</Link></li>
+              </>
+            )}
             <li>
               <Link 
                 to={admin ? "/admin/dashboard" : "/admin/login"}
@@ -576,12 +589,19 @@ export default function Layout({ children }: LayoutProps) {
       <footer className="footer">
         <div className="container">
           <div className="footer-links">
-            <Link to="/features">Features</Link>
-            <Link to="/getting-started">Installation</Link>
-            <Link to="/wordpress">WordPress</Link>
-            <Link to="/download">Download</Link>
+            {admin ? (
+              <>
+                <Link to="/features">Features</Link>
+                <Link to="/getting-started">Installation</Link>
+                <Link to="/wordpress">WordPress</Link>
+                <Link to="/download">Download</Link>
+                <Link to="/admin/monitoring">Monitoring</Link>
+              </>
+            ) : (
+              <Link to="/admin/login">Employee Login</Link>
+            )}
           </div>
-          <p>Accessibility Widget {WIDGET_VERSION} — WCAG 2.1 AA-aligned enhancements for supported surfaces only.</p>
+          <p>Accessibility Widget {WIDGET_VERSION} — demo content is available publicly; installation materials require employee login.</p>
         </div>
       </footer>
     </>

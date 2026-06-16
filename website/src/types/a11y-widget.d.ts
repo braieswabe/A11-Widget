@@ -7,6 +7,16 @@ declare global {
       surfaces?: string[]
       enableTelemetry?: boolean
       telemetryEndpoint?: string
+      translateEndpoint?: string
+      heartbeatEndpoint?: string
+      errorEndpoint?: string
+      supportEndpoint?: string
+      supportEnabled?: boolean
+      heartbeatIntervalMs?: number
+      licenseKey?: string
+      apiKey?: string
+      featureOrder?: string[]
+      hiddenFeatures?: string[]
       zIndex?: number
       initialOpen?: boolean
       locale?: string
@@ -49,4 +59,3 @@ declare global {
 }
 
 export {}
-

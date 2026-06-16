@@ -11,6 +11,7 @@ import AdminLogin from './pages/admin/AdminLogin'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import ClientForm from './pages/admin/ClientForm'
 import DomainsManagement from './pages/admin/DomainsManagement'
+import Monitoring from './pages/admin/Monitoring'
 
 function App() {
   return (
@@ -19,10 +20,10 @@ function App() {
         <Routes>
           {/* Public routes */}
           <Route path="/" element={<Layout><Home /></Layout>} />
-          <Route path="/getting-started" element={<Layout><GettingStarted /></Layout>} />
-          <Route path="/download" element={<Layout><Download /></Layout>} />
-          <Route path="/features" element={<Layout><Features /></Layout>} />
-          <Route path="/wordpress" element={<Layout><WordPress /></Layout>} />
+          <Route path="/getting-started" element={<ProtectedRoute><Layout><GettingStarted /></Layout></ProtectedRoute>} />
+          <Route path="/download" element={<ProtectedRoute><Layout><Download /></Layout></ProtectedRoute>} />
+          <Route path="/features" element={<ProtectedRoute><Layout><Features /></Layout></ProtectedRoute>} />
+          <Route path="/wordpress" element={<ProtectedRoute><Layout><WordPress /></Layout></ProtectedRoute>} />
           
           {/* Admin routes */}
           <Route path="/admin/login" element={<AdminLogin />} />
@@ -58,6 +59,14 @@ function App() {
               </ProtectedRoute>
             } 
           />
+          <Route
+            path="/admin/monitoring"
+            element={
+              <ProtectedRoute>
+                <Layout><Monitoring /></Layout>
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
@@ -65,4 +74,3 @@ function App() {
 }
 
 export default App
-

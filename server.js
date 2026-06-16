@@ -17,7 +17,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-A11Y-API-Key, X-A11Y-License-Key, X-Cron-Secret');
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
@@ -129,6 +129,38 @@ async function loadApiRoutes() {
     console.log('Loaded: /api/telemetry');
   } catch (e) {
     console.error('Failed to load /api/telemetry:', e.message);
+  }
+
+  try {
+    const translateHandler = (await import('./api/translate.js')).default;
+    app.post('/api/translate', createVercelHandler(translateHandler));
+    console.log('Loaded: /api/translate');
+  } catch (e) {
+    console.error('Failed to load /api/translate:', e.message);
+  }
+
+  try {
+    const heartbeatHandler = (await import('./api/widget/heartbeat.js')).default;
+    app.post('/api/widget/heartbeat', createVercelHandler(heartbeatHandler));
+    console.log('Loaded: /api/widget/heartbeat');
+  } catch (e) {
+    console.error('Failed to load /api/widget/heartbeat:', e.message);
+  }
+
+  try {
+    const widgetErrorsHandler = (await import('./api/widget/errors.js')).default;
+    app.post('/api/widget/errors', createVercelHandler(widgetErrorsHandler));
+    console.log('Loaded: /api/widget/errors');
+  } catch (e) {
+    console.error('Failed to load /api/widget/errors:', e.message);
+  }
+
+  try {
+    const supportCasesHandler = (await import('./api/support/cases.js')).default;
+    app.post('/api/support/cases', createVercelHandler(supportCasesHandler));
+    console.log('Loaded: /api/support/cases');
+  } catch (e) {
+    console.error('Failed to load /api/support/cases:', e.message);
   }
 
   // Auth routes
@@ -365,6 +397,41 @@ async function loadApiRoutes() {
     console.log('Loaded: /api/admin/domains/:id');
   } catch (e) {
     console.error('Failed to load /api/admin/domains/:id:', e.message);
+  }
+
+  try {
+    const adminWidgetSitesHandler = (await import('./api/admin/widget-sites/index.js')).default;
+    app.get('/api/admin/widget-sites', createVercelHandler(adminWidgetSitesHandler));
+    app.patch('/api/admin/widget-sites', createVercelHandler(adminWidgetSitesHandler));
+    console.log('Loaded: /api/admin/widget-sites');
+  } catch (e) {
+    console.error('Failed to load /api/admin/widget-sites:', e.message);
+  }
+
+  try {
+    const adminWidgetErrorsHandler = (await import('./api/admin/widget-errors/index.js')).default;
+    app.get('/api/admin/widget-errors', createVercelHandler(adminWidgetErrorsHandler));
+    app.patch('/api/admin/widget-errors', createVercelHandler(adminWidgetErrorsHandler));
+    console.log('Loaded: /api/admin/widget-errors');
+  } catch (e) {
+    console.error('Failed to load /api/admin/widget-errors:', e.message);
+  }
+
+  try {
+    const adminSupportCasesHandler = (await import('./api/admin/support-cases/index.js')).default;
+    app.get('/api/admin/support-cases', createVercelHandler(adminSupportCasesHandler));
+    app.patch('/api/admin/support-cases', createVercelHandler(adminSupportCasesHandler));
+    console.log('Loaded: /api/admin/support-cases');
+  } catch (e) {
+    console.error('Failed to load /api/admin/support-cases:', e.message);
+  }
+
+  try {
+    const adminHealthSweepHandler = (await import('./api/admin/health-sweep/index.js')).default;
+    app.post('/api/admin/health-sweep', createVercelHandler(adminHealthSweepHandler));
+    console.log('Loaded: /api/admin/health-sweep');
+  } catch (e) {
+    console.error('Failed to load /api/admin/health-sweep:', e.message);
   }
 }
 

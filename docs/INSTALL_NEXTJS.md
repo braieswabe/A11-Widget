@@ -27,7 +27,7 @@ export default function RootLayout({
       <head>
         {/* Just one line - widget loads automatically! */}
         <Script 
-          src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader-v1.6.10.js" 
+          src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.7.0/a11y-widget-loader-v1.7.0.js"
           strategy="afterInteractive"
         />
       </head>
@@ -61,7 +61,7 @@ export default function RootLayout({
           `}
         </Script>
         <Script 
-          src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader-v1.6.10.js" 
+          src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.7.0/a11y-widget-loader-v1.7.0.js"
           strategy="afterInteractive"
         />
       </head>
@@ -389,4 +389,3 @@ export default function RootLayout({
 - Configure [surfaces](README.md#surface-scoping) for your Next.js content
 - Set up [telemetry](README.md#telemetry-optional) if needed
 - Review [support statement](../support-statement.md) for scope boundaries
-

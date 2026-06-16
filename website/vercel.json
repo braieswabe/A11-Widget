@@ -17,6 +17,23 @@
       ]
     },
     {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, PATCH, PUT, DELETE, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, Authorization, X-A11Y-API-Key, X-A11Y-License-Key, X-Cron-Secret"
+        }
+      ]
+    },
+    {
       "source": "/assets/(.*)",
       "headers": [
         {
@@ -57,6 +74,10 @@
       "destination": "/a11y-widget.js"
     },
     {
+      "source": "/a11y-widget/v1.7.0/a11y-widget.js",
+      "destination": "/a11y-widget.js"
+    },
+    {
       "source": "/a11y-widget/v1/a11y-widget.css",
       "destination": "/a11y-widget.css"
     },
@@ -66,4 +87,3 @@
     }
   ]
 }
-

@@ -47,7 +47,7 @@
   - Auto-check on page load
 
 ### 6. Widget Loader Integration
-- ✅ Modified `a11y-widget-loader-v1.6.10.js` (auth-enabled loader variant):
+- ✅ Modified `a11y-widget-loader-v1.7.0.js` (auth-enabled loader variant):
   - Checks authentication before loading widget
   - Loads auth module if not present
   - Shows login modal if not authenticated
@@ -154,7 +154,7 @@ To configure the auth API base URL (if different from widget domain):
 <script>
   window.__A11Y_AUTH_API_BASE__ = "https://api.example.com/api/auth";
 </script>
-<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader-v1.6.10.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.7.0/a11y-widget-loader-v1.7.0.js" defer></script>
 ```
 
 ### Site-Specific Authentication

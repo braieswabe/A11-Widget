@@ -8,15 +8,15 @@ Added npm installation support while strictly maintaining existing CDN behavior.
 
 ### Core Widget Files (Patched)
 1. `a11y-widget.js` - Patched to expose init function
-2. `a11y-widget-v1.6.10.js` - Patched to expose init function
-3. `a11y-widget-loader-v1.6.10.js` - Updated to call init function
+2. `a11y-widget-v1.7.0.js` - Patched to expose init function
+3. `a11y-widget-loader-v1.7.0.js` - Updated to call init function
 
 ### New NPM Package Files
 - `packages/a11y-widget/package.json`
 - `packages/a11y-widget/src/index.js`
 - `packages/a11y-widget/src/init.js`
 - `packages/a11y-widget/src/types.d.ts`
-- `packages/a11y-widget/vendor/a11y-widget.core.js` (copied from a11y-widget-v1.6.10.js)
+- `packages/a11y-widget/vendor/a11y-widget.core.js` (copied from a11y-widget-v1.7.0.js)
 - `packages/a11y-widget/assets/a11y-widget.css` (copied from a11y-widget.css)
 - `packages/a11y-widget/README.md`
 - `packages/a11y-widget/IMPLEMENTATION.md`
@@ -26,7 +26,7 @@ Added npm installation support while strictly maintaining existing CDN behavior.
 
 ### 1. Widget Core Patch
 
-**Location**: `a11y-widget.js` and `a11y-widget-v1.6.10.js`
+**Location**: `a11y-widget.js` and `a11y-widget-v1.7.0.js`
 
 **Changes**:
 - Modified `init()` function to accept optional `userConfig` parameter
@@ -36,7 +36,7 @@ Added npm installation support while strictly maintaining existing CDN behavior.
 
 ### 2. CDN Loader Update
 
-**Location**: `a11y-widget-loader-v1.6.10.js`
+**Location**: `a11y-widget-loader-v1.7.0.js`
 
 **Changes**:
 - Updated `script.onload` handler to call `window.__a11yWidgetInit(window.__A11Y_WIDGET__)`
@@ -52,7 +52,7 @@ packages/a11y-widget/
 │   ├── init.js           # Init wrapper with SSR guards
 │   └── types.d.ts        # TypeScript definitions
 ├── vendor/
-│   └── a11y-widget.core.js  # Widget core (copied from a11y-widget-v1.6.10.js)
+│   └── a11y-widget.core.js  # Widget core (copied from a11y-widget-v1.7.0.js)
 ├── assets/
 │   └── a11y-widget.css   # CSS file
 └── package.json
@@ -79,7 +79,7 @@ packages/a11y-widget/
 <script>
   window.__A11Y_WIDGET__ = { siteId: "example.com" };
 </script>
-<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/a11y-widget-loader-v1.6.10.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.7.0/a11y-widget-loader-v1.7.0.js" defer></script>
 ```
 
 ### NPM (New - Additional Option)

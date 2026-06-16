@@ -131,6 +131,21 @@ export default function AdminDashboard() {
         />
         <div style={{ display: 'flex', gap: '12px' }}>
           <button
+            onClick={() => navigate('/admin/monitoring')}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: '#6f42c1',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '16px',
+              fontWeight: 500
+            }}
+          >
+            Monitoring
+          </button>
+          <button
             onClick={() => navigate('/admin/domains')}
             style={{
               padding: '10px 20px',
