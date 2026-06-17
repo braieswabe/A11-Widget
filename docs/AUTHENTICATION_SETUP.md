@@ -60,12 +60,12 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 Run the admin creation script:
 
 ```bash
-node scripts/create-admin.js admin@example.com secure-password-123
+node scripts/seed-admin.js admin@example.com strong-password-here
 ```
 
 Or interactively:
 ```bash
-node scripts/create-admin.js
+node scripts/seed-admin.js admin@example.com strong-password-here
 ```
 
 ## Step 5: Update Widget Loader

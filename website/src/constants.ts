@@ -1,10 +1,10 @@
 // Current widget release label (display/docs) and live GitHub CDN ref
-export const WIDGET_VERSION = 'v1.7.0'
-export const WIDGET_CDN_REF = 'v1.7.0'
+export const WIDGET_VERSION = 'v1.7.1'
+export const WIDGET_CDN_REF = 'v1.7.1'
 
 // Filenames on the CDN for this release (keep in sync with repo root assets)
-export const WIDGET_LOADER_FILENAME = 'a11y-widget-loader-v1.7.0.js'
-export const WIDGET_RUNTIME_FILENAME = 'a11y-widget-v1.7.0.js'
+export const WIDGET_LOADER_FILENAME = 'a11y-widget-loader-v1.7.1.js'
+export const WIDGET_RUNTIME_FILENAME = 'a11y-widget-v1.7.1.js'
 
 // CDN base URL for the widget
 export const WIDGET_CDN_BASE = `https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@${WIDGET_CDN_REF}`

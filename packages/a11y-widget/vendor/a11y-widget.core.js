@@ -1,11 +1,11 @@
-/*! a11y-widget.js — Accessibility Widget v1.7.0 (IIFE, no deps)
+/*! a11y-widget.js — Accessibility Widget v1.7.1 (IIFE, no deps)
     Scope: widget UI + configured surfaces only.
     No claims of full-site ADA compliance.
     
     GitHub Repository: https://github.com/braieswabe/A11-Widget
     CDN: https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/
     
-    Version 1.7.0 Changelog:
+    Version 1.7.1 Changelog:
     - Icon Style tab with design, size, colors, and presets
     - New default universal-access icon (blue circle with white figure)
     - Custom icon upload UI disabled in panel (runtime support preserved)
@@ -1582,7 +1582,7 @@
       faviconUrl: getFaviconUrl(),
       pageUrl: window.location.href,
       domain: window.location.hostname || "",
-      build: window.__A11Y_WIDGET_BUILD__ || "a11y-widget-v1.7.0.js",
+      build: window.__A11Y_WIDGET_BUILD__ || "a11y-widget-v1.7.1.js",
       position: cfg.position,
       browser: getBrowserInfo(),
       reportedAt: nowISO()
@@ -1609,7 +1609,7 @@
       body: JSON.stringify(assign({
         siteId: cfg.siteId,
         url: window.location.href,
-        widgetVersion: window.__A11Y_WIDGET_BUILD__ || "a11y-widget-v1.7.0.js",
+        widgetVersion: window.__A11Y_WIDGET_BUILD__ || "a11y-widget-v1.7.1.js",
         licenseKey: cfg.licenseKey || null,
         apiKey: cfg.apiKey || null
       }, payload || {}))
@@ -1734,7 +1734,7 @@
     }
     setUpdateStatus(statusEl, "Checking latest version...", false);
 
-    var probeUrl = CDN_BASE + "a11y-widget-v1.7.0.js?_a11y_check=" + Date.now();
+    var probeUrl = CDN_BASE + "a11y-widget-v1.7.1.js?_a11y_check=" + Date.now();
     var supportsFetch = typeof fetch !== "undefined";
 
     function finish(buttonText) {
@@ -3411,8 +3411,8 @@
       "aria-label": "Open accessibility settings" + shortcutText,
       "aria-haspopup": "dialog",
       "aria-keyshortcuts": cfg.keyboardShortcut || undefined,
-      "data-a11y-widget-version": "1.7.0",
-      title: (shortcutHint || "Accessibility Settings") + " - Widget v1.7.0",
+      "data-a11y-widget-version": "1.7.1",
+      title: (shortcutHint || "Accessibility Settings") + " - Widget v1.7.1",
       html: logoSVG
     });
     
@@ -6436,7 +6436,7 @@
     activeWidgetConfig = cfg;
 
     // QA / deploy verification: check in console `window.__A11Y_WIDGET_BUILD__` and Network for this filename (not legacy a11y-widget.js).
-    window.__A11Y_WIDGET_BUILD__ = "a11y-widget-v1.7.0.js";
+    window.__A11Y_WIDGET_BUILD__ = "a11y-widget-v1.7.1.js";
 
     // Namespace guard
     if (window.__a11yWidget && window.__a11yWidget.__loaded) return;
@@ -6607,7 +6607,7 @@
         open: function () { widget.open(); },
         close: function () { widget.close(); },
         toggle: function () { widget.toggle(); },
-        getBuild: function () { return window.__A11Y_WIDGET_BUILD__ || "a11y-widget-v1.7.0.js"; },
+        getBuild: function () { return window.__A11Y_WIDGET_BUILD__ || "a11y-widget-v1.7.1.js"; },
         getPrefs: function () { return assign({}, prefs); },
         setPrefs: function (next) {
           prefs = normalizePrefs(assign(prefs, next || {}));

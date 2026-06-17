@@ -89,7 +89,7 @@ function a11y_widget_enqueue() {
         telemetryEndpoint: "<?php echo esc_js(get_option('a11y_telemetry_endpoint', 'https://your-widget-backend.com/api/telemetry')); ?>"
       };
     </script>
-    <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.7.0/a11y-widget-loader-v1.7.0.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.7.1/a11y-widget-loader-v1.7.1.js" defer></script>
     <?php
 }
 add_action('wp_head', 'a11y_widget_enqueue');
