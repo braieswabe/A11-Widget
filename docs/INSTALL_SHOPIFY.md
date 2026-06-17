@@ -27,7 +27,7 @@ Backend monitoring endpoints validate deployed stores against the database. Regi
 
 ```liquid
 <!-- Accessibility Widget - Just one line! -->
-<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.7.1/a11y-widget-loader-v1.7.1.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.7.2/a11y-widget-loader-v1.7.2.js" defer></script>
 ```
 
 4. Click **Save**
