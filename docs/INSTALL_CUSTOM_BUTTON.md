@@ -22,7 +22,7 @@ Add the loader script globally in your `index.html` (or equivalent):
   <title>Your Site</title>
   
   <!-- Accessibility Widget Loader -->
-  <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.7.0/a11y-widget-loader-v1.7.0.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.7.1/a11y-widget-loader-v1.7.1.js" defer></script>
 </head>
 <body>
   <!-- Your content -->
@@ -154,7 +154,7 @@ function Header() {
 <head>
   <meta charset="UTF-8">
   <title>My App</title>
-  <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.7.0/a11y-widget-loader-v1.7.0.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.7.1/a11y-widget-loader-v1.7.1.js" defer></script>
 </head>
 <body>
   <div id="root"></div>
@@ -294,4 +294,3 @@ function Header() {
 - Add keyboard shortcuts (e.g., Alt+A to toggle)
 - Integrate with your state management system
 - Add analytics tracking for widget usage
-

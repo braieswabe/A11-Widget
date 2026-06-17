@@ -35,7 +35,7 @@ Backend monitoring endpoints validate deployed sites against the database. Regis
     enableTelemetry: false
   };
 </script>
-<script src="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.js" defer></script>
+    <script src="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.js" defer></script>
 ```
 
 3. **Tag Firing**: Choose **All Pages** (or create custom trigger)

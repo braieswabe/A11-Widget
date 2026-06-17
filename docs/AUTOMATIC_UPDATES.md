@@ -7,10 +7,10 @@ This document explains how widget updates automatically propagate to all existin
 When users install the widget using the loader script:
 
 ```html
-<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.7.0/a11y-widget-loader-v1.7.0.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.7.1/a11y-widget-loader-v1.7.1.js" defer></script>
 ```
 
-The widget files (`a11y-widget-v1.7.0.js` and `a11y-widget.css`) are loaded directly from the GitHub repository via jsDelivr CDN.
+The widget files (`a11y-widget-v1.7.1.js` and `a11y-widget.css`) are loaded directly from the GitHub repository via jsDelivr CDN.
 
 ## Update Propagation
 
@@ -35,7 +35,7 @@ Example:
 link.href = CDN_BASE + "a11y-widget.css?v=" + new Date().getTime();
 
 // JS loads with cache-busting
-script.src = CDN_BASE + "a11y-widget-v1.7.0.js?v=" + new Date().getTime();
+script.src = CDN_BASE + "a11y-widget-v1.7.1.js?v=" + new Date().getTime();
 ```
 
 ## What Gets Updated Automatically
@@ -75,7 +75,7 @@ If you need to pin to a specific version for stability:
 
 ```html
 <!-- Pin to specific commit -->
-<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.7.0/a11y-widget-loader-v1.7.0.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.7.1/a11y-widget-loader-v1.7.1.js" defer></script>
 ```
 
 **Note**: Version pinning prevents automatic updates. Use only when necessary.
@@ -95,7 +95,7 @@ To force an immediate update for testing:
 
 ```html
 <!-- Add timestamp to loader script URL -->
-<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.7.0/a11y-widget-loader-v1.7.0.js?v=<?php echo time(); ?>" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.7.1/a11y-widget-loader-v1.7.1.js?v=<?php echo time(); ?>" defer></script>
 ```
 
 ## Benefits
@@ -114,4 +114,3 @@ To force an immediate update for testing:
 4. **No user action required** - updates happen on next page load
 
 This is exactly how the recent box-style button update propagated to all users!
-
