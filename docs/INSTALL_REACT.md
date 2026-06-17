@@ -36,7 +36,7 @@ If you want to hide the default button and control it with your own header butto
 
 ### Method 3: public/index.html with Configuration (Legacy)
 
-If you need to customize settings, add configuration before the loader script:
+If you need to configure surfaces or backend tracking, add configuration before the loader script:
 
 ```html
 <!DOCTYPE html>
@@ -44,11 +44,14 @@ If you need to customize settings, add configuration before the loader script:
   <head>
     <meta charset="utf-8" />
     <title>React App</title>
-    <!-- Optional: Customize widget settings -->
+    <!-- Optional: Configure widget settings -->
     <script>
       window.__A11Y_WIDGET__ = {
+        siteId: "example.com",
+        apiKey: "YOUR_CLIENT_API_KEY",
         position: "right",  // Optional: "left" or "right"
-        surfaces: ["body", "#root"]  // Optional: CSS selectors
+        surfaces: ["body", "#root"],  // Optional: CSS selectors
+        telemetryEndpoint: "https://your-widget-backend.com/api/telemetry"
       };
     </script>
     <!-- Load widget from GitHub -->
@@ -59,6 +62,10 @@ If you need to customize settings, add configuration before the loader script:
   </body>
 </html>
 ```
+
+When `telemetryEndpoint` is configured, heartbeat, widget error, support case, and translation endpoints are derived from that backend unless you override them directly.
+
+Before using backend monitoring on a deployed React app, register the production domain in the employee/admin dashboard or include a valid `apiKey`/`licenseKey`. The backend validates protected endpoints against the database. Localhost and `127.0.0.1` are allowed for development logging tests.
 
 ### Method 4: Dynamic Load in Root Component
 
@@ -225,6 +232,8 @@ declare global {
   interface Window {
     __A11Y_WIDGET__?: {
       siteId?: string
+      apiKey?: string
+      licenseKey?: string
       position?: 'left' | 'right'
       surfaces?: string[]
       enableTelemetry?: boolean
@@ -336,4 +345,3 @@ See [Custom Button Control Guide](INSTALL_CUSTOM_BUTTON.md) for hiding the defau
 - Configure [surfaces](README.md#surface-scoping) for your React content
 - Set up [telemetry](README.md#telemetry-optional) if needed
 - Review [support statement](../support-statement.md) for scope boundaries
-

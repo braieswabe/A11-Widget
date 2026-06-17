@@ -1434,6 +1434,79 @@ html.a11y-widget-hidden .accessibility-widget {
   background: var(--a11y-color-bg-light);
 }
 
+.a11y-widget-header-btn{
+  border: 1px solid var(--a11y-custom-border, var(--a11y-color-border));
+  border-radius: var(--a11y-custom-radius, var(--a11y-radius));
+  padding: 0.45rem 0.55rem;
+  background: transparent;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  min-height: 36px;
+  color: var(--a11y-custom-text, var(--a11y-color-text));
+  flex-shrink: 0;
+}
+.a11y-widget-header-btn:hover,
+.a11y-widget-header-btn.active{
+  background: var(--a11y-color-bg-light);
+  border-color: var(--a11y-color-border-dark);
+}
+.a11y-widget-header-btn:focus-visible{
+  outline: 3px solid var(--a11y-custom-secondary, var(--a11y-color-secondary));
+  outline-offset: 2px;
+  border-color: var(--a11y-custom-secondary, var(--a11y-color-secondary));
+}
+
+.a11y-tool-manage-heading{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+}
+.a11y-tool-manage-heading > label,
+.a11y-tool-manage-heading > legend{
+  margin-bottom: 0;
+}
+.a11y-tool-manage-actions{
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.a11y-tool-manage-btn{
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  border: 1px solid var(--a11y-custom-border, var(--a11y-color-border));
+  border-radius: 999px;
+  background: var(--a11y-custom-bg, var(--a11y-color-bg));
+  color: var(--a11y-custom-text, var(--a11y-color-text));
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.a11y-tool-manage-btn:hover:not(:disabled){
+  background: var(--a11y-color-bg-light);
+  border-color: var(--a11y-color-border-dark);
+}
+.a11y-tool-manage-btn:disabled{
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.a11y-tool-manage-btn:focus-visible{
+  outline: 3px solid var(--a11y-custom-secondary, var(--a11y-color-secondary));
+  outline-offset: 2px;
+}
+.a11y-widget-manage-mode .a11y-widget-feature-hidden{
+  opacity: 0.55;
+}
+
 /* Scrollable content area */
 #a11y-widget-content{
   padding: 1rem var(--a11y-custom-spacing, var(--a11y-spacing-sm));

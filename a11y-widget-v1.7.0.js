@@ -1092,7 +1092,7 @@
     return nodes;
   }
 
-  function applyFeatureLayout(root, prefs, cfg) {
+  function applyFeatureLayout(root, prefs, cfg, showHidden) {
     if (!root) return;
     var panelMap = {
       quick: root.querySelector("#a11y-tab-quick-fixes"),
@@ -1108,7 +1108,9 @@
       if (!panel) continue;
       var nodes = getFeatureNodes(root, order[i]);
       for (var n = 0; n < nodes.length; n++) {
-        nodes[n].style.display = hidden.indexOf(order[i]) !== -1 ? "none" : "";
+        var isHidden = hidden.indexOf(order[i]) !== -1;
+        nodes[n].style.display = isHidden && !showHidden ? "none" : "";
+        nodes[n].classList.toggle("a11y-widget-feature-hidden", isHidden);
         panel.appendChild(nodes[n]);
       }
     }
@@ -1550,14 +1552,53 @@
     };
   }
 
+  function getFaviconUrl() {
+    var selectors = [
+      'link[rel~="icon"]',
+      'link[rel="shortcut icon"]',
+      'link[rel="apple-touch-icon"]'
+    ];
+    for (var i = 0; i < selectors.length; i++) {
+      var node = document.querySelector(selectors[i]);
+      var href = node && node.getAttribute("href");
+      if (href) {
+        try {
+          return new URL(href, window.location.href).href;
+        } catch (e) {
+          return href;
+        }
+      }
+    }
+    try {
+      return new URL("/favicon.ico", window.location.origin).href;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function getPageMetadata(cfg) {
+    return {
+      title: document.title || "",
+      faviconUrl: getFaviconUrl(),
+      pageUrl: window.location.href,
+      domain: window.location.hostname || "",
+      build: window.__A11Y_WIDGET_BUILD__ || "a11y-widget-v1.7.0.js",
+      position: cfg.position,
+      browser: getBrowserInfo(),
+      reportedAt: nowISO()
+    };
+  }
+
   function widgetEndpoint(cfg, key, fallbackPath) {
     if (cfg[key]) return cfg[key];
     var apiBase = getApiBase(cfg);
     return apiBase ? apiBase + fallbackPath : null;
   }
 
-  function postWidgetJson(cfg, endpoint, payload) {
-    if (!endpoint || typeof fetch === "undefined") return Promise.resolve(false);
+  function postWidgetJsonDetailed(cfg, endpoint, payload) {
+    if (!endpoint || typeof fetch === "undefined") {
+      return Promise.resolve({ ok: false, status: 0, error: "Widget logging endpoint is not available." });
+    }
     var headers = { "Content-Type": "application/json" };
     if (cfg.apiKey || cfg.licenseKey) {
       headers["X-A11Y-API-Key"] = cfg.apiKey || cfg.licenseKey;
@@ -1573,9 +1614,25 @@
         apiKey: cfg.apiKey || null
       }, payload || {}))
     }).then(function(response) {
-      return response.ok;
-    }).catch(function() {
-      return false;
+      return response.json().catch(function() { return {}; }).then(function(data) {
+        return {
+          ok: response.ok,
+          status: response.status,
+          error: data && data.error ? data.error : ""
+        };
+      });
+    }).catch(function(error) {
+      return {
+        ok: false,
+        status: 0,
+        error: error && error.message ? error.message : "Network request failed."
+      };
+    });
+  }
+
+  function postWidgetJson(cfg, endpoint, payload) {
+    return postWidgetJsonDetailed(cfg, endpoint, payload).then(function(result) {
+      return !!(result && result.ok);
     });
   }
 
@@ -1639,10 +1696,7 @@
   function sendWidgetHeartbeat(cfg) {
     var endpoint = widgetEndpoint(cfg, "heartbeatEndpoint", "/api/widget/heartbeat");
     return postWidgetJson(cfg, endpoint, {
-      metadata: {
-        build: window.__A11Y_WIDGET_BUILD__ || "a11y-widget-v1.7.0.js",
-        position: cfg.position
-      }
+      metadata: getPageMetadata(cfg)
     });
   }
 
@@ -1657,7 +1711,7 @@
 
   function submitSupportCase(cfg, payload) {
     var endpoint = widgetEndpoint(cfg, "supportEndpoint", "/api/support/cases");
-    return postWidgetJson(cfg, endpoint, assign({
+    return postWidgetJsonDetailed(cfg, endpoint, assign({
       browser: getBrowserInfo(),
       recentErrors: recentWidgetErrors.slice()
     }, payload || {}));
@@ -3391,11 +3445,43 @@
       hidden: ""
     });
 
+    var manageMode = false;
+    var manageToolsBtn = el("button", {
+      id: "a11y-manage-tools",
+      type: "button",
+      class: "a11y-widget-header-btn",
+      "aria-pressed": "false",
+      "aria-label": "Manage accessibility tools",
+      title: "Manage tools",
+      text: "Tools"
+    });
+    var resetToolLayoutBtn = el("button", {
+      id: "a11y-reset-tool-layout",
+      type: "button",
+      class: "a11y-widget-header-btn",
+      "aria-label": "Reset tool order and visibility",
+      title: "Reset tool layout",
+      text: "Reset",
+      hidden: ""
+    });
+    var supportHeaderBtn = el("button", {
+      id: "a11y-support-open",
+      type: "button",
+      class: "a11y-widget-header-btn",
+      "aria-pressed": "false",
+      "aria-label": "Open support form",
+      title: "Support",
+      text: "Support"
+    });
+
     var header = el("div", { id: "a11y-widget-header" }, [
       el("div", { style: "flex: 1;" }, [
         el("h2", { id: "a11y-widget-title", text: "Accessibility Settings" }),
         el("p", { id: "a11y-widget-description", style: "font-size: 12px; margin: 0.25rem 0 0 0; opacity: 0.7;", text: "Customize your viewing experience" })
       ]),
+      manageToolsBtn,
+      resetToolLayoutBtn,
+      supportHeaderBtn,
       el("button", { 
         id: "a11y-widget-close", 
         type: "button", 
@@ -3442,16 +3528,6 @@
       text: "Advanced Tools"
     });
 
-    var customizeTab = el("button", {
-      type: "button",
-      role: "tab",
-      "aria-selected": "false",
-      "aria-controls": "a11y-tab-customize",
-      id: "a11y-tab-customize-btn",
-      class: "a11y-widget-tab",
-      text: "Customize"
-    });
-
     var enableIconStyleTab = true;
     var iconTab = el("button", {
       type: "button",
@@ -3463,22 +3539,10 @@
       text: "Icon Style"
     });
 
-    var supportTab = el("button", {
-      type: "button",
-      role: "tab",
-      "aria-selected": "false",
-      "aria-controls": "a11y-tab-support",
-      id: "a11y-tab-support-btn",
-      class: "a11y-widget-tab",
-      text: "Support"
-    });
-    
     tabList.appendChild(quickFixesTab);
     tabList.appendChild(readingTab);
     tabList.appendChild(advancedTab);
-    tabList.appendChild(customizeTab);
     if (enableIconStyleTab) tabList.appendChild(iconTab);
-    if (cfg.supportEnabled !== false) tabList.appendChild(supportTab);
     tabContainer.appendChild(tabList);
     
     // Tab panels
@@ -3513,18 +3577,10 @@
       hidden: ""
     });
 
-    var customizePanel = el("div", {
-      id: "a11y-tab-customize",
-      role: "tabpanel",
-      "aria-labelledby": "a11y-tab-customize-btn",
-      class: "a11y-widget-tab-panel",
-      hidden: ""
-    });
-
     var supportPanel = el("div", {
       id: "a11y-tab-support",
       role: "tabpanel",
-      "aria-labelledby": "a11y-tab-support-btn",
+      "aria-labelledby": "a11y-support-open",
       class: "a11y-widget-tab-panel",
       hidden: ""
     });
@@ -3533,9 +3589,11 @@
     function switchTab(selectedTab, selectedPanel) {
       // Update all tabs
       var tabs = tabList.querySelectorAll(".a11y-widget-tab");
-      var panels = [quickFixesPanel, readingPanel, advancedPanel, customizePanel];
+      var panels = [quickFixesPanel, readingPanel, advancedPanel];
       if (enableIconStyleTab) panels.push(iconPanel);
       if (cfg.supportEnabled !== false) panels.push(supportPanel);
+      supportHeaderBtn.setAttribute("aria-pressed", "false");
+      supportHeaderBtn.classList.remove("active");
       
       for (var i = 0; i < tabs.length; i++) {
         tabs[i].setAttribute("aria-selected", "false");
@@ -3548,8 +3606,13 @@
       }
       
       // Activate selected tab and panel
-      selectedTab.setAttribute("aria-selected", "true");
-      selectedTab.classList.add("active");
+      if (selectedTab) {
+        selectedTab.setAttribute("aria-selected", "true");
+        selectedTab.classList.add("active");
+      } else if (selectedPanel === supportPanel) {
+        supportHeaderBtn.setAttribute("aria-pressed", "true");
+        supportHeaderBtn.classList.add("active");
+      }
       selectedPanel.removeAttribute("hidden");
       selectedPanel.classList.add("active");
       
@@ -3563,9 +3626,9 @@
     quickFixesTab.addEventListener("click", function() { switchTab(quickFixesTab, quickFixesPanel); });
     readingTab.addEventListener("click", function() { switchTab(readingTab, readingPanel); });
     advancedTab.addEventListener("click", function() { switchTab(advancedTab, advancedPanel); });
-    customizeTab.addEventListener("click", function() { switchTab(customizeTab, customizePanel); });
     if (enableIconStyleTab) iconTab.addEventListener("click", function() { switchTab(iconTab, iconPanel); });
-    if (cfg.supportEnabled !== false) supportTab.addEventListener("click", function() { switchTab(supportTab, supportPanel); });
+    if (cfg.supportEnabled !== false) supportHeaderBtn.addEventListener("click", function() { switchTab(null, supportPanel); });
+    if (cfg.supportEnabled === false) supportHeaderBtn.style.display = "none";
     
     // Keyboard navigation for tabs
     tabList.addEventListener("keydown", function(e) {
@@ -3590,7 +3653,6 @@
     content.appendChild(quickFixesPanel);
     content.appendChild(readingPanel);
     content.appendChild(advancedPanel);
-    content.appendChild(customizePanel);
     if (enableIconStyleTab) content.appendChild(iconPanel);
     if (cfg.supportEnabled !== false) content.appendChild(supportPanel);
 
@@ -4114,18 +4176,88 @@
       return normalizePrefs(assign(assign({}, PREF_DEFAULTS), Store.get(cfg.storageKey) || prefs || {}));
     }
 
-    function renderCustomizePanel() {
-      customizePanel.innerHTML = "";
+    function moveFeatureInPanel(order, featureId, direction) {
+      var def = getFeatureDefinition(featureId);
+      if (!def) return order;
+      var panelFeatures = [];
+      for (var i = 0; i < order.length; i++) {
+        var itemDef = getFeatureDefinition(order[i]);
+        if (itemDef && itemDef.panel === def.panel) panelFeatures.push(order[i]);
+      }
+      var panelIndex = panelFeatures.indexOf(featureId);
+      var nextPanelIndex = panelIndex + direction;
+      if (panelIndex === -1 || nextPanelIndex < 0 || nextPanelIndex >= panelFeatures.length) return order;
+      var nextOrder = order.slice();
+      var fromIndex = nextOrder.indexOf(featureId);
+      var swapId = panelFeatures[nextPanelIndex];
+      var toIndex = nextOrder.indexOf(swapId);
+      if (fromIndex === -1 || toIndex === -1) return order;
+      nextOrder[fromIndex] = swapId;
+      nextOrder[toIndex] = featureId;
+      return nextOrder;
+    }
+
+    function isFirstFeatureInPanel(order, featureId) {
+      var def = getFeatureDefinition(featureId);
+      if (!def) return true;
+      for (var i = 0; i < order.length; i++) {
+        var itemDef = getFeatureDefinition(order[i]);
+        if (itemDef && itemDef.panel === def.panel) return order[i] === featureId;
+      }
+      return true;
+    }
+
+    function isLastFeatureInPanel(order, featureId) {
+      var def = getFeatureDefinition(featureId);
+      if (!def) return true;
+      for (var i = order.length - 1; i >= 0; i--) {
+        var itemDef = getFeatureDefinition(order[i]);
+        if (itemDef && itemDef.panel === def.panel) return order[i] === featureId;
+      }
+      return true;
+    }
+
+    function removeInlineManageControls(rootNode) {
+      var controlsToRemove = rootNode.querySelectorAll(".a11y-tool-manage-actions");
+      for (var i = 0; i < controlsToRemove.length; i++) {
+        if (controlsToRemove[i].parentNode) controlsToRemove[i].parentNode.removeChild(controlsToRemove[i]);
+      }
+      var headings = rootNode.querySelectorAll(".a11y-tool-manage-heading");
+      for (var h = 0; h < headings.length; h++) {
+        var heading = headings[h];
+        var title = heading.querySelector("label, legend");
+        if (title) heading.parentNode.insertBefore(title, heading);
+        if (heading.parentNode) heading.parentNode.removeChild(heading);
+      }
+      var rows = rootNode.querySelectorAll(".a11y-widget-manage-row");
+      for (var r = 0; r < rows.length; r++) rows[r].classList.remove("a11y-widget-manage-row");
+    }
+
+    function addActionButton(actions, text, label, disabled, onClick) {
+      var btn = el("button", {
+        type: "button",
+        class: "a11y-tool-manage-btn",
+        text: text,
+        "aria-label": label,
+        title: label
+      });
+      btn.disabled = !!disabled;
+      btn.addEventListener("click", function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!btn.disabled) onClick();
+      });
+      actions.appendChild(btn);
+      return btn;
+    }
+
+    function addInlineManageControls(rootNode) {
+      removeInlineManageControls(rootNode);
+      if (!manageMode) return;
+
       var current = getCurrentWidgetPrefs();
       var order = normalizeFeatureOrder(current.featureOrder && current.featureOrder.length ? current.featureOrder : cfg.featureOrder, cfg);
       var hidden = Array.isArray(current.hiddenFeatures) ? current.hiddenFeatures.slice() : [];
-
-      customizePanel.appendChild(el("div", { class: "a11y-widget-row" }, [
-        el("legend", { text: "Personalize tool order" }),
-        el("div", { class: "a11y-widget-help", text: "Move the tools you use most to the top, hide unused tools, or add them back later. Support always stays available." })
-      ]));
-
-      var list = el("div", { class: "a11y-widget-customize-list" });
 
       function commit(nextOrder, nextHidden, extraDelta) {
         var delta = assign({
@@ -4133,7 +4265,9 @@
           hiddenFeatures: nextHidden
         }, extraDelta || {});
         onChange(delta);
-        setTimeout(renderCustomizePanel, 0);
+        var nextPrefs = getCurrentWidgetPrefs();
+        applyFeatureLayout(root, nextPrefs, cfg, manageMode);
+        addInlineManageControls(root);
       }
 
       for (var i = 0; i < order.length; i++) {
@@ -4142,42 +4276,21 @@
           var def = getFeatureDefinition(featureId);
           if (!def) return;
           var isHidden = hidden.indexOf(featureId) !== -1;
-          var item = el("div", {
-            class: "a11y-widget-row",
-            style: "display: grid; grid-template-columns: 1fr auto; gap: 0.5rem; align-items: center;"
+          var nodes = getFeatureNodes(rootNode, featureId);
+          if (!nodes.length) return;
+          var primary = nodes[0];
+          primary.classList.add("a11y-widget-manage-row");
+          var title = primary.querySelector(":scope > label, :scope > legend");
+          var checkboxWrap = primary.querySelector(":scope > .a11y-widget-checkbox-wrapper");
+          var actions = el("span", { class: "a11y-tool-manage-actions" });
+
+          addActionButton(actions, "↑", "Move " + def.label + " up", isFirstFeatureInPanel(order, featureId), function() {
+            commit(moveFeatureInPanel(order, featureId, -1), hidden);
           });
-          item.appendChild(el("div", {}, [
-            el("div", { text: def.label, style: "font-weight: 650; font-size: 13px;" }),
-            el("div", { class: "a11y-widget-help", text: isHidden ? "Hidden from your widget" : "Visible in your widget" })
-          ]));
-          var actions = el("div", { style: "display: flex; gap: 0.25rem; flex-wrap: wrap; justify-content: flex-end;" });
-          var upBtn = el("button", { type: "button", class: "a11y-widget-btn", text: "↑", "aria-label": "Move " + def.label + " up" });
-          upBtn.disabled = index === 0;
-          upBtn.addEventListener("click", function() {
-            if (index === 0) return;
-            var next = order.slice();
-            var tmp = next[index - 1];
-            next[index - 1] = next[index];
-            next[index] = tmp;
-            commit(next, hidden);
+          addActionButton(actions, "↓", "Move " + def.label + " down", isLastFeatureInPanel(order, featureId), function() {
+            commit(moveFeatureInPanel(order, featureId, 1), hidden);
           });
-          var downBtn = el("button", { type: "button", class: "a11y-widget-btn", text: "↓", "aria-label": "Move " + def.label + " down" });
-          downBtn.disabled = index === order.length - 1;
-          downBtn.addEventListener("click", function() {
-            if (index === order.length - 1) return;
-            var next = order.slice();
-            var tmp = next[index + 1];
-            next[index + 1] = next[index];
-            next[index] = tmp;
-            commit(next, hidden);
-          });
-          var visibilityBtn = el("button", {
-            type: "button",
-            class: "a11y-widget-btn",
-            text: isHidden ? "Show" : "Hide",
-            "aria-label": (isHidden ? "Show " : "Hide ") + def.label
-          });
-          visibilityBtn.addEventListener("click", function() {
+          addActionButton(actions, isHidden ? "⊘" : "👁", (isHidden ? "Show " : "Hide ") + def.label, false, function() {
             var nextHidden = hidden.slice();
             var extra = {};
             if (isHidden) {
@@ -4188,26 +4301,40 @@
             }
             commit(order, nextHidden, extra);
           });
-          actions.appendChild(upBtn);
-          actions.appendChild(downBtn);
-          actions.appendChild(visibilityBtn);
-          item.appendChild(actions);
-          list.appendChild(item);
+
+          if (checkboxWrap) {
+            checkboxWrap.appendChild(actions);
+          } else if (title) {
+            var heading = el("div", { class: "a11y-tool-manage-heading" });
+            primary.insertBefore(heading, title);
+            heading.appendChild(title);
+            heading.appendChild(actions);
+          } else {
+            primary.insertBefore(actions, primary.firstChild);
+          }
         })(i);
       }
-
-      customizePanel.appendChild(list);
-      var resetLayoutBtn = el("button", {
-        type: "button",
-        class: "a11y-widget-btn",
-        text: "Reset Tool Layout",
-        style: "width: 100%; margin-top: 0.5rem;"
-      });
-      resetLayoutBtn.addEventListener("click", function() {
-        commit([], []);
-      });
-      customizePanel.appendChild(resetLayoutBtn);
     }
+
+    function refreshToolManagement() {
+      var current = getCurrentWidgetPrefs();
+      manageToolsBtn.setAttribute("aria-pressed", manageMode ? "true" : "false");
+      manageToolsBtn.classList.toggle("active", manageMode);
+      resetToolLayoutBtn.hidden = !manageMode;
+      root.classList.toggle("a11y-widget-manage-mode", manageMode);
+      applyFeatureLayout(root, current, cfg, manageMode);
+      addInlineManageControls(root);
+    }
+
+    manageToolsBtn.addEventListener("click", function() {
+      manageMode = !manageMode;
+      refreshToolManagement();
+    });
+
+    resetToolLayoutBtn.addEventListener("click", function() {
+      onChange({ featureOrder: [], hiddenFeatures: [] });
+      refreshToolManagement();
+    });
 
     function renderSupportPanel() {
       supportPanel.innerHTML = "";
@@ -4259,14 +4386,18 @@
           issueType: typeSelect.value,
           message: message,
           contactEmail: emailInput.value.trim() || null
-        }).then(function(ok) {
-          if (ok) {
+        }).then(function(result) {
+          if (result && result.ok) {
             messageInput.value = "";
             status.style.color = "";
             status.textContent = "Support case sent. Thank you.";
           } else {
             status.style.color = "#b42318";
-            status.textContent = "Unable to send right now. Please try again later.";
+            if (result && result.status === 403) {
+              status.textContent = result.error || "This site is not authorized to send support cases.";
+            } else {
+              status.textContent = result && result.error ? result.error : "Unable to send right now. Please try again later.";
+            }
           }
         }).finally(function() {
           submitBtn.disabled = false;
@@ -4277,7 +4408,6 @@
       supportPanel.appendChild(form);
     }
 
-    renderCustomizePanel();
     if (cfg.supportEnabled !== false) renderSupportPanel();
 
     if (cfg.features.readableFont) {
@@ -6189,7 +6319,7 @@
       }
     }, 2000);
 
-    applyFeatureLayout(root, prefs, cfg);
+    applyFeatureLayout(root, prefs, cfg, manageMode);
 
     return { 
       root: root, 
@@ -6197,11 +6327,10 @@
       close: closePanel,
       toggle: togglePanel,
       controls: controls,
-      refreshCustomize: renderCustomizePanel,
       updateControls: function(nextPrefs) {
         updateUIControls(controls, nextPrefs);
-        applyFeatureLayout(root, nextPrefs, cfg);
-        renderCustomizePanel();
+        applyFeatureLayout(root, nextPrefs, cfg, manageMode);
+        addInlineManageControls(root);
       }
     };
   }

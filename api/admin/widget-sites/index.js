@@ -8,7 +8,24 @@ async function listSites(req, res) {
   let rows;
   if (search) {
     rows = await sql`
-      SELECT wi.*, c.email AS client_email, c.company_name
+      SELECT
+        wi.*,
+        c.email AS client_email,
+        c.company_name,
+        (
+          SELECT COUNT(*)::int
+          FROM widget_errors we
+          WHERE we.site_id = wi.site_id
+            AND we.domain IS NOT DISTINCT FROM wi.domain
+            AND we.is_resolved = false
+        ) AS unresolved_error_count,
+        (
+          SELECT COUNT(*)::int
+          FROM support_cases sc
+          WHERE sc.site_id = wi.site_id
+            AND sc.domain IS NOT DISTINCT FROM wi.domain
+            AND sc.status NOT IN ('resolved', 'closed')
+        ) AS open_support_case_count
       FROM widget_installations wi
       LEFT JOIN clients c ON wi.client_id = c.id
       WHERE wi.site_id ILIKE ${'%' + search + '%'}
@@ -19,7 +36,24 @@ async function listSites(req, res) {
     `;
   } else if (status) {
     rows = await sql`
-      SELECT wi.*, c.email AS client_email, c.company_name
+      SELECT
+        wi.*,
+        c.email AS client_email,
+        c.company_name,
+        (
+          SELECT COUNT(*)::int
+          FROM widget_errors we
+          WHERE we.site_id = wi.site_id
+            AND we.domain IS NOT DISTINCT FROM wi.domain
+            AND we.is_resolved = false
+        ) AS unresolved_error_count,
+        (
+          SELECT COUNT(*)::int
+          FROM support_cases sc
+          WHERE sc.site_id = wi.site_id
+            AND sc.domain IS NOT DISTINCT FROM wi.domain
+            AND sc.status NOT IN ('resolved', 'closed')
+        ) AS open_support_case_count
       FROM widget_installations wi
       LEFT JOIN clients c ON wi.client_id = c.id
       WHERE wi.status = ${status}
@@ -28,7 +62,24 @@ async function listSites(req, res) {
     `;
   } else {
     rows = await sql`
-      SELECT wi.*, c.email AS client_email, c.company_name
+      SELECT
+        wi.*,
+        c.email AS client_email,
+        c.company_name,
+        (
+          SELECT COUNT(*)::int
+          FROM widget_errors we
+          WHERE we.site_id = wi.site_id
+            AND we.domain IS NOT DISTINCT FROM wi.domain
+            AND we.is_resolved = false
+        ) AS unresolved_error_count,
+        (
+          SELECT COUNT(*)::int
+          FROM support_cases sc
+          WHERE sc.site_id = wi.site_id
+            AND sc.domain IS NOT DISTINCT FROM wi.domain
+            AND sc.status NOT IN ('resolved', 'closed')
+        ) AS open_support_case_count
       FROM widget_installations wi
       LEFT JOIN clients c ON wi.client_id = c.id
       ORDER BY wi.last_seen_at DESC
@@ -48,6 +99,10 @@ async function listSites(req, res) {
       userAgent: row.user_agent,
       status: row.status,
       metadata: row.metadata || {},
+      title: row.metadata?.title || null,
+      faviconUrl: row.metadata?.faviconUrl || null,
+      unresolvedErrorCount: Number(row.unresolved_error_count || 0),
+      openSupportCaseCount: Number(row.open_support_case_count || 0),
       client: row.client_id ? {
         id: row.client_id,
         email: row.client_email,

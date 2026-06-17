@@ -5,10 +5,16 @@ import './Pages.css'
 export default function Docs() {
   const configCode = `window.__A11Y_WIDGET__ = {
   siteId: "string",              // Optional: Auto-detected from domain if not provided
+  apiKey: "string",              // Optional: Client API key for protected backend endpoints
+  licenseKey: "string",          // Optional: License key alias for backend authorization
   position: "left" | "right",     // Optional: Widget position (default: "right")
   surfaces: ["string"],           // Optional: CSS selectors (default: ["body"])
   enableTelemetry: boolean,       // Optional: Enable telemetry (default: false)
   telemetryEndpoint: "string",    // Optional: Backend endpoint (default: null)
+  heartbeatEndpoint: "string",    // Optional: Defaults to telemetry backend + /api/widget/heartbeat
+  errorEndpoint: "string",        // Optional: Defaults to telemetry backend + /api/widget/errors
+  supportEndpoint: "string",      // Optional: Defaults to telemetry backend + /api/support/cases
+  translateEndpoint: "string",    // Optional: Defaults to telemetry backend + /api/translate
   zIndex: number,                 // Optional: Widget z-index (default: 2147483000)
   initialOpen: boolean,           // Optional: Open on load (default: false)
   locale: "string",               // Optional: Locale (default: "en")
@@ -97,8 +103,26 @@ Content-Type: application/json
 
         <div className="card" style={{ marginTop: '1.5rem' }}>
           <h3>Backend Endpoint</h3>
-          <p>If <code>telemetryEndpoint</code> is set, events are POSTed to your backend:</p>
+          <p>If <code>telemetryEndpoint</code> is set, events are POSTed to your backend and the widget derives heartbeat, error, support, and translation endpoints from the same base URL:</p>
           <CodeBlock code={telemetryCode} />
+          <p>Protected backend endpoints validate each request against the database. Production installs must use a registered domain or include a valid <code>apiKey</code>/<code>licenseKey</code>. Local development origins such as <code>localhost</code> and <code>127.0.0.1</code> are allowed for logging endpoint tests.</p>
+        </div>
+
+        <div className="card" style={{ marginTop: '1.5rem' }}>
+          <h3>Authorized Site Setup</h3>
+          <ol>
+            <li>Create or select the client in the employee/admin dashboard.</li>
+            <li>Add every production domain where the widget will run, without <code>https://</code>.</li>
+            <li>Copy the client API key and place it in the widget config as <code>apiKey</code>.</li>
+            <li>Use the assigned <code>siteId</code> consistently in the snippet and client record.</li>
+            <li>Verify <code>/api/health</code> reports <code>database: connected</code> before expecting monitoring data.</li>
+          </ol>
+          <p>A valid heartbeat automatically creates or updates the installation record shown in Employee Monitoring, including URL, title, favicon, version, health status, unresolved errors, and support case counts.</p>
+        </div>
+
+        <div className="card" style={{ marginTop: '1.5rem' }}>
+          <h3>Tool Management</h3>
+          <p>Visitors can click <strong>Tools</strong> inside the widget header to move controls up/down or hide/show unused tools. The Support button remains available.</p>
         </div>
 
         <h2 id="wcag-coverage">WCAG 2.1 AA Coverage</h2>
@@ -237,4 +261,3 @@ Content-Type: application/json
     </section>
   )
 }
-

@@ -7,6 +7,7 @@ This guide covers installing the Accessibility Widget v1 on WordPress sites.
 - WordPress admin access
 - Ability to edit theme files or use plugins
 - CDN domain where widget is hosted
+- For monitoring/support/translation: a registered domain and client API key from the employee/admin dashboard
 
 ## Installation Methods
 
@@ -39,14 +40,22 @@ This guide covers installing the Accessibility Widget v1 on WordPress sites.
 ```php
 <!-- Accessibility Widget - Just one line! -->
 <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.7.0/a11y-widget-loader-v1.7.0.js" defer></script>
+```
+
+For a monitored production install, place this before the loader:
+
+```php
+<script>
   window.__A11Y_WIDGET__ = {
     siteId: "<?php echo get_option('a11y_site_id', 'wordpress-site'); ?>",
+    apiKey: "<?php echo esc_js(get_option('a11y_api_key', 'YOUR_CLIENT_API_KEY')); ?>",
     position: "right",
     surfaces: ["body", "main", ".entry-content"],
-    enableTelemetry: false
+    enableTelemetry: true,
+    telemetryEndpoint: "https://your-widget-backend.com/api/telemetry"
   };
 </script>
-<script src="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.7.0/a11y-widget-loader-v1.7.0.js" defer></script>
 ```
 
 6. Click **Update File**
@@ -73,12 +82,14 @@ function a11y_widget_enqueue() {
     <script>
       window.__A11Y_WIDGET__ = {
         siteId: "<?php echo esc_js(get_option('a11y_site_id', 'wordpress-site')); ?>",
+        apiKey: "<?php echo esc_js(get_option('a11y_api_key', '')); ?>",
         position: "<?php echo esc_js(get_option('a11y_position', 'right')); ?>",
         surfaces: ["body", "main", ".entry-content", ".wp-block-post-content"],
-        enableTelemetry: <?php echo get_option('a11y_telemetry', false) ? 'true' : 'false'; ?>
+        enableTelemetry: <?php echo get_option('a11y_telemetry', false) ? 'true' : 'false'; ?>,
+        telemetryEndpoint: "<?php echo esc_js(get_option('a11y_telemetry_endpoint', 'https://your-widget-backend.com/api/telemetry')); ?>"
       };
     </script>
-    <script src="https://cdn.YOURDOMAIN.com/a11y-widget/v1/a11y-widget.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.7.0/a11y-widget-loader-v1.7.0.js" defer></script>
     <?php
 }
 add_action('wp_head', 'a11y_widget_enqueue');
@@ -103,6 +114,19 @@ If WordPress blocks inline scripts (rare), use data attributes:
 ```
 
 ## WordPress-Specific Configuration
+
+### Authorize the Site for Monitoring
+
+The widget UI can load with the one-line script. Database-backed heartbeat tracking, widget error logs, support cases, and translation require backend validation.
+
+1. Log in to the employee/admin dashboard.
+2. Create or select the client record and copy the API key.
+3. Add the WordPress production domain without protocol, for example `example.com` and `www.example.com`.
+4. Use the same `siteId` in WordPress that is assigned to the client.
+5. Add the copied key as `apiKey` or `licenseKey`.
+6. Set `telemetryEndpoint` to the backend `/api/telemetry` URL.
+
+Local development domains such as `localhost` and `127.0.0.1` can send logging requests for testing. Deployed WordPress domains still require a registered domain match or valid API/license key.
 
 ### Recommended Surfaces
 
@@ -233,4 +257,3 @@ add_action('wp_head', 'a11y_widget_scripts', 1);
 - Configure [surfaces](README.md#surface-scoping) for your WordPress content
 - Set up [telemetry](README.md#telemetry-optional) if needed
 - Review [support statement](../support-statement.md) for scope boundaries
-

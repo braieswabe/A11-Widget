@@ -56,6 +56,7 @@ const steps = [
       'Open your site in a new tab or incognito window',
       'Look for the accessibility icon (bottom-right corner by default)',
       'Click it to open the accessibility panel',
+      'Click Tools in the panel header to reorder or hide/show widget controls',
       'Try pressing Alt + A (Option + A on Mac) to toggle the widget via keyboard'
     ]
   }
@@ -91,9 +92,10 @@ export default function WordPress() {
   const telemetryCode = `<script>
   window.__A11Y_WIDGET__ = {
     siteId: "yourdomain.com",
+    apiKey: "YOUR_CLIENT_API_KEY",
     position: "right",
     enableTelemetry: true,
-    telemetryEndpoint: "https://your-backend.com/api/telemetry",
+    telemetryEndpoint: "https://your-widget-backend.com/api/telemetry",
     surfaces: [
       "body",
       "main",
@@ -129,6 +131,7 @@ export default function WordPress() {
             <li>WordPress admin access (Administrator role)</li>
             <li>Ability to install plugins on your WordPress site</li>
             <li>5 minutes of your time</li>
+            <li>For monitoring/support: the domain registered in the employee dashboard and a client API key</li>
           </ul>
         </div>
 

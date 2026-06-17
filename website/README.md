@@ -84,9 +84,14 @@ window.__A11Y_WIDGET__ = {
   siteId: "docs-site",
   position: "right",
   surfaces: ["body", "main"],
-  enableTelemetry: false
+  enableTelemetry: true,
+  telemetryEndpoint: "/api/telemetry"
 };
 ```
+
+When `telemetryEndpoint` is configured, the widget derives the heartbeat, widget error, support case, and translation endpoints from the same backend. Local development now reads `NEON_DATABASE_URL` from the repo `.env`, and `/api/health` should report `database: connected` when Neon is reachable.
+
+The `Customize` tab has been removed from the widget. Visitors now use the `Tools` button in the widget header to reorder controls or hide/show unused tools inline.
 
 ## Deployment
 
@@ -100,7 +105,7 @@ The website is configured to deploy to Vercel:
 
 ### Environment Variables
 
-No environment variables required for basic deployment.
+The public demo can load without a database, but tracking and admin monitoring require `NEON_DATABASE_URL` in local `.env` and in the deployment environment.
 
 ## Downloadable Example
 

@@ -7,6 +7,7 @@ This guide covers installing the Accessibility Widget v1 on Next.js applications
 - Next.js project (App Router or Pages Router)
 - Access to `_app.tsx`, `layout.tsx`, or `_document.tsx`
 - CDN domain where widget is hosted
+- For monitoring/support/translation: a registered domain and client API key from the employee/admin dashboard
 
 ## App Router (Next.js 13+)
 
@@ -78,6 +79,8 @@ Create `.env.local`:
 ```env
 NEXT_PUBLIC_A11Y_SITE_ID=your-site-id
 NEXT_PUBLIC_A11Y_POSITION=right
+NEXT_PUBLIC_A11Y_API_KEY=YOUR_CLIENT_API_KEY
+NEXT_PUBLIC_A11Y_TELEMETRY_ENDPOINT=https://your-widget-backend.com/api/telemetry
 ```
 
 In `app/layout.tsx`:
@@ -98,9 +101,11 @@ export default function RootLayout({
           {`
             window.__A11Y_WIDGET__ = {
               siteId: "${process.env.NEXT_PUBLIC_A11Y_SITE_ID}",
+              apiKey: "${process.env.NEXT_PUBLIC_A11Y_API_KEY || ''}",
               position: "${process.env.NEXT_PUBLIC_A11Y_POSITION || 'right'}",
               surfaces: ["body"],
-              enableTelemetry: false
+              enableTelemetry: Boolean("${process.env.NEXT_PUBLIC_A11Y_TELEMETRY_ENDPOINT || ''}"),
+              telemetryEndpoint: "${process.env.NEXT_PUBLIC_A11Y_TELEMETRY_ENDPOINT || ''}"
             };
           `}
         </Script>
@@ -116,6 +121,8 @@ export default function RootLayout({
 ```
 
 ### Method 3: CSP-Friendly (Data Attributes)
+
+Backend monitoring endpoints validate deployed sites against the database. Register the production domain in the employee/admin dashboard or include a valid `apiKey`/`licenseKey` before enabling telemetry, support cases, widget error logging, or translation. Localhost and `127.0.0.1` are allowed for development logging tests.
 
 If CSP blocks inline scripts:
 
@@ -240,6 +247,8 @@ declare global {
   interface Window {
     __A11Y_WIDGET__?: {
       siteId?: string
+      apiKey?: string
+      licenseKey?: string
       position?: 'left' | 'right'
       surfaces?: string[]
       enableTelemetry?: boolean

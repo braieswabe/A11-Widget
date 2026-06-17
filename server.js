@@ -6,6 +6,28 @@ import fs from 'fs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+function loadLocalEnv() {
+  var envPath = join(__dirname, '.env');
+  if (!fs.existsSync(envPath)) return;
+  var lines = fs.readFileSync(envPath, 'utf8').split(/\r?\n/);
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i].trim();
+    if (!line || line.charAt(0) === '#') continue;
+    var eq = line.indexOf('=');
+    if (eq <= 0) continue;
+    var key = line.slice(0, eq).trim();
+    var value = line.slice(eq + 1).trim();
+    if (!key || Object.prototype.hasOwnProperty.call(process.env, key)) continue;
+    if ((value.charAt(0) === '"' && value.charAt(value.length - 1) === '"') ||
+        (value.charAt(0) === "'" && value.charAt(value.length - 1) === "'")) {
+      value = value.slice(1, -1);
+    }
+    process.env[key] = value;
+  }
+}
+
+loadLocalEnv();
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 

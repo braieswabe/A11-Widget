@@ -17,6 +17,8 @@ This widget is a **support layer** + **render-time accessibility controls** — 
 - ✅ **Reading Aids**: Reading ruler, screen mask, text-only mode, adjustable margins
 - ✅ **Focus Tools**: Customizable cursor size, page magnifier
 - ✅ **Dictionary**: Double-click words to see definitions
+- ✅ **Inline Tool Management**: Use the widget's `Tools` button to reorder tools and hide/show unused controls
+- ✅ **Support + Monitoring**: Optional backend endpoints for telemetry, install heartbeats, widget errors, support cases, and translation
 
 **Scope boundaries**: This widget only affects elements you explicitly declare as surfaces. It does not fix host-site HTML outside those surfaces, third-party embeds, or guarantee full-site compliance. PDF text extraction is attempted for same-origin PDFs but may be limited by CORS restrictions.
 
@@ -65,20 +67,22 @@ initA11yWidget({
 
 **⌨️ Keyboard Shortcut**: Press **Alt+A** (Option+A on Mac) from anywhere on the page to quickly open/close the accessibility widget. The shortcut doesn't interfere with typing in input fields.
 
-### Optional: Customize Settings
+### Optional Configuration
 
 #### CDN Method
 
-If you want to customize the widget, add configuration before the loader script:
+If you want to configure surfaces, telemetry, monitoring, or support routing, add configuration before the loader script:
 
 ```html
 <script>
   window.__A11Y_WIDGET__ = {
     siteId: "example.com",
+    apiKey: "YOUR_CLIENT_API_KEY",
     position: "right",  // Optional: "left" or "right"
     keyboardShortcut: "Alt+A",  // Optional: "Alt+A", "Ctrl+Alt+A", or null to disable
     globalMode: false,  // Optional: If true, applies transformations to entire website (fonts, colors, sizes)
-    surfaces: ["body", "main"]  // Optional: CSS selectors (ignored if globalMode is true)
+    surfaces: ["body", "main"],  // Optional: CSS selectors (ignored if globalMode is true)
+    telemetryEndpoint: "https://your-widget-backend.com/api/telemetry"
   };
 </script>
 <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.7.0/a11y-widget-loader-v1.7.0.js" defer></script>
@@ -94,14 +98,33 @@ import "@careerdriver/a11y-widget/styles.css";
 
 initA11yWidget({
   siteId: "example.com",
+  apiKey: "YOUR_CLIENT_API_KEY",
   position: "right",
   keyboardShortcut: "Alt+A",
   globalMode: false,
-  surfaces: ["body", "main"]
+  surfaces: ["body", "main"],
+  telemetryEndpoint: "https://your-widget-backend.com/api/telemetry"
 });
 ```
 
 **Global Mode**: When enabled, the widget applies transformations (fonts, font sizes, colors, spacing) to the entire website, completely overhauling the user interface. When disabled (default), transformations only apply to declared surfaces.
+
+**Tool Management**: Visitors can click `Tools` inside the widget header to show inline up/down and visibility controls beside each tool name. Order and hidden tools persist per visitor.
+
+**Monitoring**: When `telemetryEndpoint` is set, the widget also derives `/api/widget/heartbeat`, `/api/widget/errors`, `/api/support/cases`, and `/api/translate` from the same backend unless you override those endpoints directly.
+
+### Authorized Monitoring Installation
+
+The one-line install can run the widget UI without backend monitoring. To use database-backed heartbeat tracking, widget error logging, support cases, or translation, the site must be authorized by the backend first.
+
+1. Log in to the employee/admin dashboard.
+2. Create or select the client record and copy its API key.
+3. Add every production domain where the widget will run, without protocol, for example `example.com` and `www.example.com`.
+4. Use the same `siteId` in the website snippet that is assigned to that client.
+5. Add the client API key as `apiKey` or `licenseKey` in the widget config.
+6. Set `telemetryEndpoint` to your backend `/api/telemetry`. The widget will derive heartbeat, error, support, and translation endpoints from the same backend unless they are overridden.
+
+Development origins such as `localhost` and `127.0.0.1` are allowed for logging endpoints so local demos can submit support cases and heartbeats. Production domains still require a registered domain match or a valid API/license key.
 
 ### Custom Button Control
 
@@ -118,12 +141,18 @@ Both methods support the same configuration options:
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `siteId` | string | `null` | Auto-detected from hostname if not provided |
+| `apiKey` | string | `null` | Client API key used by protected backend endpoints |
+| `licenseKey` | string | `null` | Alias for backend authorization when using license-key terminology |
 | `position` | `"left"\|"right"` | `"right"` | Widget position on screen |
 | `keyboardShortcut` | string\|null | `"Alt+A"` | Global keyboard shortcut to open/close widget (e.g., `"Alt+A"`, `"Ctrl+Alt+A"`, or `null` to disable) |
 | `globalMode` | boolean | `false` | If `true`, applies transformations to entire website (fonts, colors, sizes). When enabled, `surfaces` is ignored. |
 | `surfaces` | string[] | `["body"]` | CSS selectors to mark as `data-a11y-surface="true"` (ignored if `globalMode` is `true`) |
 | `enableTelemetry` | boolean | `false` | Enable telemetry events |
 | `telemetryEndpoint` | string | `null` | Backend endpoint for telemetry (e.g., `/api/telemetry`) |
+| `heartbeatEndpoint` | string | Derived from `telemetryEndpoint` | Backend endpoint for widget installation heartbeats |
+| `errorEndpoint` | string | Derived from `telemetryEndpoint` | Backend endpoint for widget runtime errors |
+| `supportEndpoint` | string | Derived from `telemetryEndpoint` | Backend endpoint for visitor support cases |
+| `translateEndpoint` | string | Derived from `telemetryEndpoint` | Backend endpoint for server-side translation |
 | `zIndex` | number | `2147483000` | Widget z-index |
 | `initialOpen` | boolean | `false` | Open widget on page load |
 | `locale` | string | `"en"` | Locale (future use) |
@@ -215,6 +244,8 @@ If `enableTelemetry: true` and `telemetryEndpoint` is set, the widget sends even
 
 Events include: `siteId`, `event`, `payload`, `url`, `userAgent` (no PII).
 
+Protected backend features use the Neon-backed validation tables. A production request to heartbeat, widget errors, support cases, or translation must come from a registered domain or include a valid `apiKey`/`licenseKey`. Localhost and `127.0.0.1` are allowed for development logging tests.
+
 ## API Reference
 
 ### Telemetry Endpoint
@@ -230,6 +261,17 @@ Events include: `siteId`, `event`, `payload`, `url`, `userAgent` (no PII).
   "userAgent": "Mozilla/5.0..."
 }
 ```
+
+### Monitoring Endpoints
+
+These endpoints are derived automatically from `telemetryEndpoint` unless configured directly:
+
+- **POST** `/api/widget/heartbeat` — Creates or updates the installed-site record with domain, URL, title, favicon, version, browser metadata, and last seen time.
+- **POST** `/api/widget/errors` — Stores widget runtime/API failures for Employee Monitoring.
+- **POST** `/api/support/cases` — Stores visitor support cases from the widget Support button.
+- **POST** `/api/translate` — Runs server-side translation and cache lookup when configured.
+
+Production requests are authorized by allowed domain, client API key, or license key. Make sure `NEON_DATABASE_URL` is configured on the backend and `/api/health` reports `database: connected`.
 
 ### Config Endpoint (Optional)
 
@@ -322,6 +364,14 @@ If CSP blocks inline scripts, use data attributes:
 3. Check browser network tab for POST requests
 4. Verify backend endpoint is accessible
 5. Check CORS headers allow your domain
+
+### Backend Request Returns 403
+
+1. Add the deployed domain in the employee/admin dashboard without protocol, for example `example.com`.
+2. Confirm the snippet uses the assigned `siteId`.
+3. Include the client `apiKey` or `licenseKey` if the domain is not already allowed.
+4. Confirm `telemetryEndpoint` points to the correct backend `/api/telemetry` URL.
+5. Confirm `/api/health` returns `database: connected`.
 
 ## Browser Support
 

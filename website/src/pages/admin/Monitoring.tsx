@@ -6,10 +6,14 @@ interface WidgetSite {
   id: string
   siteId: string
   domain: string
+  title?: string | null
+  faviconUrl?: string | null
   lastSeenAt: string
   lastUrl: string | null
   widgetVersion: string | null
   status: string
+  unresolvedErrorCount?: number
+  openSupportCaseCount?: number
 }
 
 interface WidgetError {
@@ -117,6 +121,25 @@ export default function Monitoring() {
     return acc
   }, {})
 
+  function formatUrl(domain: string) {
+    if (!domain) return ''
+    return domain.startsWith('http://') || domain.startsWith('https://') ? domain : `https://${domain}`
+  }
+
+  function statusChip(status: string) {
+    const colors: Record<string, { bg: string; color: string }> = {
+      active: { bg: '#dcfce7', color: '#166534' },
+      stale: { bg: '#fef3c7', color: '#92400e' },
+      down: { bg: '#fee2e2', color: '#991b1b' }
+    }
+    const style = colors[status] || { bg: '#e5e7eb', color: '#374151' }
+    return (
+      <span style={{ display: 'inline-flex', borderRadius: '999px', background: style.bg, color: style.color, padding: '0.2rem 0.55rem', fontSize: '0.8rem', fontWeight: 700 }}>
+        {status}
+      </span>
+    )
+  }
+
   return (
     <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', alignItems: 'center' }}>
@@ -147,7 +170,7 @@ export default function Monitoring() {
             <div className="feature-item">
               <h3>Support Cases</h3>
               <p style={{ fontSize: '2rem', margin: 0 }}>{cases.filter((item) => item.status !== 'closed' && item.status !== 'resolved').length}</p>
-              <p>Visitor-submitted cases from the widget Support tab.</p>
+              <p>Visitor-submitted cases from the widget Support button.</p>
             </div>
           </div>
 
@@ -155,16 +178,43 @@ export default function Monitoring() {
             <h2>Installed Sites</h2>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
-                <tr><th>Site</th><th>Domain</th><th>Status</th><th>Version</th><th>Last seen</th></tr>
+                <tr>
+                  <th>Site</th>
+                  <th>Status</th>
+                  <th>Errors</th>
+                  <th>Cases</th>
+                  <th>Version</th>
+                  <th>Last seen</th>
+                  <th>Latest URL</th>
+                </tr>
               </thead>
               <tbody>
                 {sites.map((site) => (
                   <tr key={site.id}>
-                    <td>{site.siteId}</td>
-                    <td>{site.domain}</td>
-                    <td>{site.status}</td>
+                    <td>
+                      <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', minWidth: '220px' }}>
+                        {site.faviconUrl ? (
+                          <img src={site.faviconUrl} alt="" width="24" height="24" style={{ borderRadius: '6px', flex: '0 0 auto' }} />
+                        ) : (
+                          <span style={{ width: '24px', height: '24px', borderRadius: '6px', background: '#e5e7eb', display: 'inline-block', flex: '0 0 auto' }} />
+                        )}
+                        <div>
+                          <strong>{site.title || site.siteId}</strong>
+                          <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                            <a href={formatUrl(site.domain)} target="_blank" rel="noreferrer">{site.domain}</a>
+                          </div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{site.siteId}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>{statusChip(site.status)}</td>
+                    <td>{site.unresolvedErrorCount || 0}</td>
+                    <td>{site.openSupportCaseCount || 0}</td>
                     <td>{site.widgetVersion || '-'}</td>
                     <td>{new Date(site.lastSeenAt).toLocaleString()}</td>
+                    <td style={{ maxWidth: '280px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {site.lastUrl ? <a href={site.lastUrl} target="_blank" rel="noreferrer">{site.lastUrl}</a> : '-'}
+                    </td>
                   </tr>
                 ))}
               </tbody>

@@ -7,6 +7,9 @@ This guide covers installing the Accessibility Widget v1 via Google Tag Manager 
 - Google Tag Manager access
 - GTM container ID
 - CDN domain where widget is hosted
+- For monitoring/support/translation: a registered domain and client API key from the employee/admin dashboard
+
+Backend monitoring endpoints validate deployed sites against the database. Register the production domain in the employee/admin dashboard or include a valid `apiKey`/`licenseKey` before enabling telemetry, support cases, widget error logging, or translation.
 
 ## Installation Steps
 
@@ -269,4 +272,3 @@ If CSP blocks GTM:
 - Configure [surfaces](README.md#surface-scoping) for your content
 - Set up [telemetry](README.md#telemetry-optional) if needed
 - Review [support statement](../support-statement.md) for scope boundaries
-

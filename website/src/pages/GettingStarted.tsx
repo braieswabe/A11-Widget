@@ -43,14 +43,35 @@ export default function GettingStarted() {
 
         <h2>Optional Configuration</h2>
         <div className="card" style={{ marginBottom: '2rem' }}>
-          <p>Customize widget settings (all optional):</p>
+          <p>Configure surfaces and optional backend tracking. If you set <code>telemetryEndpoint</code>, the widget derives heartbeat, error, support, and translation endpoints from the same backend.</p>
           <CodeBlock code={`<script>
   window.__A11Y_WIDGET__ = {
+    siteId: "example.com",
+    apiKey: "YOUR_CLIENT_API_KEY",
     position: "left",              // "left" or "right"
-    surfaces: ["body", "main"]     // CSS selectors
+    surfaces: ["body", "main"],    // CSS selectors
+    telemetryEndpoint: "https://your-widget-backend.com/api/telemetry"
   };
 </script>
 <script src="${WIDGET_LOADER_URL}" defer></script>`} />
+        </div>
+
+        <h2>Authorized Monitoring Setup</h2>
+        <div className="card" style={{ marginBottom: '2rem' }}>
+          <p>Heartbeat tracking, widget error logs, visitor support cases, and translation use database-backed API validation. Complete these steps before installing the monitored snippet on a production site:</p>
+          <ol>
+            <li>Log in as an employee/admin and open the client or domain management area.</li>
+            <li>Create or select the client record and copy the client API key.</li>
+            <li>Add each allowed production domain without protocol, for example <code>example.com</code> and <code>www.example.com</code>.</li>
+            <li>Use the assigned <code>siteId</code> in the widget config and include the copied <code>apiKey</code>.</li>
+            <li>Set <code>telemetryEndpoint</code> to this backend&apos;s <code>/api/telemetry</code> URL. Heartbeat, error, support, and translation endpoints are derived automatically.</li>
+          </ol>
+          <p style={{ marginBottom: 0 }}>Local development origins such as <code>localhost</code> and <code>127.0.0.1</code> can use logging endpoints for testing. Real deployed domains still require a registered domain or valid API/license key.</p>
+        </div>
+
+        <div className="card" style={{ marginBottom: '2rem' }}>
+          <h3>Manage Tool Order</h3>
+          <p>Open the widget and click <strong>Tools</strong> in the panel header to move controls up/down or hide/show unused tools. The Support button always stays available.</p>
         </div>
 
         <h2>Test It</h2>
@@ -68,4 +89,3 @@ export default function GettingStarted() {
     </section>
   )
 }
-

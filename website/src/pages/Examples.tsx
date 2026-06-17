@@ -8,7 +8,9 @@ export default function Examples() {
 
   const advancedCode = `<script>
   window.__A11Y_WIDGET__ = {
-    position: "left",              // Optional: auto-detects siteId from domain
+    siteId: "example.com",
+    apiKey: "YOUR_CLIENT_API_KEY",
+    position: "left",
     surfaces: [
       "body",
       "main",
@@ -16,7 +18,7 @@ export default function Examples() {
       "[data-canonical-surface='true']"
     ],
     enableTelemetry: true,
-    telemetryEndpoint: "/api/telemetry"
+    telemetryEndpoint: "https://your-widget-backend.com/api/telemetry"
   };
 </script>
 <script src="${WIDGET_LOADER_URL}" defer></script>`
@@ -98,8 +100,13 @@ export default function Examples() {
 
         <div className="card" style={{ marginBottom: '2rem' }}>
           <h3>Advanced Configuration</h3>
-          <p>Customize surfaces and features:</p>
+          <p>Configure surfaces and backend tracking. Register the production domain in the employee dashboard or include a valid API key before enabling monitoring. Heartbeat, error, support, and translation endpoints are derived from the telemetry backend unless overridden.</p>
           <CodeBlock code={advancedCode} language="javascript" />
+        </div>
+
+        <div className="card" style={{ marginBottom: '2rem' }}>
+          <h3>Inline Tool Management</h3>
+          <p>Visitors can click <strong>Tools</strong> in the widget header to move controls up/down or hide/show unused tools inline. The Support button stays available.</p>
         </div>
 
         <h2>Use Cases</h2>

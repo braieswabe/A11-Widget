@@ -7,6 +7,9 @@ This guide covers installing the Accessibility Widget v1 on server-side rendered
 - Access to base template/layout file
 - Ability to edit HTML templates
 - CDN domain where widget is hosted
+- For monitoring/support/translation: a registered domain and client API key from the employee/admin dashboard
+
+Backend monitoring endpoints validate deployed sites against the database. Register the production domain in the employee/admin dashboard or include a valid `apiKey`/`licenseKey` before enabling telemetry, support cases, widget error logging, or translation.
 
 ## Django
 
@@ -331,4 +334,3 @@ surfaces: [
 - Configure [surfaces](README.md#surface-scoping) for your content
 - Set up [telemetry](README.md#telemetry-optional) if needed
 - Review [support statement](../support-statement.md) for scope boundaries
-

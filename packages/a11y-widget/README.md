@@ -18,7 +18,9 @@ import "@careerdriver/a11y-widget/styles.css";
 
 initA11yWidget({ 
   siteId: "example.com",
-  position: "right"
+  apiKey: "YOUR_CLIENT_API_KEY",
+  position: "right",
+  telemetryEndpoint: "https://your-widget-backend.com/api/telemetry"
 });
 ```
 
@@ -28,7 +30,9 @@ initA11yWidget({
 <script>
   window.__A11Y_WIDGET__ = {
     siteId: "example.com",
-    position: "right"
+    apiKey: "YOUR_CLIENT_API_KEY",
+    position: "right",
+    telemetryEndpoint: "https://your-widget-backend.com/api/telemetry"
   };
 </script>
 <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.7.0/a11y-widget-loader-v1.7.0.js" defer></script>
@@ -39,13 +43,24 @@ initA11yWidget({
 Both methods support the same configuration options:
 
 - `siteId`: Site identifier (auto-detected from hostname if not provided)
+- `apiKey`: Client API key for protected backend endpoints
+- `licenseKey`: License key alias for backend authorization
 - `position`: Widget position - `"left"` or `"right"` (default: `"right"`)
 - `surfaces`: CSS selectors for surfaces (default: `["body"]`)
 - `globalMode`: Apply transformations to entire website (default: `false`)
 - `keyboardShortcut`: Keyboard shortcut - `"Alt+A"`, `"Ctrl+Alt+A"`, or `null` to disable (default: `"Alt+A"`)
 - `initialOpen`: Open widget on page load (default: `false`)
 - `zIndex`: Widget z-index (default: `2147483000`)
+- `telemetryEndpoint`: Backend telemetry endpoint. Heartbeat, error, support, and translation endpoints are derived from this backend unless set directly.
+- `heartbeatEndpoint`: Widget installation tracking endpoint
+- `errorEndpoint`: Widget runtime error logging endpoint
+- `supportEndpoint`: Visitor support case endpoint
+- `translateEndpoint`: Server-side translation endpoint
 - `features`: Feature flags object (all enabled by default)
+
+Visitors can click `Tools` inside the widget header to reorder tools and hide/show controls inline. Those preferences persist per visitor.
+
+Backend monitoring, support, and translation endpoints validate production installs against the database. Register the domain in the employee/admin dashboard or include a valid `apiKey`/`licenseKey` before enabling `telemetryEndpoint` on a deployed site. Localhost and `127.0.0.1` are allowed for development logging tests.
 
 See full documentation for complete configuration options.
 

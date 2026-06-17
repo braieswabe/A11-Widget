@@ -7,6 +7,9 @@ This guide covers installing the Accessibility Widget v1 on Shopify stores.
 - Shopify admin access
 - Ability to edit theme code
 - CDN domain where widget is hosted
+- For monitoring/support/translation: a registered store domain and client API key from the employee/admin dashboard
+
+Backend monitoring endpoints validate deployed stores against the database. Register the production domain in the employee/admin dashboard or include a valid `apiKey`/`licenseKey` before enabling telemetry, support cases, widget error logging, or translation.
 
 ## Installation Steps
 
@@ -196,4 +199,3 @@ This is more complex but survives theme updates.
 - Test widget on all page types
 - Review [support statement](../support-statement.md) for scope boundaries
 - Consider z-index adjustments for your theme
-

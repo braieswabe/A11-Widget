@@ -18,12 +18,13 @@
   <!-- Uses release v1.7.0 and loads the updated tabbed widget design -->
   <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.7.0/a11y-widget-loader-v1.7.0.js" defer></script>
   
-  <!-- Optional: Customize widget settings (only if needed) -->
+  <!-- Optional: Configure widget settings (only if needed) -->
   <!--
   <script>
     window.__A11Y_WIDGET__ = {
       position: "right",              // Optional: "left" or "right" (default: "right")
       surfaces: ["body", "main"],     // Optional: CSS selectors (default: ["body"])
+      // telemetryEndpoint: "https://your-widget-backend.com/api/telemetry",
       // All other settings use smart defaults - no configuration needed!
     };
   </script>
@@ -250,6 +251,7 @@
         <li>Uses jsDelivr CDN for fast, reliable delivery</li>
         <li>Falls back to GitHub raw URLs if CDN is unavailable</li>
         <li>Site ID is auto-detected from your domain name</li>
+        <li>Click Tools inside the widget to move, hide, or restore controls</li>
       </ul>
       <p><strong>For production:</strong> Just use the same loader script - it works everywhere!</p>
       <pre><code>&lt;!-- Widget Loader (v1.7.0) --&gt;
@@ -263,6 +265,7 @@
       <li>Change the contrast mode and observe the color changes</li>
       <li>Adjust the text size slider and see how content scales</li>
       <li>Try different spacing presets (Normal, Comfortable, Max)</li>
+      <li>Click Tools in the widget header to reorder or hide/show controls</li>
       <li>Enable "Readable font" to see the font change</li>
       <li>Try the preset buttons (Low Vision, Dyslexia-Friendly, Reduced Motion, High Contrast, Large Text)</li>
       <li>Reload the page — your settings should persist!</li>

@@ -147,12 +147,15 @@ const toggleWidget = async () => {
 <script src="${WIDGET_LOADER_URL}" defer></script>`
       },
       {
-        title: 'Optional: Customize Settings',
-        content: 'If needed, add configuration before the loader script:',
+        title: 'Optional: Configure Settings',
+        content: 'If needed, add configuration before the loader script. Register the production domain in the employee dashboard or include a valid API key before enabling backend monitoring:',
         code: `<script>
   window.__A11Y_WIDGET__ = {
+    siteId: "YOUR_SITE_ID",
+    apiKey: "YOUR_CLIENT_API_KEY",
     position: "right",
-    surfaces: ["body", "main"]
+    surfaces: ["body", "main"],
+    telemetryEndpoint: "https://your-widget-backend.com/api/telemetry"
   };
 </script>
 <script src="${WIDGET_LOADER_URL}" defer></script>`

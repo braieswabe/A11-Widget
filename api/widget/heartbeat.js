@@ -13,7 +13,7 @@ export default async function handler(req, res) {
   const { siteId, url, widgetVersion, metadata, licenseKey, apiKey } = req.body || {};
 
   try {
-    const access = await validateWidgetAccess(req, { siteId, licenseKey, apiKey });
+    const access = await validateWidgetAccess(req, { siteId, licenseKey, apiKey, allowDevOrigin: true });
     if (!access.allowed) {
       return res.status(access.status || 403).json({ error: access.error });
     }

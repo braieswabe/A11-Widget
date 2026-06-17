@@ -26,12 +26,23 @@ function domainMatches(requestDomain, allowedDomain) {
   return requestDomain === allowedDomain || requestDomain.endsWith(`.${allowedDomain}`);
 }
 
-export async function validateWidgetAccess(req, { siteId, licenseKey, apiKey } = {}) {
+function isDevDomain(domain) {
+  return domain === 'localhost' ||
+    domain === '127.0.0.1' ||
+    domain === '::1' ||
+    domain.endsWith('.localhost');
+}
+
+export async function validateWidgetAccess(req, { siteId, licenseKey, apiKey, allowDevOrigin = false } = {}) {
   const requestDomain = getRequestDomain(req);
   const key = licenseKey || apiKey || req.headers['x-a11y-api-key'] || req.headers['x-a11y-license-key'] || null;
 
   if (!siteId || typeof siteId !== 'string') {
     return { allowed: false, status: 400, error: 'siteId is required', domain: requestDomain };
+  }
+
+  if (allowDevOrigin && isDevDomain(requestDomain)) {
+    return { allowed: true, domain: requestDomain, clientId: null, reason: 'Development origin allowed' };
   }
 
   if (!process.env.NEON_DATABASE_URL) {
