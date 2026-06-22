@@ -104,7 +104,7 @@ cat package.json
 
 **Important fields**:
 - `name`: `@careerdriver/a11y-widget` ✅
-- `version`: `1.1.0` (or your desired version)
+- `version`: `1.7.3` (or your next desired version)
 - `author`: Add your name/email (optional but recommended)
 - `repository`: Add GitHub repo URL (optional but recommended)
 
@@ -112,7 +112,7 @@ cat package.json
 ```json
 {
   "name": "@careerdriver/a11y-widget",
-  "version": "1.1.0",
+  "version": "1.7.3",
   "author": "careerdriver",
   "repository": {
     "type": "git",
@@ -129,11 +129,11 @@ Make sure the npm package has the latest widget files:
 
 ```bash
 # From root directory
-npm run sync-widget
+npm run release:prepare
 
-# Or manually
-cd packages/a11y-widget
-node ../../scripts/sync-widget-to-npm.js
+# Or do the underlying steps manually
+npm run sync-widget
+npm run build --prefix website
 ```
 
 ---
@@ -143,20 +143,24 @@ node ../../scripts/sync-widget-to-npm.js
 Before publishing, test the package:
 
 ```bash
-cd packages/a11y-widget
+cd /Users/braiebook/CDHQ\ Projects/a11y_widget_v1
 
-# Create a test package tarball
+# Preferred release dry-run from repo root
+npm run release:pack
+
+# Or manually from the package directory
+cd packages/a11y-widget
 npm pack --dry-run
 
 # Create actual tarball
 npm pack
 ```
 
-**Expected output**: `careerdriver-a11y-widget-1.1.0.tgz`
+**Expected output**: `careerdriver-a11y-widget-1.7.3.tgz`
 
 **Verify contents**:
 ```bash
-tar -tzf careerdriver-a11y-widget-1.1.0.tgz | sort
+tar -tzf careerdriver-a11y-widget-1.7.3.tgz | sort
 ```
 
 **Should include**:
@@ -205,6 +209,12 @@ npm requires 2FA to publish packages. If you get a 403 error, you need to:
 ### Publishing:
 
 ```bash
+cd /Users/braiebook/CDHQ\ Projects/a11y_widget_v1
+
+# Preferred publish command from repo root
+npm run release:publish
+
+# Or manually from the package directory
 cd packages/a11y-widget
 
 # Dry run (see what would be published without actually publishing)
@@ -270,12 +280,12 @@ npm run sync-widget
 cd packages/a11y-widget
 
 # Option A: Manual version bump
-# Edit package.json and change version (e.g., 1.1.0 → 1.1.1)
+# Edit package.json and change version (e.g., 1.7.3 → 1.7.4)
 
 # Option B: Use npm version command
-npm version patch    # 1.1.0 → 1.1.1 (bug fixes)
-npm version minor    # 1.1.0 → 1.2.0 (new features)
-npm version major    # 1.1.0 → 2.0.0 (breaking changes)
+npm version patch    # 1.7.3 → 1.7.4 (bug fixes)
+npm version minor    # 1.7.3 → 1.8.0 (new features)
+npm version major    # 1.7.3 → 2.0.0 (breaking changes)
 ```
 
 ### 3. Publish New Version
@@ -326,14 +336,13 @@ npm whoami
 npm access ls-packages @braieswabe
 
 # Sync widget files
-npm run sync-widget
+npm run release:prepare
 
 # Test package
-cd packages/a11y-widget
-npm pack --dry-run
+npm run release:pack
 
 # Publish
-npm publish --access public
+npm run release:publish
 
 # View published package
 npm view @careerdriver/a11y-widget
@@ -347,7 +356,7 @@ npm version patch && npm publish --access public
 ## Package Information
 
 **Package Name**: `@careerdriver/a11y-widget`  
-**Current Version**: `1.1.0`  
+**Current Version**: `1.7.3`  
 **License**: MIT  
 **Type**: ESM Module  
 
@@ -370,12 +379,12 @@ initA11yWidget({ siteId: "example.com" });
 
 1. ✅ Update root `package.json` to use published version:
    ```json
-   "@careerdriver/a11y-widget": "^1.7.0"
+   "@careerdriver/a11y-widget": "^1.7.3"
    ```
 
 2. ✅ Update `website/package.json` to use published version:
    ```json
-   "@careerdriver/a11y-widget": "^1.7.0"
+   "@careerdriver/a11y-widget": "^1.7.3"
    ```
 
 3. ✅ Update README.md with npm installation instructions

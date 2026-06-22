@@ -1611,6 +1611,36 @@ html.a11y-widget-hidden .accessibility-widget {
   border-color: var(--a11y-color-secondary);
 }
 
+.a11y-widget-input{
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  font-size: 14px;
+  line-height: 1.4;
+  font-family: var(--a11y-font-family);
+  border: 1px solid var(--a11y-color-border);
+  border-radius: var(--a11y-radius);
+  background: var(--a11y-color-bg);
+  color: var(--a11y-color-text);
+  cursor: text;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, background-color 0.2s ease, outline-color 0.2s ease;
+  appearance: auto;
+  -webkit-appearance: auto;
+  -moz-appearance: auto;
+}
+
+.a11y-widget-input:hover{
+  border-color: var(--a11y-color-border-dark);
+  background-color: var(--a11y-color-bg-light);
+}
+
+.a11y-widget-input:focus{
+  outline: 3px solid var(--a11y-color-secondary);
+  outline-offset: 2px;
+  border-color: var(--a11y-color-secondary);
+  background-color: var(--a11y-color-bg);
+}
+
 /* Icon customization tab */
 .a11y-icon-design-grid{
   display: grid;
@@ -2783,4 +2813,54 @@ html[data-a11y][data-a11y-contrast="light"] .a11y-toolbar-close-btn {
 
 html[data-a11y][data-a11y-contrast="light"] .a11y-toolbar-close-btn:hover {
   background: rgba(220, 53, 69, 0.3) !important;
+}
+
+/* Widget self-protection: host/global accessibility transforms must never
+   resize or restyle the control surface itself. */
+html[data-a11y] #a11y-widget-root,
+html[data-a11y] #a11y-widget-root *,
+html[data-a11y] #a11y-widget-toolbar,
+html[data-a11y] #a11y-widget-toolbar *{
+  font-family: var(--a11y-font-family) !important;
+  line-height: normal !important;
+  letter-spacing: normal !important;
+  word-spacing: normal !important;
+}
+
+html[data-a11y] #a11y-widget-root,
+html[data-a11y] #a11y-widget-panel{
+  font-size: 14px !important;
+}
+
+html[data-a11y] #a11y-widget-title{
+  font-size: 18px !important;
+  line-height: 1.25 !important;
+}
+
+html[data-a11y] #a11y-widget-description,
+html[data-a11y] #a11y-widget-root .a11y-widget-help{
+  font-size: 12px !important;
+  line-height: 1.5 !important;
+}
+
+html[data-a11y] #a11y-widget-root :where(
+  button, input, select, textarea, label, legend,
+  .a11y-widget-tab,
+  .a11y-widget-btn,
+  .a11y-widget-header-btn,
+  .a11y-widget-preset-btn,
+  .a11y-widget-input,
+  .a11y-widget-select
+){
+  font-size: 14px !important;
+  line-height: 1.4 !important;
+}
+
+html[data-a11y] #a11y-widget-toolbar{
+  font-size: 14px !important;
+}
+
+html[data-a11y] #a11y-widget-toolbar .a11y-toolbar-btn{
+  font-size: 18px !important;
+  line-height: 1 !important;
 }

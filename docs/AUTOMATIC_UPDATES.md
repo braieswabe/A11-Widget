@@ -7,10 +7,10 @@ This document explains how widget updates automatically propagate to all existin
 When users install the widget using the loader script:
 
 ```html
-<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.7.2/a11y-widget-loader-v1.7.2.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.7.3/a11y-widget-loader-v1.7.3.js" defer></script>
 ```
 
-The widget files (`a11y-widget-v1.7.2.js` and `a11y-widget.css`) are loaded directly from the GitHub repository via jsDelivr CDN.
+The widget files (`a11y-widget-v1.7.3.js` and `a11y-widget.css`) are loaded directly from the GitHub repository via jsDelivr CDN.
 
 ## Update Propagation
 
@@ -35,7 +35,7 @@ Example:
 link.href = CDN_BASE + "a11y-widget.css?v=" + new Date().getTime();
 
 // JS loads with cache-busting
-script.src = CDN_BASE + "a11y-widget-v1.7.2.js?v=" + new Date().getTime();
+script.src = CDN_BASE + "a11y-widget-v1.7.3.js?v=" + new Date().getTime();
 ```
 
 ## What Gets Updated Automatically
@@ -75,7 +75,7 @@ If you need to pin to a specific version for stability:
 
 ```html
 <!-- Pin to specific commit -->
-<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.7.2/a11y-widget-loader-v1.7.2.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.7.3/a11y-widget-loader-v1.7.3.js" defer></script>
 ```
 
 **Note**: Version pinning prevents automatic updates. Use only when necessary.
@@ -95,7 +95,7 @@ To force an immediate update for testing:
 
 ```html
 <!-- Add timestamp to loader script URL -->
-<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.7.2/a11y-widget-loader-v1.7.2.js?v=<?php echo time(); ?>" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.7.3/a11y-widget-loader-v1.7.3.js?v=<?php echo time(); ?>" defer></script>
 ```
 
 ## Benefits

@@ -35,7 +35,7 @@ initA11yWidget({
     telemetryEndpoint: "https://your-widget-backend.com/api/telemetry"
   };
 </script>
-<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.7.2/a11y-widget-loader-v1.7.2.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.7.3/a11y-widget-loader-v1.7.3.js" defer></script>
 ```
 
 ## Configuration

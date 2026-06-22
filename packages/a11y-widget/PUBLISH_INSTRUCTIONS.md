@@ -4,7 +4,7 @@
 
 ### ✅ Package Configuration
 - [x] Package name: `@careerdriver/a11y-widget`
-- [x] Version: `1.1.0`
+- [x] Version: `1.7.3`
 - [x] All exports configured correctly
 - [x] Side effects declared
 - [x] TypeScript definitions included
@@ -34,6 +34,14 @@
 ### 1. Final Verification
 
 ```bash
+cd /Users/braiebook/CDHQ\ Projects/a11y_widget_v1
+
+# Sync release assets into the npm package copy
+npm run sync-widget
+
+# Build the website so the install/download pages publish the same release
+npm run build --prefix website
+
 cd packages/a11y-widget
 
 # Verify package.json
@@ -46,13 +54,13 @@ npm pack --dry-run
 npm pack
 ```
 
-**Expected output**: `careerdriver-a11y-widget-1.1.0.tgz`
+**Expected output**: `careerdriver-a11y-widget-1.7.3.tgz`
 
 ### 2. Verify Package Contents
 
 ```bash
 # Extract and inspect
-tar -tzf careerdriver-a11y-widget-1.1.0.tgz | sort
+tar -tzf careerdriver-a11y-widget-1.7.3.tgz | sort
 ```
 
 **Expected files** (7 total):
@@ -141,7 +149,7 @@ For future updates:
 ## Package Information
 
 **Package Name**: `@careerdriver/a11y-widget`  
-**Version**: `1.1.0`  
+**Version**: `1.7.3`  
 **License**: MIT  
 **Type**: ESM Module  
 
@@ -186,7 +194,10 @@ npm view @careerdriver/a11y-widget
 
 All checks passed. Package is production-ready.
 
-**Final Command**:
+**Release Commands**:
 ```bash
-cd packages/a11y-widget && npm publish --access public
+cd /Users/braiebook/CDHQ\ Projects/a11y_widget_v1
+npm run release:prepare
+npm run release:pack
+npm run release:publish
 ```

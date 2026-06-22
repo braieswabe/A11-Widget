@@ -21,7 +21,7 @@ This guide covers installing the Accessibility Widget v1 on WordPress sites.
 
 ```html
 <!-- Just one line - widget loads automatically! -->
-<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.7.2/a11y-widget-loader-v1.7.2.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.7.3/a11y-widget-loader-v1.7.3.js" defer></script>
 ```
 
 4. Click **Save**
@@ -39,7 +39,7 @@ This guide covers installing the Accessibility Widget v1 on WordPress sites.
 
 ```php
 <!-- Accessibility Widget - Just one line! -->
-<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.7.2/a11y-widget-loader-v1.7.2.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.7.3/a11y-widget-loader-v1.7.3.js" defer></script>
 ```
 
 For a monitored production install, place this before the loader:
@@ -55,7 +55,7 @@ For a monitored production install, place this before the loader:
     telemetryEndpoint: "https://your-widget-backend.com/api/telemetry"
   };
 </script>
-<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.7.2/a11y-widget-loader-v1.7.2.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.7.3/a11y-widget-loader-v1.7.3.js" defer></script>
 ```
 
 6. Click **Update File**
@@ -89,7 +89,7 @@ function a11y_widget_enqueue() {
         telemetryEndpoint: "<?php echo esc_js(get_option('a11y_telemetry_endpoint', 'https://your-widget-backend.com/api/telemetry')); ?>"
       };
     </script>
-<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.7.2/a11y-widget-loader-v1.7.2.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.7.3/a11y-widget-loader-v1.7.3.js" defer></script>
     <?php
 }
 add_action('wp_head', 'a11y_widget_enqueue');

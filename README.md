@@ -34,10 +34,10 @@ Just add this single line to your HTML:
 
 ```html
 <!-- Use versioned tag to ensure you get the latest stable version -->
-<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.7.2/a11y-widget-loader-v1.7.2.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.7.3/a11y-widget-loader-v1.7.3.js" defer></script>
 ```
 
-**Note:** We use version tags (for example `@v1.7.2`) instead of branch names (`@main`) because jsDelivr CDN aggressively caches branch URLs for up to 7 days. Version tags are served immediately and ensure you always get the exact version you specify.
+**Note:** We use version tags (for example `@v1.7.3`) instead of branch names (`@main`) because jsDelivr CDN aggressively caches branch URLs for up to 7 days. Version tags are served immediately and ensure you always get the exact version you specify.
 
 That's it! The widget loads automatically from GitHub. No configuration needed.
 
@@ -62,7 +62,7 @@ initA11yWidget({
 ```
 
 **✨ Version Updates**: 
-- **CDN**: Update the version tag in your script tag (e.g., `@v1.6.10` → `@v1.7.2`)
+- **CDN**: Update the version tag in your script tag (e.g., `@v1.6.10` → `@v1.7.3`)
 - **NPM**: Run `npm update @careerdriver/a11y-widget` to get the latest version
 
 **⌨️ Keyboard Shortcut**: Press **Alt+A** (Option+A on Mac) from anywhere on the page to quickly open/close the accessibility widget. The shortcut doesn't interfere with typing in input fields.
@@ -85,7 +85,7 @@ If you want to configure surfaces, telemetry, monitoring, or support routing, ad
     telemetryEndpoint: "https://your-widget-backend.com/api/telemetry"
   };
 </script>
-<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.7.2/a11y-widget-loader-v1.7.2.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.7.3/a11y-widget-loader-v1.7.3.js" defer></script>
 ```
 
 #### NPM Method

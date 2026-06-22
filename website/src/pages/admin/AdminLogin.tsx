@@ -55,14 +55,19 @@ export default function AdminLogin() {
         
         <form onSubmit={handleSubmit}>
           {error && (
-            <div style={{
-              padding: '12px',
-              marginBottom: '16px',
-              backgroundColor: '#fee',
-              border: '1px solid #fcc',
-              borderRadius: '4px',
-              color: '#c33'
-            }}>
+            <div
+              role="alert"
+              aria-live="assertive"
+              aria-atomic="true"
+              style={{
+                padding: '12px',
+                marginBottom: '16px',
+                backgroundColor: '#fee',
+                border: '1px solid #fcc',
+                borderRadius: '4px',
+                color: '#c33'
+              }}
+            >
               {error}
             </div>
           )}
@@ -74,6 +79,7 @@ export default function AdminLogin() {
             <input
               id="email"
               type="email"
+              autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -95,6 +101,7 @@ export default function AdminLogin() {
             <input
               id="password"
               type="password"
+              autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required

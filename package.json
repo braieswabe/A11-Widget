@@ -11,6 +11,9 @@
     "install:all": "npm install && npm install --prefix website",
     "build": "npm run sync-widget && npm run install:all && npm run build --prefix website",
     "prebuild": "npm run sync-widget",
+    "release:prepare": "npm run sync-widget && npm run build --prefix website",
+    "release:pack": "npm run release:prepare && cd packages/a11y-widget && npm pack --dry-run --cache ../../.npm-cache",
+    "release:publish": "npm run release:prepare && cd packages/a11y-widget && npm publish --access public --cache ../../.npm-cache",
     "start": "node server.js",
     "dev": "node server.js"
   },

@@ -4321,14 +4321,22 @@
       manageToolsBtn.setAttribute("aria-pressed", manageMode ? "true" : "false");
       manageToolsBtn.classList.toggle("active", manageMode);
       resetToolLayoutBtn.hidden = !manageMode;
+      if (toolManageHint) toolManageHint.hidden = !manageMode;
       root.classList.toggle("a11y-widget-manage-mode", manageMode);
       applyFeatureLayout(root, current, cfg, manageMode);
       addInlineManageControls(root);
     }
 
     manageToolsBtn.addEventListener("click", function() {
+      switchTab(advancedTab, advancedPanel);
       manageMode = !manageMode;
       refreshToolManagement();
+      if (manageMode) {
+        setTimeout(function() {
+          var firstManageControl = advancedPanel.querySelector(".a11y-tool-manage-btn, .a11y-widget-manage-row button, .a11y-widget-manage-row input, .a11y-widget-manage-row select");
+          if (firstManageControl && firstManageControl.focus) firstManageControl.focus();
+        }, 60);
+      }
     });
 
     resetToolLayoutBtn.addEventListener("click", function() {
@@ -4351,7 +4359,7 @@
         typeSelect.appendChild(el("option", { value: types[st][0], text: types[st][1] }));
       }
       var emailLabel = el("label", { for: "a11y-support-email", text: "Email (optional)", style: "margin-top: 0.75rem; display: block;" });
-      var emailInput = el("input", { id: "a11y-support-email", type: "email", class: "a11y-widget-select", placeholder: "you@example.com" });
+      var emailInput = el("input", { id: "a11y-support-email", type: "email", class: "a11y-widget-input", placeholder: "you@example.com", autocomplete: "email" });
       var messageLabel = el("label", { for: "a11y-support-message", text: "What happened?", style: "margin-top: 0.75rem; display: block;" });
       var messageInput = el("textarea", {
         id: "a11y-support-message",
@@ -4784,6 +4792,14 @@
     toolsLabel.style.marginBottom = "0.4rem";
     toolsLabel.style.color = "#111";
     advancedPanel.appendChild(toolsLabel);
+    var toolManageHint = el("div", {
+      class: "a11y-widget-help",
+      text: "Tool ordering is active. Use the arrow and visibility controls beside each tool.",
+      hidden: "",
+      "aria-live": "polite"
+    });
+    toolManageHint.style.marginBottom = "0.75rem";
+    advancedPanel.appendChild(toolManageHint);
 
     // Cursor Options
     if (cfg.features.cursorOptions) {
@@ -5029,6 +5045,29 @@
 
     // Presets
     if (cfg.features.presets) {
+      function getCurrentPresetPrefs() {
+        return normalizePrefs(assign(assign({}, PREF_DEFAULTS), Store.get(cfg.storageKey) || prefs || {}));
+      }
+
+      function presetMatchesSettings(settings) {
+        var current = getCurrentPresetPrefs();
+        for (var key in settings) {
+          if (!Object.prototype.hasOwnProperty.call(settings, key)) continue;
+          if (current[key] !== settings[key]) return false;
+        }
+        return true;
+      }
+
+      function refreshPresetAppliedStates() {
+        var buttons = presets.querySelectorAll(".a11y-widget-preset-btn");
+        for (var i = 0; i < buttons.length; i++) {
+          var buttonSettings = buttons[i].__a11yPresetSettings || {};
+          var isApplied = presetMatchesSettings(buttonSettings);
+          buttons[i].classList.toggle("applied", isApplied);
+          buttons[i].setAttribute("aria-pressed", isApplied ? "true" : "false");
+        }
+      }
+
       var presetRow = el("div", { class: "a11y-widget-row" });
       var presetLabel = el("div", { text: "Quick Presets", class: "a11y-widget-help" });
       presetLabel.style.fontSize = "12px";
@@ -5038,6 +5077,31 @@
       presetLabel.style.color = "#111";
       presetRow.appendChild(presetLabel);
       var presets = el("div", { class: "a11y-widget-presets" });
+      var savedPrefsNotice = null;
+      if (hasHostAffectingPrefs(getCurrentPresetPrefs())) {
+        savedPrefsNotice = el("div", {
+          class: "a11y-widget-help",
+          "aria-live": "polite",
+          style: "display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.5rem; border: 1px solid var(--a11y-color-border); border-radius: var(--a11y-radius); background: var(--a11y-color-bg-light); margin-bottom: 0.75rem;"
+        });
+        savedPrefsNotice.appendChild(el("span", { text: "Saved accessibility settings are active for this browser." }));
+        var savedPrefsResetBtn = el("button", {
+          type: "button",
+          class: "a11y-widget-btn",
+          text: "Reset",
+          "aria-label": "Reset saved accessibility settings",
+          style: "padding: 0.25rem 0.5rem; font-size: 12px; width: auto;"
+        });
+        savedPrefsResetBtn.addEventListener("click", function() {
+          enhancedOnReset();
+          if (savedPrefsNotice && savedPrefsNotice.parentNode) {
+            savedPrefsNotice.parentNode.removeChild(savedPrefsNotice);
+          }
+          refreshPresetAppliedStates();
+        });
+        savedPrefsNotice.appendChild(savedPrefsResetBtn);
+        presetRow.appendChild(savedPrefsNotice);
+      }
       
       // Helper function to add visual feedback to preset buttons
       function applyPresetFeedback(btn, presetContainer) {
@@ -5083,14 +5147,18 @@
       // Helper function to create preset button with description
       function createPresetButton(icon, name, description, settings, ariaLabel) {
         var presetContainer = el("div", { class: "a11y-widget-preset-container" });
+        var descId = "a11y-preset-desc-" + name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
         var btn = el("button", { 
           type: "button", 
           class: "a11y-widget-preset-btn", 
           text: icon + " " + name,
           "aria-pressed": "false",
-          "aria-label": ariaLabel || "Apply " + name + " preset"
+          "aria-label": ariaLabel || "Apply " + name + " preset",
+          "aria-describedby": descId
         });
+        btn.__a11yPresetSettings = settings;
         var desc = el("div", { 
+          id: descId,
           class: "a11y-widget-preset-desc",
           text: description,
           style: "font-size: 11px; color: #666; margin-top: 4px; line-height: 1.3;"
@@ -5101,6 +5169,7 @@
           applyPresetFeedback(btn, presets);
           announceToScreenReader(COPY.announcements.presetApplied + " " + name);
           onChange(settings);
+          refreshPresetAppliedStates();
           emit(cfg, "preset_applied", { 
             presetId: name.toLowerCase().replace(/\s+/g, "-"),
             presetName: name,
@@ -5120,14 +5189,14 @@
         "🔍",
         "Low Vision",
         COPY.presets.lowVision,
-        { 
+        {
           contrast: "high", 
           fontScale: 1.4,
           spacing: "comfortable", 
           readableFont: true,
           reduceMotion: true
         },
-        "Apply low vision preset: high contrast, 140% text size, comfortable spacing, readable font"
+        "Apply Low Vision preset"
       );
       
       // 2. Dyslexia-Friendly Preset - Based on dyslexia research
@@ -5144,7 +5213,7 @@
           reduceMotion: true,
           contrast: "default"  // High contrast can worsen dyslexia symptoms
         },
-        "Apply dyslexia-friendly preset: readable font, comfortable spacing, 120% text size, reduced motion"
+        "Apply Dyslexia preset"
       );
       
       // 3. Reduced Motion Preset - WCAG 2.1 SC 2.3.3 (Level AAA)
@@ -5156,7 +5225,7 @@
         { 
           reduceMotion: true
         },
-        "Apply reduced motion preset: disable animations and transitions"
+        "Apply Reduced Motion preset"
       );
       
       // 4. High Contrast Preset - WCAG 2.1 SC 1.4.3 (Contrast Minimum - Level AA)
@@ -5169,7 +5238,7 @@
           contrast: "high",
           readableFont: true  // Sans-serif improves readability with high contrast
         },
-        "Apply high contrast preset: enhanced color contrast for better visibility"
+        "Apply High Contrast preset"
       );
       
       // 5. Large Text Preset - WCAG 2.1 SC 1.4.4 (Resize Text - Level AA)
@@ -5183,7 +5252,7 @@
           spacing: "comfortable",
           readableFont: true
         },
-        "Apply large text preset: 140% text size with comfortable spacing"
+        "Apply Large Text preset"
       );
       
       // 6. Dark Theme Preset - For light sensitivity and eye strain
@@ -5198,7 +5267,7 @@
           readableFont: true,
           reduceMotion: true
         },
-        "Apply dark theme preset: dark background with light text for reduced eye strain"
+        "Apply Dark Theme preset"
       );
 
       // 7. Reading Mode - New guided mode for long reading sessions
@@ -5213,7 +5282,7 @@
           reduceMotion: true,
           fontScale: 1.1
         },
-        "Apply reading mode preset: comfortable spacing, readable font, reduced motion, reading ruler ON"
+        "Apply Reading Mode preset"
       );
 
       // 8. Call Center / Ops Mode - New guided mode for dashboards
@@ -5229,7 +5298,7 @@
           readableFont: true,
           fontScale: 1.1
         },
-        "Apply call center mode preset: reduce motion, comfortable spacing, readable font, medium cursor"
+        "Apply Call Center / Ops Mode preset"
       );
 
       // 9. Quick Scan Mode - New guided mode for quick scanning
@@ -5243,7 +5312,7 @@
           reduceMotion: true,
           readableFont: true
         },
-        "Apply quick scan mode preset: slightly larger text, comfortable spacing, no animations"
+        "Apply Quick Scan Mode preset"
       );
 
       presets.appendChild(lowVision);
@@ -5255,6 +5324,7 @@
       presets.appendChild(readingMode);
       presets.appendChild(callCenterMode);
       presets.appendChild(quickScanMode);
+      refreshPresetAppliedStates();
       presetRow.appendChild(presets);
       quickFixesPanel.appendChild(presetRow);
       

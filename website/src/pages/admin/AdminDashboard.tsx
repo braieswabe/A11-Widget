@@ -116,19 +116,25 @@ export default function AdminDashboard() {
         alignItems: 'center',
         marginBottom: '24px'
       }}>
-        <input
-          type="text"
-          placeholder="Search clients..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          style={{
-            padding: '8px 12px',
-            border: '1px solid #ddd',
-            borderRadius: '4px',
-            fontSize: '16px',
-            width: '300px'
-          }}
-        />
+        <div>
+          <label htmlFor="client-search" style={{ display: 'block', marginBottom: '6px', fontWeight: 500 }}>
+            Search clients
+          </label>
+          <input
+            id="client-search"
+            type="text"
+            placeholder="Search clients..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{
+              padding: '8px 12px',
+              border: '1px solid #ddd',
+              borderRadius: '4px',
+              fontSize: '16px',
+              width: '300px'
+            }}
+          />
+        </div>
         <div style={{ display: 'flex', gap: '12px' }}>
           <button
             onClick={() => navigate('/admin/monitoring')}
@@ -201,14 +207,17 @@ export default function AdminDashboard() {
           boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
         }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <caption style={{ textAlign: 'left', padding: '12px', fontWeight: 600 }}>
+              Client accounts and site access
+            </caption>
             <thead>
               <tr style={{ backgroundColor: '#f5f5f5' }}>
-                <th style={{ padding: '12px', textAlign: 'left', borderBottom: '2px solid #ddd' }}>Email</th>
-                <th style={{ padding: '12px', textAlign: 'left', borderBottom: '2px solid #ddd' }}>Company</th>
-                <th style={{ padding: '12px', textAlign: 'left', borderBottom: '2px solid #ddd' }}>Sites</th>
-                <th style={{ padding: '12px', textAlign: 'left', borderBottom: '2px solid #ddd' }}>Status</th>
-                <th style={{ padding: '12px', textAlign: 'left', borderBottom: '2px solid #ddd' }}>Last Login</th>
-                <th style={{ padding: '12px', textAlign: 'left', borderBottom: '2px solid #ddd' }}>Actions</th>
+                <th scope="col" style={{ padding: '12px', textAlign: 'left', borderBottom: '2px solid #ddd' }}>Email</th>
+                <th scope="col" style={{ padding: '12px', textAlign: 'left', borderBottom: '2px solid #ddd' }}>Company</th>
+                <th scope="col" style={{ padding: '12px', textAlign: 'left', borderBottom: '2px solid #ddd' }}>Sites</th>
+                <th scope="col" style={{ padding: '12px', textAlign: 'left', borderBottom: '2px solid #ddd' }}>Status</th>
+                <th scope="col" style={{ padding: '12px', textAlign: 'left', borderBottom: '2px solid #ddd' }}>Last Login</th>
+                <th scope="col" style={{ padding: '12px', textAlign: 'left', borderBottom: '2px solid #ddd' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -236,7 +245,10 @@ export default function AdminDashboard() {
                           )}
                         </div>
                       ) : (
-                        '-'
+                        <div>
+                          <div style={{ fontSize: '14px', fontWeight: 500 }}>All sites</div>
+                          <div style={{ fontSize: '12px', color: '#666' }}>No site restriction</div>
+                        </div>
                       )}
                     </td>
                     <td style={{ padding: '12px' }}>
