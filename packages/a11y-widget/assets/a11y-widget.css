@@ -1051,6 +1051,9 @@ html[data-a11y][data-a11y-contrast="light"] [data-a11y-surface="true"] select{
   font-family: var(--a11y-font-family);
   color: var(--a11y-color-text);
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
 }
 
 /* Hide widget when a11y-widget-hidden class is on html */
@@ -1073,6 +1076,7 @@ html.a11y-widget-hidden .accessibility-widget {
 #a11y-widget-root[data-position="left"]{
   left: var(--a11y-spacing-sm);
   right: auto;
+  align-items: flex-start;
 }
 
 
@@ -1134,34 +1138,54 @@ html.a11y-widget-hidden .accessibility-widget {
   box-shadow: 0 0 0 4px rgba(0,123,255,0.4), var(--a11y-shadow-button);
 }
 
-/* Hover tooltip for keyboard shortcut hint */
-#a11y-widget-toggle[title]:hover::after {
-  content: attr(title);
-  position: absolute;
-  bottom: calc(100% + 8px);
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(0, 0, 0, 0.9);
-  color: white;
+/* Viewport-aware JS tooltips (toggle + toolbar) */
+.a11y-widget-tooltip {
+  position: fixed;
+  z-index: 2147483005;
+  background: rgba(0, 0, 0, 0.92);
+  color: #fff;
   padding: 6px 10px;
   border-radius: 4px;
   font-size: 12px;
+  line-height: 1.3;
   white-space: nowrap;
   pointer-events: none;
-  z-index: 2147483002;
-  font-family: system-ui, sans-serif;
+  font-family: system-ui, -apple-system, sans-serif;
+  max-width: min(280px, calc(100vw - 16px));
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
-#a11y-widget-toggle[title]:hover::before {
-  content: "";
-  position: absolute;
-  bottom: calc(100% + 2px);
+.a11y-widget-tooltip[hidden] {
+  display: none !important;
+}
+
+/* Magnifier exit affordance */
+#a11y-magnifier-exit {
+  position: fixed;
+  bottom: 24px;
   left: 50%;
   transform: translateX(-50%);
-  border: 5px solid transparent;
-  border-top-color: rgba(0, 0, 0, 0.9);
-  pointer-events: none;
-  z-index: 2147483002;
+  z-index: 2147483003;
+  background: #0066cc;
+  color: #fff;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: system-ui, -apple-system, sans-serif;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  line-height: 1.2;
+}
+
+#a11y-magnifier-exit:hover {
+  background: #0052a3;
+}
+
+#a11y-magnifier-exit:focus-visible {
+  outline: 3px solid #ffd700;
+  outline-offset: 3px;
 }
 
 /* Screen reader only class */
@@ -1223,8 +1247,6 @@ html.a11y-widget-hidden .accessibility-widget {
 .a11y-widget-tab-panel {
   display: block;
   padding: var(--a11y-spacing-sm);
-  max-height: calc(85vh - 200px);
-  overflow-y: auto;
 }
 
 .a11y-widget-tab-panel[hidden] {

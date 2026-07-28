@@ -1,10 +1,18 @@
-/*! a11y-widget.js — Accessibility Widget v1.7.3 (IIFE, no deps)
+/*! a11y-widget.js — Accessibility Widget v1.7.4 (IIFE, no deps)
     Scope: widget UI + configured surfaces only.
     No claims of full-site ADA compliance.
     
     GitHub Repository: https://github.com/braieswabe/A11-Widget
     CDN: https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/
     
+    Version 1.7.4 Changelog:
+    - Viewport-aware tooltips for toggle and toolbar icons (no edge clipping)
+    - Toggle stays corner-anchored when settings panel opens
+    - Removed duplicate inner scrollbar in settings panel
+    - Esc turns off active overlay tools (magnifier, screen mask, reading ruler)
+    - Instant hover/focus tooltips in toolbar mode
+    - Page magnifier exit chip + session-only overlays (no trap after reload)
+
     Version 1.7.3 Changelog:
     - Icon Style tab with design, size, colors, and presets
     - New default universal-access icon (blue circle with white figure)
@@ -141,7 +149,9 @@
       textSizeChanged: "Text size changed to",
       presetApplied: "Preset applied:",
       settingsReset: "All settings reset to defaults",
-      preferencesSaved: "Accessibility preferences saved"
+      preferencesSaved: "Accessibility preferences saved",
+      magnifierEnabled: "Page magnifier on. Press Escape to exit.",
+      overlaysCleared: "Active tools turned off"
     },
     firstVisit: {
       title: "Accessibility tools available",
@@ -213,6 +223,112 @@
         region.textContent = "";
       }, 1000);
     }, assertive ? 300 : 200);
+  }
+
+  // --- Viewport-aware tooltips ----------------------------------------------
+  var a11yTooltipEl = null;
+  var a11yTooltipTrigger = null;
+
+  function ensureA11yTooltip() {
+    if (!a11yTooltipEl) {
+      a11yTooltipEl = document.createElement("div");
+      a11yTooltipEl.id = "a11y-widget-tooltip";
+      a11yTooltipEl.className = "a11y-widget-tooltip";
+      a11yTooltipEl.setAttribute("role", "tooltip");
+      a11yTooltipEl.setAttribute("hidden", "");
+      if (document.body) {
+        document.body.appendChild(a11yTooltipEl);
+      } else {
+        document.addEventListener("DOMContentLoaded", function() {
+          if (a11yTooltipEl && !a11yTooltipEl.parentNode && document.body) {
+            document.body.appendChild(a11yTooltipEl);
+          }
+        });
+      }
+    }
+    return a11yTooltipEl;
+  }
+
+  function positionA11yTooltip(trigger) {
+    var tip = ensureA11yTooltip();
+    var rect = trigger.getBoundingClientRect();
+    var pad = 8;
+    var gap = 8;
+    tip.style.visibility = "hidden";
+    tip.removeAttribute("hidden");
+    var tipRect = tip.getBoundingClientRect();
+    var top = rect.top - tipRect.height - gap;
+    var left = rect.left + (rect.width / 2) - (tipRect.width / 2);
+    var placement = "above";
+
+    if (top < pad) {
+      top = rect.bottom + gap;
+      placement = "below";
+    }
+    if (left < pad) left = pad;
+    if (left + tipRect.width > window.innerWidth - pad) {
+      left = Math.max(pad, window.innerWidth - pad - tipRect.width);
+    }
+    if (top + tipRect.height > window.innerHeight - pad) {
+      top = Math.max(pad, window.innerHeight - pad - tipRect.height);
+    }
+    if (placement === "above" && top < pad) {
+      top = pad;
+    }
+
+    tip.style.top = Math.round(top) + "px";
+    tip.style.left = Math.round(left) + "px";
+    tip.style.visibility = "visible";
+  }
+
+  function showA11yTooltip(trigger, text) {
+    if (!trigger || !text) return;
+    var tip = ensureA11yTooltip();
+    if (!tip.parentNode && document.body) {
+      document.body.appendChild(tip);
+    }
+    if (a11yTooltipTrigger && a11yTooltipTrigger !== trigger) {
+      a11yTooltipTrigger.removeAttribute("aria-describedby");
+    }
+    tip.textContent = text;
+    positionA11yTooltip(trigger);
+    trigger.setAttribute("aria-describedby", tip.id);
+    a11yTooltipTrigger = trigger;
+  }
+
+  function hideA11yTooltip() {
+    if (a11yTooltipTrigger) {
+      a11yTooltipTrigger.removeAttribute("aria-describedby");
+      a11yTooltipTrigger = null;
+    }
+    if (a11yTooltipEl) {
+      a11yTooltipEl.setAttribute("hidden", "");
+      a11yTooltipEl.style.visibility = "";
+    }
+  }
+
+  function bindA11yTooltip(el, textOrFn) {
+    if (!el) return;
+    var getText = typeof textOrFn === "function"
+      ? textOrFn
+      : function() { return textOrFn; };
+    el.addEventListener("mouseenter", function() {
+      showA11yTooltip(el, getText());
+    });
+    el.addEventListener("mouseleave", hideA11yTooltip);
+    el.addEventListener("focus", function() {
+      showA11yTooltip(el, getText());
+    });
+    el.addEventListener("blur", hideA11yTooltip);
+  }
+
+  // Strip trapping overlay tools so they never restore after reload.
+  function clearSessionOverlayPrefs(prefsObj) {
+    if (!prefsObj || typeof prefsObj !== "object") return prefsObj;
+    prefsObj.magnifierEnabled = false;
+    prefsObj.screenMaskEnabled = false;
+    prefsObj.readingRulerEnabled = false;
+    return prefsObj;
   }
 
   // --- Focus Trap -------------------------------------------------------------
@@ -1582,7 +1698,7 @@
       faviconUrl: getFaviconUrl(),
       pageUrl: window.location.href,
       domain: window.location.hostname || "",
-      build: window.__A11Y_WIDGET_BUILD__ || "a11y-widget-v1.7.3.js",
+      build: window.__A11Y_WIDGET_BUILD__ || "a11y-widget-v1.7.4.js",
       position: cfg.position,
       browser: getBrowserInfo(),
       reportedAt: nowISO()
@@ -1609,7 +1725,7 @@
       body: JSON.stringify(assign({
         siteId: cfg.siteId,
         url: window.location.href,
-        widgetVersion: window.__A11Y_WIDGET_BUILD__ || "a11y-widget-v1.7.3.js",
+        widgetVersion: window.__A11Y_WIDGET_BUILD__ || "a11y-widget-v1.7.4.js",
         licenseKey: cfg.licenseKey || null,
         apiKey: cfg.apiKey || null
       }, payload || {}))
@@ -1734,7 +1850,7 @@
     }
     setUpdateStatus(statusEl, "Checking latest version...", false);
 
-    var probeUrl = CDN_BASE + "a11y-widget-v1.7.3.js?_a11y_check=" + Date.now();
+    var probeUrl = CDN_BASE + "a11y-widget-v1.7.4.js?_a11y_check=" + Date.now();
     var supportsFetch = typeof fetch !== "undefined";
 
     function finish(buttonText) {
@@ -2147,6 +2263,41 @@
   var magnifierHandler = null;
   var magnifierClone = null;
   var magnifierRAF = null;
+  var magnifierExitChip = null;
+  var magnifierExitCallback = null;
+
+  function setMagnifierExitCallback(fn) {
+    magnifierExitCallback = typeof fn === "function" ? fn : null;
+  }
+
+  function showMagnifierExitChip() {
+    if (magnifierExitChip) return;
+    magnifierExitChip = document.createElement("button");
+    magnifierExitChip.id = "a11y-magnifier-exit";
+    magnifierExitChip.type = "button";
+    magnifierExitChip.textContent = "Exit magnifier (Esc)";
+    magnifierExitChip.setAttribute("aria-label", "Exit page magnifier. Press Escape.");
+    magnifierExitChip.addEventListener("click", function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (magnifierExitCallback) {
+        magnifierExitCallback();
+      } else {
+        removeMagnifier();
+        document.documentElement.setAttribute("data-a11y-magnifier", "0");
+      }
+    });
+    if (document.body) {
+      document.body.appendChild(magnifierExitChip);
+    }
+  }
+
+  function hideMagnifierExitChip() {
+    if (magnifierExitChip && magnifierExitChip.parentNode) {
+      magnifierExitChip.parentNode.removeChild(magnifierExitChip);
+    }
+    magnifierExitChip = null;
+  }
 
   function createMagnifier(prefs) {
     removeMagnifier(); // Clean up any existing magnifier
@@ -2261,7 +2412,7 @@
       var elementUnder = document.elementFromPoint(e.clientX, e.clientY);
       magnifierElement.style.display = "block";
       
-      if (elementUnder && !elementUnder.closest("#a11y-magnifier-lens") && !elementUnder.closest("#a11y-widget-root")) {
+      if (elementUnder && !elementUnder.closest("#a11y-magnifier-lens") && !elementUnder.closest("#a11y-widget-root") && !elementUnder.closest("#a11y-magnifier-exit") && !elementUnder.closest("#a11y-widget-tooltip") && !elementUnder.closest("#a11y-widget-toolbar")) {
         // Clone and render content in magnifier
         renderMagnifiedArea(e.clientX, e.clientY, currentZoom, size);
       }
@@ -2273,6 +2424,9 @@
     document.addEventListener("mouseleave", function() {
       if (magnifierElement) magnifierElement.style.display = "none";
     }, { passive: true });
+
+    showMagnifierExitChip();
+    announceToScreenReader(COPY.announcements.magnifierEnabled, true);
   }
   
   function renderMagnifiedArea(mouseX, mouseY, zoomLevel, size) {
@@ -2389,6 +2543,7 @@
   }
 
   function removeMagnifier() {
+    hideMagnifierExitChip();
     if (magnifierRAF) {
       cancelAnimationFrame(magnifierRAF);
       magnifierRAF = null;
@@ -3083,7 +3238,7 @@
     return isInput || isTextarea || isContentEditable;
   }
 
-  function setupKeyboardShortcut(cfg, openPanel, closePanel, toggle, onReset) {
+  function setupKeyboardShortcut(cfg, openPanel, closePanel, toggle, onReset, clearOverlays) {
     var resetShortcutConfig = parseShortcut("Alt+D");
     var shortcutConfig = null;
 
@@ -3100,6 +3255,19 @@
         e.stopPropagation();
         onReset();
         announceToScreenReader(COPY.announcements.settingsReset);
+        return;
+      }
+
+      if (e.key === "Escape" || e.key === "Esc") {
+        if (typeof clearOverlays === "function" && clearOverlays()) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+        if (toggle && toggle.getAttribute("aria-expanded") === "true") {
+          e.preventDefault();
+          closePanel();
+        }
         return;
       }
       
@@ -3403,6 +3571,7 @@
     
     var shortcutText = cfg.keyboardShortcut ? " (" + cfg.keyboardShortcut + ")" : "";
     var shortcutHint = cfg.keyboardShortcut ? "Press " + cfg.keyboardShortcut + " to open" : "";
+    var toggleTooltipText = (shortcutHint || "Accessibility Settings") + " - Widget v1.7.4";
     var toggle = el("button", {
       id: "a11y-widget-toggle",
       type: "button",
@@ -3411,10 +3580,10 @@
       "aria-label": "Open accessibility settings" + shortcutText,
       "aria-haspopup": "dialog",
       "aria-keyshortcuts": cfg.keyboardShortcut || undefined,
-      "data-a11y-widget-version": "1.7.3",
-      title: (shortcutHint || "Accessibility Settings") + " - Widget v1.7.3",
+      "data-a11y-widget-version": "1.7.4",
       html: logoSVG
     });
+    bindA11yTooltip(toggle, toggleTooltipText);
     
     // Add keyboard focus tracking for enhanced focus ring
     var isKeyboardUser = false;
@@ -5461,7 +5630,7 @@
     var shortcuts = [
       { key: cfg.keyboardShortcut || "Alt+A", desc: "Open/Close widget panel" },
       { key: "Alt+D", desc: "Reset all settings to defaults" },
-      { key: "Esc", desc: "Close widget panel" },
+      { key: "Esc", desc: "Turn off active tools (magnifier, screen mask, reading ruler); or close panel" },
       { key: "Tab", desc: "Navigate between controls" },
       { key: "Enter / Space", desc: "Activate buttons and toggles" },
       { key: "Arrow Keys", desc: "Navigate dropdown menus and sliders" }
@@ -5578,7 +5747,7 @@
       shortcutsList.innerHTML = 
         "<li>" + (cfg.keyboardShortcut || "Alt+A") + " - Open/Close widget</li>" +
         "<li>Alt+D - Reset all settings to defaults</li>" +
-        "<li>Esc - Close widget</li>" +
+        "<li>Esc - Turn off active tools, or close widget</li>" +
         "<li>Tab - Navigate controls</li>" +
         "<li>Arrow Keys - Navigate tabs and dropdowns</li>";
       
@@ -5748,10 +5917,11 @@
 
     panel.querySelector("#a11y-widget-close").addEventListener("click", closePanel);
 
-    // Escape closes when focus inside panel
+    // Escape: clear overlay tools first, then close panel
     panel.addEventListener("keydown", function (e) {
-      if (e.key === "Escape") {
+      if (e.key === "Escape" || e.key === "Esc") {
         e.stopPropagation();
+        if (clearActiveOverlays()) return;
         closePanel();
       }
     });
@@ -5774,6 +5944,33 @@
         updateUIControls(controls, normalizePrefs(assign(assign({}, PREF_DEFAULTS), currentPrefs)));
       }
     };
+
+    function clearActiveOverlays() {
+      var currentPrefs = normalizePrefs(assign(assign({}, PREF_DEFAULTS), Store.get(cfg.storageKey) || prefs || {}));
+      var delta = {};
+      var changed = false;
+      if (currentPrefs.magnifierEnabled) {
+        delta.magnifierEnabled = false;
+        changed = true;
+      }
+      if (currentPrefs.screenMaskEnabled) {
+        delta.screenMaskEnabled = false;
+        changed = true;
+      }
+      if (currentPrefs.readingRulerEnabled) {
+        delta.readingRulerEnabled = false;
+        changed = true;
+      }
+      if (!changed) return false;
+      enhancedOnChange(delta);
+      announceToScreenReader(COPY.announcements.overlaysCleared, true);
+      return true;
+    }
+
+    setMagnifierExitCallback(function() {
+      enhancedOnChange({ magnifierEnabled: false });
+      announceToScreenReader(COPY.announcements.overlaysCleared, true);
+    });
 
     // Create enhanced onReset that updates UI controls and cleans up active features
     var enhancedOnReset = function() {
@@ -5806,7 +6003,7 @@
     };
 
     // Setup keyboard shortcut
-    setupKeyboardShortcut(cfg, openPanel, closePanel, toggle, enhancedOnReset);
+    setupKeyboardShortcut(cfg, openPanel, closePanel, toggle, enhancedOnReset, clearActiveOverlays);
 
     // Toolbar Mode Toggle Function
     function toggleToolbarMode(enabled, root, controls, cfg, prefs, onChange) {
@@ -6304,7 +6501,6 @@
         toggleToolbarMode(false, root, controls, cfg, prefs, enhancedOnChange);
       });
       closeBtn.setAttribute("aria-label", "Close toolbar");
-      closeBtn.setAttribute("title", "Close toolbar");
       closeBtn.className = "a11y-toolbar-btn a11y-toolbar-close-btn";
       toolbarButtons.push(closeBtn);
 
@@ -6322,9 +6518,9 @@
         type: "button",
         class: "a11y-toolbar-btn",
         "aria-label": label,
-        title: label,
         html: icon
       });
+      bindA11yTooltip(btn, label);
       btn.addEventListener("click", onClick);
       return btn;
     }
@@ -6506,7 +6702,7 @@
     activeWidgetConfig = cfg;
 
     // QA / deploy verification: check in console `window.__A11Y_WIDGET_BUILD__` and Network for this filename (not legacy a11y-widget.js).
-    window.__A11Y_WIDGET_BUILD__ = "a11y-widget-v1.7.3.js";
+    window.__A11Y_WIDGET_BUILD__ = "a11y-widget-v1.7.4.js";
 
     // Namespace guard
     if (window.__a11yWidget && window.__a11yWidget.__loaded) return;
@@ -6533,13 +6729,22 @@
 
     // Load preferences: try localStorage first (synchronous), then try user profile (async)
     var stored = Store.get(cfg.storageKey);
+    if (stored && typeof stored === "object") {
+      // Overlay tools are session-only — never restore after reload.
+      clearSessionOverlayPrefs(stored);
+      Store.set(cfg.storageKey, stored);
+    }
     var prefs = normalizePrefs(assign(assign({}, PREF_DEFAULTS), stored || {}));
+    clearSessionOverlayPrefs(prefs);
     
     // Try to load from user profile asynchronously and update if found
     loadPreferencesFromProfile(cfg).then(function(profilePrefs) {
       if (profilePrefs) {
+        clearSessionOverlayPrefs(profilePrefs);
         var updatedPrefs = normalizePrefs(assign(assign({}, PREF_DEFAULTS), profilePrefs));
+        clearSessionOverlayPrefs(updatedPrefs);
         prefs = updatedPrefs;
+        Store.set(cfg.storageKey, prefs);
         // Keep controls in sync without applying host-page changes during initialization.
         if (window.__a11yWidget && window.__a11yWidget.__widget && window.__a11yWidget.__widget.updateControls) {
           window.__a11yWidget.__widget.updateControls(prefs);
@@ -6677,7 +6882,7 @@
         open: function () { widget.open(); },
         close: function () { widget.close(); },
         toggle: function () { widget.toggle(); },
-        getBuild: function () { return window.__A11Y_WIDGET_BUILD__ || "a11y-widget-v1.7.3.js"; },
+        getBuild: function () { return window.__A11Y_WIDGET_BUILD__ || "a11y-widget-v1.7.4.js"; },
         getPrefs: function () { return assign({}, prefs); },
         setPrefs: function (next) {
           prefs = normalizePrefs(assign(prefs, next || {}));
