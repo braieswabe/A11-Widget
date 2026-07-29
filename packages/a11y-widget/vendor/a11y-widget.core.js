@@ -12,6 +12,7 @@
     - Esc turns off active overlay tools (magnifier, screen mask, reading ruler)
     - Instant hover/focus tooltips in toolbar mode
     - Page magnifier exit chip + session-only overlays (no trap after reload)
+    - Page magnifier render fix: single page-mirror zoom (no overlapping clones / centered "x")
 
     Version 1.7.3 Changelog:
     - Icon Style tab with design, size, colors, and presets
@@ -2257,7 +2258,7 @@
   }
 
   // --- Magnifier Handler ------------------------------------------------------
-  // Uses CSS transforms for real-time magnification of actual page content
+  // Single page-mirror + CSS scale (avoids overlapping parent/child clones)
   var magnifierElement = null;
   var magnifierContent = null;
   var magnifierHandler = null;
@@ -2265,6 +2266,9 @@
   var magnifierRAF = null;
   var magnifierExitChip = null;
   var magnifierExitCallback = null;
+  var magnifierMirrorBuiltAt = 0;
+  var magnifierScrollHandler = null;
+  var magnifierResizeHandler = null;
 
   function setMagnifierExitCallback(fn) {
     magnifierExitCallback = typeof fn === "function" ? fn : null;
@@ -2299,77 +2303,150 @@
     magnifierExitChip = null;
   }
 
+  function stripMagnifierChromeFromClone(root) {
+    if (!root || !root.querySelectorAll) return;
+    var selectors = [
+      "#a11y-magnifier-lens",
+      "#a11y-magnifier-exit",
+      "#a11y-magnifier-mirror",
+      "#a11y-widget-root",
+      "#a11y-widget-toolbar",
+      "#a11y-widget-tooltip",
+      "#a11y-widget-stylesheet",
+      "#a11y-custom-cursor",
+      "#a11y-compliance-modal",
+      "#a11y-reading-ruler",
+      "#a11y-screen-mask",
+      "script",
+      "noscript",
+      "iframe"
+    ];
+    for (var s = 0; s < selectors.length; s++) {
+      var nodes = root.querySelectorAll(selectors[s]);
+      for (var i = nodes.length - 1; i >= 0; i--) {
+        if (nodes[i].parentNode) nodes[i].parentNode.removeChild(nodes[i]);
+      }
+    }
+  }
+
+  function rebuildMagnifierMirror() {
+    if (!magnifierClone || !document.body) return;
+    while (magnifierClone.firstChild) {
+      magnifierClone.removeChild(magnifierClone.firstChild);
+    }
+
+    var bodyClone = document.body.cloneNode(true);
+    stripMagnifierChromeFromClone(bodyClone);
+
+    var bodyStyles = window.getComputedStyle(document.body);
+    bodyClone.style.margin = "0";
+    bodyClone.style.padding = bodyStyles.padding;
+    bodyClone.style.width = Math.max(document.documentElement.scrollWidth, window.innerWidth) + "px";
+    bodyClone.style.minHeight = Math.max(document.documentElement.scrollHeight, window.innerHeight) + "px";
+    bodyClone.style.background = bodyStyles.backgroundColor || "#ffffff";
+    bodyClone.style.backgroundImage = bodyStyles.backgroundImage;
+    bodyClone.style.color = bodyStyles.color;
+    bodyClone.style.fontFamily = bodyStyles.fontFamily;
+    bodyClone.style.fontSize = bodyStyles.fontSize;
+    bodyClone.style.lineHeight = bodyStyles.lineHeight;
+    bodyClone.style.position = "relative";
+    bodyClone.style.left = "0";
+    bodyClone.style.top = "0";
+    bodyClone.style.overflow = "visible";
+    bodyClone.style.pointerEvents = "none";
+    bodyClone.style.transform = "none";
+    bodyClone.removeAttribute("id");
+
+    magnifierClone.appendChild(bodyClone);
+    magnifierClone.style.width = bodyClone.style.width;
+    magnifierClone.style.height = bodyClone.style.minHeight;
+    magnifierMirrorBuiltAt = Date.now();
+  }
+
   function createMagnifier(prefs) {
     removeMagnifier(); // Clean up any existing magnifier
-    
+
     var size = 220; // Magnifier lens size
     var zoom = parseFloat(prefs.magnifierZoom || 2.0);
-    
+
     // Create magnifier container (the lens)
     magnifierElement = document.createElement("div");
     magnifierElement.id = "a11y-magnifier-lens";
     magnifierElement.setAttribute("aria-hidden", "true");
-    magnifierElement.style.cssText = 
+    magnifierElement.style.cssText =
       "position: fixed; " +
       "pointer-events: none; " +
-      "z-index: 2147483000; " +
+      "z-index: 2147482997; " +
       "width: " + size + "px; " +
       "height: " + size + "px; " +
       "border: 4px solid #0066cc; " +
       "border-radius: 50%; " +
       "overflow: hidden; " +
-      "box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(0,102,204,0.3), inset 0 0 30px rgba(0,0,0,0.1); " +
+      "box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(0,102,204,0.3); " +
       "display: none; " +
       "background: #fff;";
-    
-    // Create content container that holds the cloned/transformed content
+
+    // Clip container for the mirrored page
     magnifierContent = document.createElement("div");
-    magnifierContent.style.cssText = 
-      "width: " + size + "px; " +
-      "height: " + size + "px; " +
+    magnifierContent.style.cssText =
       "position: absolute; " +
-      "top: 50%; " +
-      "left: 50%; " +
-      "transform: translate(-50%, -50%); " +
-      "transform-origin: center center; " +
+      "inset: 0; " +
+      "overflow: hidden; " +
+      "border-radius: 50%; " +
       "pointer-events: none; " +
       "background: #fff;";
-    
+
+    // Single scaled mirror of the page (rebuilt periodically, not per-element)
+    magnifierClone = document.createElement("div");
+    magnifierClone.id = "a11y-magnifier-mirror";
+    magnifierClone.setAttribute("aria-hidden", "true");
+    magnifierClone.style.cssText =
+      "position: absolute; " +
+      "left: 0; " +
+      "top: 0; " +
+      "transform-origin: 0 0; " +
+      "will-change: transform; " +
+      "pointer-events: none;";
+
+    magnifierContent.appendChild(magnifierClone);
     magnifierElement.appendChild(magnifierContent);
-    document.body.appendChild(magnifierElement);
-    
-    // Create zoom level indicator
+
+    // Zoom level indicator (bottom pill — not a centered overlay glyph)
     var zoomIndicator = document.createElement("div");
     zoomIndicator.id = "a11y-magnifier-zoom-indicator";
-    zoomIndicator.style.cssText = 
+    zoomIndicator.style.cssText =
       "position: absolute; " +
       "bottom: 8px; " +
       "left: 50%; " +
       "transform: translateX(-50%); " +
-      "background: rgba(0,102,204,0.9); " +
+      "background: rgba(0,102,204,0.95); " +
       "color: #fff; " +
       "padding: 2px 8px; " +
       "border-radius: 10px; " +
       "font-size: 11px; " +
       "font-weight: bold; " +
-      "font-family: system-ui, sans-serif;";
+      "font-family: system-ui, sans-serif; " +
+      "z-index: 2; " +
+      "pointer-events: none;";
     zoomIndicator.textContent = zoom.toFixed(1) + "x";
     magnifierElement.appendChild(zoomIndicator);
-    
-    // Throttle for performance
+
+    document.body.appendChild(magnifierElement);
+    rebuildMagnifierMirror();
+
     var lastUpdate = 0;
     var throttleMs = 16; // ~60fps
-    
+    var mirrorRefreshMs = 400;
+
     magnifierHandler = function(e) {
       var html = document.documentElement;
       var enabled = html.getAttribute("data-a11y-magnifier") === "1";
-      
+
       if (!enabled || !magnifierElement) {
         if (magnifierElement) magnifierElement.style.display = "none";
         return;
       }
-      
-      // Throttle updates
+
       var now = Date.now();
       if (now - lastUpdate < throttleMs) {
         if (magnifierRAF) cancelAnimationFrame(magnifierRAF);
@@ -2379,167 +2456,54 @@
         return;
       }
       lastUpdate = now;
-      
       updateMagnifier(e);
     };
-    
+
     function updateMagnifier(e) {
       var html = document.documentElement;
-      var currentZoom = parseFloat(html.style.getPropertyValue("--a11y-magnifier-zoom") || zoom);
-      
-      // Show magnifier
+      var currentZoom = parseFloat(html.style.getPropertyValue("--a11y-magnifier-zoom") || zoom) || zoom;
+
       magnifierElement.style.display = "block";
-      
-      // Center the lens on the pointer, while keeping it inside the viewport.
+
       var magX = e.clientX - size / 2;
       var magY = e.clientY - size / 2;
       magX = clamp(magX, 10, Math.max(10, window.innerWidth - size - 10));
       magY = clamp(magY, 10, Math.max(10, window.innerHeight - size - 10));
-
       magnifierElement.style.left = magX + "px";
       magnifierElement.style.top = magY + "px";
-      
-      // Update zoom indicator
-      var indicator = magnifierElement.querySelector("#a11y-magnifier-zoom-indicator");
-      if (indicator) indicator.textContent = currentZoom.toFixed(1) + "x";
-      
-      // Calculate what area to show (centered on mouse position)
-      var viewWidth = size / currentZoom;
-      var viewHeight = size / currentZoom;
-      
-      // Get the element under the cursor
-      magnifierElement.style.display = "none"; // Hide temporarily to get element under
-      var elementUnder = document.elementFromPoint(e.clientX, e.clientY);
-      magnifierElement.style.display = "block";
-      
-      if (elementUnder && !elementUnder.closest("#a11y-magnifier-lens") && !elementUnder.closest("#a11y-widget-root") && !elementUnder.closest("#a11y-magnifier-exit") && !elementUnder.closest("#a11y-widget-tooltip") && !elementUnder.closest("#a11y-widget-toolbar")) {
-        // Clone and render content in magnifier
-        renderMagnifiedArea(e.clientX, e.clientY, currentZoom, size);
+
+      if (zoomIndicator) zoomIndicator.textContent = currentZoom.toFixed(1) + "x";
+
+      // Refresh mirror when stale so dynamic table content stays accurate
+      if (!magnifierClone.firstChild || Date.now() - magnifierMirrorBuiltAt > mirrorRefreshMs) {
+        rebuildMagnifierMirror();
       }
+
+      var scrollX = window.pageXOffset || document.documentElement.scrollLeft || 0;
+      var scrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+      var docX = e.clientX + scrollX;
+      var docY = e.clientY + scrollY;
+
+      // Map document point under cursor to the lens center
+      magnifierClone.style.transform =
+        "translate(" + (size / 2 - docX * currentZoom) + "px, " +
+                       (size / 2 - docY * currentZoom) + "px) scale(" + currentZoom + ")";
     }
-    
+
     document.addEventListener("mousemove", magnifierHandler, { passive: true });
-    
-    // Hide on mouse leave
-    document.addEventListener("mouseleave", function() {
-      if (magnifierElement) magnifierElement.style.display = "none";
-    }, { passive: true });
+
+    magnifierScrollHandler = function() {
+      magnifierMirrorBuiltAt = 0; // force rebuild after scroll
+    };
+    magnifierResizeHandler = function() {
+      magnifierMirrorBuiltAt = 0;
+      rebuildMagnifierMirror();
+    };
+    window.addEventListener("scroll", magnifierScrollHandler, { passive: true, capture: true });
+    window.addEventListener("resize", magnifierResizeHandler, { passive: true });
 
     showMagnifierExitChip();
     announceToScreenReader(COPY.announcements.magnifierEnabled, true);
-  }
-  
-  function renderMagnifiedArea(mouseX, mouseY, zoomLevel, size) {
-    if (!magnifierContent) return;
-    
-    // Calculate scroll offset
-    var scrollX = window.pageXOffset || document.documentElement.scrollLeft;
-    var scrollY = window.pageYOffset || document.documentElement.scrollTop;
-    
-    // The area we want to magnify (centered on mouse)
-    var areaWidth = size / zoomLevel;
-    var areaHeight = size / zoomLevel;
-    
-    // Use a simple CSS approach: clone body and transform
-    // Clear previous content
-    magnifierContent.innerHTML = "";
-    
-    // Create a viewport for the magnified content
-    var viewport = document.createElement("div");
-    var targetX = mouseX + scrollX;
-    var targetY = mouseY + scrollY;
-    viewport.style.cssText = 
-      "position: absolute; " +
-      "width: " + document.documentElement.scrollWidth + "px; " +
-      "height: " + document.documentElement.scrollHeight + "px; " +
-      "transform-origin: 0 0; " +
-      "transform: translate(" + (size / 2 - targetX * zoomLevel) + "px, " + (size / 2 - targetY * zoomLevel) + "px) scale(" + zoomLevel + "); " +
-      "left: 0; " +
-      "top: 0; " +
-      "pointer-events: none; " +
-      "background: #fff;";
-    
-    // Clone visible elements near the mouse cursor
-    var elementsInArea = getElementsInArea(mouseX + scrollX, mouseY + scrollY, areaWidth, areaHeight);
-    
-    elementsInArea.forEach(function(el) {
-      try {
-        // Skip the magnifier and widget
-        if (el.id === "a11y-magnifier-lens" || el.id === "a11y-widget-root" || 
-            el.closest("#a11y-magnifier-lens") || el.closest("#a11y-widget-root")) {
-          return;
-        }
-        
-        var clone = el.cloneNode(true);
-        var rect = el.getBoundingClientRect();
-        
-        // Position clone at its original location
-        clone.style.cssText = 
-          "position: absolute !important; " +
-          "left: " + (rect.left + scrollX) + "px !important; " +
-          "top: " + (rect.top + scrollY) + "px !important; " +
-          "width: " + rect.width + "px !important; " +
-          "height: " + rect.height + "px !important; " +
-          "margin: 0 !important; " +
-          "pointer-events: none !important;";
-        
-        // Copy computed styles
-        var computedStyle = window.getComputedStyle(el);
-        clone.style.backgroundColor = computedStyle.backgroundColor;
-        clone.style.color = computedStyle.color;
-        clone.style.fontSize = computedStyle.fontSize;
-        clone.style.fontFamily = computedStyle.fontFamily;
-        clone.style.fontWeight = computedStyle.fontWeight;
-        clone.style.lineHeight = computedStyle.lineHeight;
-        clone.style.textAlign = computedStyle.textAlign;
-        clone.style.border = computedStyle.border;
-        clone.style.borderRadius = computedStyle.borderRadius;
-        clone.style.boxShadow = computedStyle.boxShadow;
-        clone.style.padding = computedStyle.padding;
-        
-        viewport.appendChild(clone);
-      } catch(err) {
-        // Skip elements that can't be cloned
-      }
-    });
-    
-    magnifierContent.appendChild(viewport);
-  }
-  
-  function getElementsInArea(centerX, centerY, areaWidth, areaHeight) {
-    var elements = [];
-    var allElements = document.body.querySelectorAll("*");
-    var leftBound = centerX - areaWidth / 2;
-    var rightBound = centerX + areaWidth / 2;
-    var topBound = centerY - areaHeight / 2;
-    var bottomBound = centerY + areaHeight / 2;
-    
-    for (var i = 0; i < allElements.length; i++) {
-      var el = allElements[i];
-      
-      // Skip hidden, script, style elements
-      if (el.tagName === "SCRIPT" || el.tagName === "STYLE" || el.tagName === "NOSCRIPT") continue;
-      
-      var rect = el.getBoundingClientRect();
-      var scrollX = window.pageXOffset || document.documentElement.scrollLeft;
-      var scrollY = window.pageYOffset || document.documentElement.scrollTop;
-      
-      var elLeft = rect.left + scrollX;
-      var elRight = rect.right + scrollX;
-      var elTop = rect.top + scrollY;
-      var elBottom = rect.bottom + scrollY;
-      
-      // Check if element intersects the magnified area
-      if (elRight >= leftBound && elLeft <= rightBound && elBottom >= topBound && elTop <= bottomBound) {
-        // Only include leaf nodes or elements with direct text
-        if (el.children.length === 0 || el.textContent.trim().length < 200) {
-          elements.push(el);
-        }
-      }
-    }
-    
-    // Limit to 50 elements for performance
-    return elements.slice(0, 50);
   }
 
   function removeMagnifier() {
@@ -2548,15 +2512,25 @@
       cancelAnimationFrame(magnifierRAF);
       magnifierRAF = null;
     }
-    if (magnifierElement) {
-      magnifierElement.remove();
-      magnifierElement = null;
-    }
     if (magnifierHandler) {
       document.removeEventListener("mousemove", magnifierHandler);
       magnifierHandler = null;
     }
+    if (magnifierScrollHandler) {
+      window.removeEventListener("scroll", magnifierScrollHandler, true);
+      magnifierScrollHandler = null;
+    }
+    if (magnifierResizeHandler) {
+      window.removeEventListener("resize", magnifierResizeHandler);
+      magnifierResizeHandler = null;
+    }
+    if (magnifierElement) {
+      magnifierElement.remove();
+      magnifierElement = null;
+    }
     magnifierContent = null;
+    magnifierClone = null;
+    magnifierMirrorBuiltAt = 0;
   }
 
   // --- Custom Cursor Handler -------------------------------------------------
