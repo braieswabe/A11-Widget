@@ -104,7 +104,7 @@ cat package.json
 
 **Important fields**:
 - `name`: `@careerdriver/a11y-widget` ✅
-- `version`: `1.7.4` (or your next desired version)
+- `version`: `1.7.5` (or your next desired version)
 - `author`: Add your name/email (optional but recommended)
 - `repository`: Add GitHub repo URL (optional but recommended)
 
@@ -112,7 +112,7 @@ cat package.json
 ```json
 {
   "name": "@careerdriver/a11y-widget",
-  "version": "1.7.4",
+  "version": "1.7.5",
   "author": "careerdriver",
   "repository": {
     "type": "git",
@@ -156,11 +156,11 @@ npm pack --dry-run
 npm pack
 ```
 
-**Expected output**: `careerdriver-a11y-widget-1.7.4.tgz`
+**Expected output**: `careerdriver-a11y-widget-1.7.5.tgz`
 
 **Verify contents**:
 ```bash
-tar -tzf careerdriver-a11y-widget-1.7.4.tgz | sort
+tar -tzf careerdriver-a11y-widget-1.7.5.tgz | sort
 ```
 
 **Should include**:
@@ -280,12 +280,12 @@ npm run sync-widget
 cd packages/a11y-widget
 
 # Option A: Manual version bump
-# Edit package.json and change version (e.g., 1.7.4 → 1.7.4)
+# Edit package.json and change version (e.g., 1.7.5 → 1.7.5)
 
 # Option B: Use npm version command
-npm version patch    # 1.7.4 → 1.7.4 (bug fixes)
-npm version minor    # 1.7.4 → 1.8.0 (new features)
-npm version major    # 1.7.4 → 2.0.0 (breaking changes)
+npm version patch    # 1.7.5 → 1.7.5 (bug fixes)
+npm version minor    # 1.7.5 → 1.8.0 (new features)
+npm version major    # 1.7.5 → 2.0.0 (breaking changes)
 ```
 
 ### 3. Publish New Version
@@ -356,7 +356,7 @@ npm version patch && npm publish --access public
 ## Package Information
 
 **Package Name**: `@careerdriver/a11y-widget`  
-**Current Version**: `1.7.4`  
+**Current Version**: `1.7.5`  
 **License**: MIT  
 **Type**: ESM Module  
 
@@ -379,12 +379,12 @@ initA11yWidget({ siteId: "example.com" });
 
 1. ✅ Update root `package.json` to use published version:
    ```json
-   "@careerdriver/a11y-widget": "^1.7.4"
+   "@careerdriver/a11y-widget": "^1.7.5"
    ```
 
 2. ✅ Update `website/package.json` to use published version:
    ```json
-   "@careerdriver/a11y-widget": "^1.7.4"
+   "@careerdriver/a11y-widget": "^1.7.5"
    ```
 
 3. ✅ Update README.md with npm installation instructions

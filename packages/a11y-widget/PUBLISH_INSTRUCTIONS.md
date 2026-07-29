@@ -4,7 +4,7 @@
 
 ### ✅ Package Configuration
 - [x] Package name: `@careerdriver/a11y-widget`
-- [x] Version: `1.7.4`
+- [x] Version: `1.7.5`
 - [x] All exports configured correctly
 - [x] Side effects declared
 - [x] TypeScript definitions included
@@ -54,13 +54,13 @@ npm pack --dry-run
 npm pack
 ```
 
-**Expected output**: `careerdriver-a11y-widget-1.7.4.tgz`
+**Expected output**: `careerdriver-a11y-widget-1.7.5.tgz`
 
 ### 2. Verify Package Contents
 
 ```bash
 # Extract and inspect
-tar -tzf careerdriver-a11y-widget-1.7.4.tgz | sort
+tar -tzf careerdriver-a11y-widget-1.7.5.tgz | sort
 ```
 
 **Expected files** (7 total):
@@ -149,7 +149,7 @@ For future updates:
 ## Package Information
 
 **Package Name**: `@careerdriver/a11y-widget`  
-**Version**: `1.7.4`  
+**Version**: `1.7.5`  
 **License**: MIT  
 **Type**: ESM Module  
 
