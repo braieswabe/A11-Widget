@@ -6,6 +6,7 @@ import {
   WIDGET_SCRIPT_URL,
   WIDGET_SCRIPT_URL_FALLBACK,
   WIDGET_CSS_URL,
+  WIDGET_CSS_URL_FALLBACK,
   WIDGET_RUNTIME_FILENAME
 } from '../constants'
 
@@ -140,14 +141,10 @@ export default function Layout({ children }: LayoutProps) {
         return
       }
 
-      // Detect environment: development, Vercel deployment, or production
+      // Local Vite dev only: serve widget from repo via middleware (see vite.config).
+      // Production (Vercel and any deployed host): same jsDelivr URLs as install docs (`constants.ts`).
       const isDevelopment = import.meta.env.DEV || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-      const isVercelDeployment = window.location.hostname === 'a11-widget.vercel.app' || window.location.hostname.endsWith('.vercel.app')
-      
-      // Localhost / dev: serve widget from Vite (repo root `a11y-widget*.js` + `a11y-widget.css`).
-      // Vercel / static hosting: same files are copied into `dist/` at build time (see vite.config `closeBundle`).
-      // Any other hostname: load from GitHub tag via CDN (same URLs as `constants.ts` / install docs).
-      const useLocalFiles = isDevelopment || isVercelDeployment || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+      const useLocalFiles = isDevelopment
 
       // Load CSS first
       const cssLink = document.createElement('link')
@@ -157,12 +154,11 @@ export default function Layout({ children }: LayoutProps) {
         : WIDGET_CSS_URL + '?v=' + Date.now()
       cssLink.href = cssUrl
       cssLink.id = 'a11y-widget-stylesheet'
-      
-      // Add fallback for CSS on Vercel
-      if (isVercelDeployment) {
-        cssLink.onerror = function() {
-          // Try fallback to CDN if local file fails
-          cssLink.href = WIDGET_CSS_URL + '?v=' + Date.now()
+      cssLink.crossOrigin = 'anonymous'
+
+      if (!useLocalFiles) {
+        cssLink.onerror = function () {
+          cssLink.href = WIDGET_CSS_URL_FALLBACK + '?v=' + Date.now()
         }
       }
       
@@ -183,6 +179,9 @@ export default function Layout({ children }: LayoutProps) {
       
       widgetScript.src = widgetUrl
       widgetScript.defer = true // Defer ensures script runs after DOM is parsed
+      if (!useLocalFiles) {
+        widgetScript.crossOrigin = 'anonymous'
+      }
       
       // Debug logging for local development
       if (isDevelopment) {
@@ -190,8 +189,7 @@ export default function Layout({ children }: LayoutProps) {
           widgetUrl,
           fallbackUrl,
           useLocalFiles,
-          isDevelopment,
-          isVercelDeployment
+          isDevelopment
         })
       }
       
@@ -306,17 +304,16 @@ export default function Layout({ children }: LayoutProps) {
           widgetScript.parentNode.removeChild(widgetScript)
         }
         
-        // On Vercel, try CDN fallback if local file fails
-        // Otherwise, try the configured fallback URL
-        const nextFallbackUrl = isVercelDeployment && useLocalFiles
-          ? WIDGET_SCRIPT_URL + '?v=' + Date.now() // Try CDN on Vercel if local fails
-          : fallbackUrl
+        const nextFallbackUrl = fallbackUrl
         
         // Try fallback URL
         const fallbackScript = document.createElement('script')
         fallbackScript.id = 'a11y-widget-script'
         fallbackScript.src = nextFallbackUrl
         fallbackScript.defer = true
+        if (!useLocalFiles) {
+          fallbackScript.crossOrigin = 'anonymous'
+        }
         
         fallbackScript.onload = () => {
           // Use the same loading logic as the main script

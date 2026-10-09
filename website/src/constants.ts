@@ -19,3 +19,4 @@ export const WIDGET_SCRIPT_URL_FALLBACK = `https://raw.githubusercontent.com/bra
 
 // Widget CSS URL
 export const WIDGET_CSS_URL = `${WIDGET_CDN_BASE}/a11y-widget.css`
+export const WIDGET_CSS_URL_FALLBACK = 'https://raw.githubusercontent.com/braieswabe/A11-Widget/main/a11y-widget.css'

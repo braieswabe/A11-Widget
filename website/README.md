@@ -74,7 +74,7 @@ website/
 
 **Release tag for docs and copy-paste snippets:** update `src/constants.ts` (`WIDGET_VERSION`, `WIDGET_CDN_REF`, `WIDGET_LOADER_FILENAME`, `WIDGET_RUNTIME_FILENAME`, and `WIDGET_CSS_URL` if paths change) so Home, Getting Started, Tutorials, Examples, WordPress, Download, and `Layout` stay aligned with the GitHub branch/tag you ship on jsDelivr.
 
-**Runtime on this site:** `npm run dev` and production builds load `a11y-widget-v1.7.5.js` and `a11y-widget.css` from the npm package copy in `packages/a11y-widget` (Vite middleware + `closeBundle` copy). Run `npm run sync-widget` before building so the package mirrors the GitHub release assets.
+**Runtime on this site:** Production (Vercel) loads the versioned runtime and CSS from jsDelivr using the URLs in `constants.ts` (same as customer install snippets). Local `npm run dev` still serves widget files from the repo via Vite middleware for faster iteration. The build still copies widget assets into `dist/` for direct URLs and downloads; run `npm run sync-widget` before release builds so those copies stay aligned with GitHub.
 
 The website includes the widget for demonstration. The Layout component loads the widget script dynamically:
 
