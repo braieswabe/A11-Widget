@@ -1,6 +1,8 @@
 import { ReactNode, useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { useSiteAccess } from '../contexts/SiteAccessContext'
+import { teardownA11yWidget } from '../utils/teardownA11yWidget'
 import {
   WIDGET_VERSION,
   WIDGET_SCRIPT_URL,
@@ -21,6 +23,7 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps) {
   const location = useLocation()
   const { admin } = useAuth()
+  const { hasSiteAccess } = useSiteAccess()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [widgetLoaded, setWidgetLoaded] = useState(false)
   const [widgetError, setWidgetError] = useState<string | null>(null)
@@ -69,6 +72,13 @@ export default function Layout({ children }: LayoutProps) {
   }, [])
 
   useEffect(() => {
+    if (!hasSiteAccess) {
+      teardownA11yWidget()
+      setWidgetLoaded(false)
+      setWidgetError(null)
+      return
+    }
+
     // Load widget directly from GitHub CDN (using updated tabbed widget file)
     // Uses jsDelivr CDN as primary (more reliable than raw GitHub)
     const loadWidget = () => {
@@ -373,8 +383,11 @@ export default function Layout({ children }: LayoutProps) {
       loadWidget()
     }, 100)
 
-    return () => clearTimeout(timer)
-  }, [])
+    return () => {
+      clearTimeout(timer)
+      teardownA11yWidget()
+    }
+  }, [hasSiteAccess])
 
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen)
@@ -388,7 +401,7 @@ export default function Layout({ children }: LayoutProps) {
     <>
       <header className="header">
         <nav className="nav">
-          <Link to="/" className="nav-logo" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <Link to="/welcome" className="nav-logo" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <A11yLogo size={32} />
             <span>
               Accessibility Widget <span style={{ fontSize: '0.875rem', opacity: 0.8 }}>{WIDGET_VERSION}</span>
@@ -403,7 +416,7 @@ export default function Layout({ children }: LayoutProps) {
             {mobileMenuOpen ? '✕' : '☰'}
           </button>
           <ul className={`nav-links ${mobileMenuOpen ? 'active' : ''}`}>
-            <li><Link to="/" className={isActive('/') ? 'active' : ''}>Home</Link></li>
+            <li><Link to="/welcome" className={isActive('/welcome') ? 'active' : ''}>Home</Link></li>
             {/* Employee-only links, including Monitoring, stay hidden unless an admin session is active. */}
             {admin && (
               <>
@@ -479,7 +492,7 @@ export default function Layout({ children }: LayoutProps) {
               <Link to="/admin/login">Employee Login</Link>
             )}
           </div>
-          <p>Accessibility Widget {WIDGET_VERSION} — demo content is available publicly; installation materials require employee login.</p>
+          <p>Accessibility Widget {WIDGET_VERSION} — site access password required; installation materials also require employee admin login.</p>
         </div>
       </footer>
     </>

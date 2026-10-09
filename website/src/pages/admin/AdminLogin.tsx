@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { teardownA11yWidget } from '../../utils/teardownA11yWidget';
 import '../Pages.css';
 
 export default function AdminLogin() {
@@ -10,6 +11,13 @@ export default function AdminLogin() {
   const [isLoading, setIsLoading] = useState(false);
   const { login, admin } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    teardownA11yWidget();
+    return () => {
+      teardownA11yWidget();
+    };
+  }, []);
 
   useEffect(() => {
     if (admin) {

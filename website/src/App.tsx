@@ -1,8 +1,11 @@
 import { useEffect } from 'react'
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
+import { SiteAccessProvider } from './contexts/SiteAccessContext'
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
+import SiteAccessRoute from './components/SiteAccessRoute'
+import SitePasswordGate from './pages/SitePasswordGate'
 import Home from './pages/Home'
 import GettingStarted from './pages/GettingStarted'
 import Download from './pages/Download'
@@ -15,7 +18,8 @@ import DomainsManagement from './pages/admin/DomainsManagement'
 import Monitoring from './pages/admin/Monitoring'
 
 const PAGE_TITLES: Record<string, string> = {
-  '/': 'Home | Accessibility Widget v1',
+  '/': 'Site Access | Accessibility Widget v1',
+  '/welcome': 'Home | Accessibility Widget v1',
   '/getting-started': 'Installation Guide | Accessibility Widget v1',
   '/download': 'Download Example | Accessibility Widget v1',
   '/features': 'Features | Accessibility Widget v1',
@@ -42,62 +46,145 @@ function RouteTitle() {
 
 function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <RouteTitle />
-        <Routes>
-          {/* Public routes */}
-          <Route path="/" element={<Layout><Home /></Layout>} />
-          <Route path="/getting-started" element={<ProtectedRoute><Layout><GettingStarted /></Layout></ProtectedRoute>} />
-          <Route path="/download" element={<ProtectedRoute><Layout><Download /></Layout></ProtectedRoute>} />
-          <Route path="/features" element={<ProtectedRoute><Layout><Features /></Layout></ProtectedRoute>} />
-          <Route path="/wordpress" element={<ProtectedRoute><Layout><WordPress /></Layout></ProtectedRoute>} />
-          
-          {/* Admin routes */}
-          <Route path="/admin/login" element={<AdminLogin />} />
-          <Route 
-            path="/admin/dashboard" 
-            element={
-              <ProtectedRoute>
-                <Layout><AdminDashboard /></Layout>
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/admin/clients/new" 
-            element={
-              <ProtectedRoute>
-                <Layout><ClientForm /></Layout>
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/admin/clients/:id/edit" 
-            element={
-              <ProtectedRoute>
-                <Layout><ClientForm /></Layout>
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/admin/domains" 
-            element={
-              <ProtectedRoute>
-                <Layout><DomainsManagement /></Layout>
-              </ProtectedRoute>
-            } 
-          />
-          <Route
-            path="/admin/monitoring"
-            element={
-              <ProtectedRoute>
-                <Layout><Monitoring /></Layout>
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+    <SiteAccessProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <RouteTitle />
+          <Routes>
+            <Route path="/" element={<SitePasswordGate />} />
+
+            <Route
+              path="/welcome"
+              element={
+                <SiteAccessRoute>
+                  <Layout>
+                    <Home />
+                  </Layout>
+                </SiteAccessRoute>
+              }
+            />
+            <Route
+              path="/getting-started"
+              element={
+                <SiteAccessRoute>
+                  <ProtectedRoute>
+                    <Layout>
+                      <GettingStarted />
+                    </Layout>
+                  </ProtectedRoute>
+                </SiteAccessRoute>
+              }
+            />
+            <Route
+              path="/download"
+              element={
+                <SiteAccessRoute>
+                  <ProtectedRoute>
+                    <Layout>
+                      <Download />
+                    </Layout>
+                  </ProtectedRoute>
+                </SiteAccessRoute>
+              }
+            />
+            <Route
+              path="/features"
+              element={
+                <SiteAccessRoute>
+                  <ProtectedRoute>
+                    <Layout>
+                      <Features />
+                    </Layout>
+                  </ProtectedRoute>
+                </SiteAccessRoute>
+              }
+            />
+            <Route
+              path="/wordpress"
+              element={
+                <SiteAccessRoute>
+                  <ProtectedRoute>
+                    <Layout>
+                      <WordPress />
+                    </Layout>
+                  </ProtectedRoute>
+                </SiteAccessRoute>
+              }
+            />
+
+            <Route
+              path="/admin/login"
+              element={
+                <SiteAccessRoute>
+                  <AdminLogin />
+                </SiteAccessRoute>
+              }
+            />
+            <Route
+              path="/admin/dashboard"
+              element={
+                <SiteAccessRoute>
+                  <ProtectedRoute>
+                    <Layout>
+                      <AdminDashboard />
+                    </Layout>
+                  </ProtectedRoute>
+                </SiteAccessRoute>
+              }
+            />
+            <Route
+              path="/admin/clients/new"
+              element={
+                <SiteAccessRoute>
+                  <ProtectedRoute>
+                    <Layout>
+                      <ClientForm />
+                    </Layout>
+                  </ProtectedRoute>
+                </SiteAccessRoute>
+              }
+            />
+            <Route
+              path="/admin/clients/:id/edit"
+              element={
+                <SiteAccessRoute>
+                  <ProtectedRoute>
+                    <Layout>
+                      <ClientForm />
+                    </Layout>
+                  </ProtectedRoute>
+                </SiteAccessRoute>
+              }
+            />
+            <Route
+              path="/admin/domains"
+              element={
+                <SiteAccessRoute>
+                  <ProtectedRoute>
+                    <Layout>
+                      <DomainsManagement />
+                    </Layout>
+                  </ProtectedRoute>
+                </SiteAccessRoute>
+              }
+            />
+            <Route
+              path="/admin/monitoring"
+              element={
+                <SiteAccessRoute>
+                  <ProtectedRoute>
+                    <Layout>
+                      <Monitoring />
+                    </Layout>
+                  </ProtectedRoute>
+                </SiteAccessRoute>
+              }
+            />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
+    </SiteAccessProvider>
   )
 }
 

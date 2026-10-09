@@ -54,6 +54,7 @@ declare global {
       reset: () => void
     }
     __a11yWidgetInit?: (config?: any) => void
+    __a11yWidgetLoaderBooted?: boolean
     __initA11yWidget?: (config?: any) => Promise<Window['__a11yWidget']>
   }
 }
