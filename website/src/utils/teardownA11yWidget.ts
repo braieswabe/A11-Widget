@@ -19,7 +19,7 @@ export function teardownA11yWidget() {
     })
   }
 
-  document.querySelectorAll('script[src*="a11y-widget"]').forEach((el) => {
+  document.querySelectorAll('script[src*="a11y-widget"],#a11y-widget-loader-script').forEach((el) => {
     el.parentNode?.removeChild(el)
   })
 

@@ -5,14 +5,12 @@ import { useSiteAccess } from '../contexts/SiteAccessContext'
 import { teardownA11yWidget } from '../utils/teardownA11yWidget'
 import {
   WIDGET_VERSION,
-  WIDGET_SCRIPT_URL,
-  WIDGET_SCRIPT_URL_FALLBACK,
-  WIDGET_CSS_URL,
-  WIDGET_CSS_URL_FALLBACK,
+  WIDGET_LOADER_URL,
+  WIDGET_LOADER_FILENAME,
   WIDGET_RUNTIME_FILENAME
 } from '../constants'
 
-const WIDGET_SCRIPT_MARKERS = [WIDGET_RUNTIME_FILENAME, 'a11y-widget.js']
+const WIDGET_SCRIPT_MARKERS = [WIDGET_LOADER_FILENAME, WIDGET_RUNTIME_FILENAME, 'a11y-widget.js']
 import A11yLogo from './A11yLogo'
 import './Layout.css'
 
@@ -79,312 +77,78 @@ export default function Layout({ children }: LayoutProps) {
       return
     }
 
-    // Load widget directly from GitHub CDN (using updated tabbed widget file)
-    // Uses jsDelivr CDN as primary (more reliable than raw GitHub)
-    const loadWidget = () => {
-      const hasUpdatedScriptAlready = WIDGET_SCRIPT_MARKERS.some(
-        (marker) => !!document.querySelector(`script[src*="${marker}"]`)
-      )
-      const updatedScriptSelector = WIDGET_SCRIPT_MARKERS
-        .map((marker) => `script[src*="${marker}"]`)
-        .join(', ')
-
-      // Check if widget is already loaded
-      if (window.__a11yWidget?.__loaded && hasUpdatedScriptAlready) {
-        console.log('[A11Y Layout] Widget already loaded')
-        setWidgetLoaded(true)
-        return
-      }
-
-      // If an older widget runtime exists, clear stale state so updated script can initialize.
-      if (window.__a11yWidget?.__loaded && !hasUpdatedScriptAlready) {
-        window.__a11yWidget.__loaded = false
-      }
-
-      // Check if widget button already exists (widget might be loaded but flag not set)
-      const existingToggle = document.getElementById('a11y-widget-toggle')
-      const existingRoot = document.getElementById('a11y-widget-root')
-      if ((existingToggle || existingRoot) && hasUpdatedScriptAlready) {
-        console.log('[A11Y Layout] Widget elements already exist in DOM')
-        setWidgetLoaded(true)
-        return
-      }
-
-      if (!hasUpdatedScriptAlready) {
-        // Remove stale widget DOM from older script includes.
-        if (existingRoot && existingRoot.parentNode) {
-          existingRoot.parentNode.removeChild(existingRoot)
-        } else if (existingToggle && existingToggle.parentNode) {
-          existingToggle.parentNode.removeChild(existingToggle)
+    const waitForWidgetReady = (timeoutMs = 8000) => {
+      const started = Date.now()
+      const interval = setInterval(() => {
+        if (window.__a11yWidget?.__loaded || document.getElementById('a11y-widget-toggle')) {
+          setWidgetLoaded(true)
+          clearInterval(interval)
+          return
         }
-
-        // Remove legacy direct script includes so only updated widget script remains.
-        document.querySelectorAll('script[src*="a11y-widget.js"]').forEach((el) => {
-          const scriptEl = el as HTMLScriptElement
-          if (!scriptEl.src.includes(WIDGET_RUNTIME_FILENAME) && scriptEl.parentNode) {
-            scriptEl.parentNode.removeChild(scriptEl)
-          }
-        })
-      }
-
-      // Check if widget script already exists
-      const existingWidgetScript = document.querySelector(updatedScriptSelector)
-      if (existingWidgetScript) {
-        console.log('[A11Y Layout] Widget script already loading, waiting...')
-        // Script already loading, wait for widget to initialize
-        const checkWidget = setInterval(() => {
-          if (window.__a11yWidget?.__loaded || document.getElementById('a11y-widget-toggle')) {
-            setWidgetLoaded(true)
-            clearInterval(checkWidget)
-          }
-        }, 100)
-        
-        // Timeout after 5 seconds
-        setTimeout(() => {
-          clearInterval(checkWidget)
+        if (Date.now() - started >= timeoutMs) {
+          clearInterval(interval)
           if (!window.__a11yWidget?.__loaded && !document.getElementById('a11y-widget-toggle')) {
-            setWidgetError('Widget initialization timeout')
+            setWidgetError('Widget failed to initialize. Check browser console for errors.')
           } else {
             setWidgetLoaded(true)
           }
-        }, 5000)
-        return
-      }
-
-      // Local Vite dev only: serve widget from repo via middleware (see vite.config).
-      // Production (Vercel and any deployed host): same jsDelivr URLs as install docs (`constants.ts`).
-      const isDevelopment = import.meta.env.DEV || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-      const useLocalFiles = isDevelopment
-
-      // Load CSS first
-      const cssLink = document.createElement('link')
-      cssLink.rel = 'stylesheet'
-      const cssUrl = useLocalFiles 
-        ? '/a11y-widget.css?v=' + Date.now() 
-        : WIDGET_CSS_URL + '?v=' + Date.now()
-      cssLink.href = cssUrl
-      cssLink.id = 'a11y-widget-stylesheet'
-      cssLink.crossOrigin = 'anonymous'
-
-      if (!useLocalFiles) {
-        cssLink.onerror = function () {
-          cssLink.href = WIDGET_CSS_URL_FALLBACK + '?v=' + Date.now()
         }
-      }
-      
-      document.head.appendChild(cssLink)
-
-      // Load widget script directly (updated v1.7.0 tabbed widget)
-      const widgetScript = document.createElement('script')
-      widgetScript.id = 'a11y-widget-script'
-      
-      // Use local files on Vercel/devel, CDN in production
-      const localRuntime = '/' + WIDGET_RUNTIME_FILENAME
-      const widgetUrl = useLocalFiles 
-        ? localRuntime + '?v=' + Date.now()
-        : WIDGET_SCRIPT_URL + '?v=' + Date.now()
-      const fallbackUrl = useLocalFiles
-        ? localRuntime + '?v=' + Date.now()
-        : WIDGET_SCRIPT_URL_FALLBACK + '?v=' + Date.now()
-      
-      widgetScript.src = widgetUrl
-      widgetScript.defer = true // Defer ensures script runs after DOM is parsed
-      if (!useLocalFiles) {
-        widgetScript.crossOrigin = 'anonymous'
-      }
-      
-      // Debug logging for local development
-      if (isDevelopment) {
-        console.log('[A11Y Layout] Loading widget:', {
-          widgetUrl,
-          fallbackUrl,
-          useLocalFiles,
-          isDevelopment
-        })
-      }
-      
-      // Track loading state
-      widgetScript.onload = () => {
-        
-        if (isDevelopment) {
-          console.log('[A11Y Layout] Widget script loaded, initializing...')
-        }
-        
-        // Initialize widget immediately after script loads
-        // The widget exposes __a11yWidgetInit but doesn't auto-initialize
-        // Wait a tiny bit to ensure the script has fully executed
-        setTimeout(() => {
-          
-          if (typeof window.__a11yWidgetInit === 'function') {
-            try {
-              
-              // Call init with config (or undefined if not set - widget handles this)
-              const config = window.__A11Y_WIDGET__ || undefined;
-              window.__a11yWidgetInit(config);
-              
-              if (isDevelopment) {
-                console.log('[A11Y Layout] Widget init function called with config:', config)
-              }
-            } catch (error) {
-              console.error('[A11Y Layout] Error initializing widget:', error);
-            }
-          } else {
-            console.warn('[A11Y Layout] Widget init function not found after script load');
-          }
-        }, 100);
-        
-        // Give widget a moment to initialize, then start checking
-        setTimeout(() => {
-          // Wait for widget to initialize
-          let attempts = 0
-          const maxAttempts = 80 // 8 seconds max (widget needs time to initialize)
-          
-          const checkWidget = setInterval(() => {
-            attempts++
-            
-            // Check if widget is loaded
-            if (window.__a11yWidget?.__loaded) {
-              if (isDevelopment) {
-                console.log('[A11Y Layout] Widget initialized successfully (__loaded flag)')
-              }
-              setWidgetLoaded(true)
-              clearInterval(checkWidget)
-              return
-            }
-            
-            // Also check if widget button exists in DOM (widget might be loaded but __loaded flag not set yet)
-            const toggleButton = document.getElementById('a11y-widget-toggle')
-            const widgetRoot = document.getElementById('a11y-widget-root')
-            if (toggleButton || widgetRoot) {
-              if (isDevelopment) {
-                const toggleStyle = toggleButton ? window.getComputedStyle(toggleButton) : null
-                console.log('[A11Y Layout] Widget elements found in DOM:', {
-                  toggleButton: !!toggleButton,
-                  widgetRoot: !!widgetRoot,
-                  toggleDisplay: toggleStyle?.display,
-                  toggleVisibility: toggleStyle?.visibility,
-                  toggleOpacity: toggleStyle?.opacity,
-                  hasWidgetGlobal: !!window.__a11yWidget
-                })
-              }
-              setWidgetLoaded(true)
-              clearInterval(checkWidget)
-              return
-            }
-            
-            // Timeout check
-            if (attempts >= maxAttempts) {
-              clearInterval(checkWidget)
-              // Check one more time before showing error
-              // Widget button might exist even if __loaded flag isn't set
-              const finalToggleButton = document.getElementById('a11y-widget-toggle')
-              const finalWidgetRoot = document.getElementById('a11y-widget-root')
-              if (!window.__a11yWidget?.__loaded && !finalToggleButton && !finalWidgetRoot) {
-                setWidgetError('Widget failed to initialize. Check browser console for errors.')
-                console.error('[A11Y Layout] Widget initialization timeout. Check if CSS/JS loaded correctly.')
-                console.error('[A11Y Layout] Debug info:', {
-                  hasWidgetGlobal: !!window.__a11yWidget,
-                  toggleButton: !!finalToggleButton,
-                  widgetRoot: !!finalWidgetRoot,
-                  scriptSrc: widgetScript.src
-                })
-              } else if ((finalToggleButton || finalWidgetRoot) && !window.__a11yWidget?.__loaded) {
-                // Button exists but widget not fully initialized - this is OK, widget might be loading
-                if (isDevelopment) {
-                  console.log('[A11Y Layout] Widget elements exist but __loaded flag not set - marking as loaded')
-                }
-                setWidgetLoaded(true)
-              }
-            }
-          }, 100)
-        }, 500) // Wait 500ms before starting checks to give widget time to initialize
-      }
-      
-      // Add error handler with fallback
-      widgetScript.onerror = (error) => {
-        console.error('[A11Y Layout] Widget script load error:', {
-          widgetUrl,
-          error,
-          isDevelopment,
-          useLocalFiles
-        })
-        console.warn('Failed to load widget from primary source, trying fallback...')
-        // Remove failed script
-        if (widgetScript.parentNode) {
-          widgetScript.parentNode.removeChild(widgetScript)
-        }
-        
-        const nextFallbackUrl = fallbackUrl
-        
-        // Try fallback URL
-        const fallbackScript = document.createElement('script')
-        fallbackScript.id = 'a11y-widget-script'
-        fallbackScript.src = nextFallbackUrl
-        fallbackScript.defer = true
-        if (!useLocalFiles) {
-          fallbackScript.crossOrigin = 'anonymous'
-        }
-        
-        fallbackScript.onload = () => {
-          // Use the same loading logic as the main script
-          let attempts = 0
-          const maxAttempts = 60
-          
-          const checkWidget = setInterval(() => {
-            attempts++
-            
-            if (window.__a11yWidget?.__loaded) {
-              setWidgetLoaded(true)
-              clearInterval(checkWidget)
-              return
-            }
-            
-            if (document.getElementById('a11y-widget-toggle') || document.getElementById('a11y-widget-root')) {
-              setWidgetLoaded(true)
-              clearInterval(checkWidget)
-              return
-            }
-            
-            if (attempts >= maxAttempts) {
-              clearInterval(checkWidget)
-              if (!window.__a11yWidget?.__loaded && !document.getElementById('a11y-widget-toggle')) {
-                setWidgetError('Widget failed to initialize. Check browser console for errors.')
-                console.error('Widget initialization timeout. Check if CSS/JS loaded correctly.')
-              }
-            }
-          }, 100)
-        }
-        
-        fallbackScript.onerror = () => {
-          setWidgetError('Failed to load widget script from both sources')
-          console.error('Failed to load accessibility widget from both:', widgetUrl, 'and', fallbackUrl)
-        }
-        
-        // Insert fallback script
-        const firstScript = document.getElementsByTagName('script')[0]
-        if (firstScript?.parentNode) {
-          firstScript.parentNode.insertBefore(fallbackScript, firstScript)
-        } else {
-          document.head.appendChild(fallbackScript)
-        }
-      }
-      
-      // Insert script before first script or append to head
-      const firstScript = document.getElementsByTagName('script')[0]
-      if (firstScript?.parentNode) {
-        firstScript.parentNode.insertBefore(widgetScript, firstScript)
-      } else {
-        document.head.appendChild(widgetScript)
-      }
+      }, 100)
+      return () => clearInterval(interval)
     }
 
-    // Load widget after a small delay to ensure DOM is ready
+    const loadWidget = () => {
+      const hasLoaderOrRuntime = WIDGET_SCRIPT_MARKERS.some(
+        (marker) => !!document.querySelector(`script[src*="${marker}"]`)
+      )
+
+      if (window.__a11yWidget?.__loaded && hasLoaderOrRuntime) {
+        setWidgetLoaded(true)
+        return () => undefined
+      }
+
+      if (hasLoaderOrRuntime) {
+        return waitForWidgetReady()
+      }
+
+      teardownA11yWidget()
+
+      const isDevelopment =
+        import.meta.env.DEV ||
+        window.location.hostname === 'localhost' ||
+        window.location.hostname === '127.0.0.1'
+
+      if (isDevelopment) {
+        window.__A11Y_ASSET_BASE__ = `${window.location.origin}/`
+      } else {
+        delete window.__A11Y_ASSET_BASE__
+      }
+
+      const loaderUrl = isDevelopment
+        ? `/${WIDGET_LOADER_FILENAME}?v=${Date.now()}`
+        : `${WIDGET_LOADER_URL}?v=${Date.now()}`
+
+      const loaderScript = document.createElement('script')
+      loaderScript.id = 'a11y-widget-loader-script'
+      loaderScript.src = loaderUrl
+      loaderScript.defer = true
+      loaderScript.crossOrigin = 'anonymous'
+      loaderScript.onerror = () => {
+        setWidgetError('Failed to load widget loader from CDN.')
+      }
+
+      document.head.appendChild(loaderScript)
+      return waitForWidgetReady()
+    }
+
+    let stopWaiting: (() => void) | undefined
     const timer = setTimeout(() => {
-      loadWidget()
+      stopWaiting = loadWidget()
     }, 100)
 
     return () => {
       clearTimeout(timer)
+      stopWaiting?.()
       teardownA11yWidget()
     }
   }, [hasSiteAccess])

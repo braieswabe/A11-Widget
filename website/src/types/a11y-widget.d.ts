@@ -1,6 +1,7 @@
 // TypeScript definitions for Accessibility Widget
 declare global {
   interface Window {
+    __A11Y_ASSET_BASE__?: string
     __A11Y_WIDGET__?: {
       siteId?: string
       position?: 'left' | 'right'

@@ -1,10 +1,13 @@
-/*! a11y-widget.js — Accessibility Widget v1.7.5 (IIFE, no deps)
+/*! a11y-widget.js — Accessibility Widget v1.7.6 (IIFE, no deps)
     Scope: widget UI + configured surfaces only.
     No claims of full-site ADA compliance.
     
     GitHub Repository: https://github.com/braieswabe/A11-Widget
     CDN: https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@main/
     
+    Version 1.7.6 Changelog:
+    - Release bundle: loader-first CDN install path (`a11y-widget-loader-v1.7.6.js`) aligned across docs and demo site
+
     Version 1.7.5 Changelog:
     - Page magnifier render fix: single page-mirror zoom (no overlapping clones / centered "x")
 
@@ -1701,7 +1704,7 @@
       faviconUrl: getFaviconUrl(),
       pageUrl: window.location.href,
       domain: window.location.hostname || "",
-      build: window.__A11Y_WIDGET_BUILD__ || "a11y-widget-v1.7.5.js",
+      build: window.__A11Y_WIDGET_BUILD__ || "a11y-widget-v1.7.6.js",
       position: cfg.position,
       browser: getBrowserInfo(),
       reportedAt: nowISO()
@@ -1728,7 +1731,7 @@
       body: JSON.stringify(assign({
         siteId: cfg.siteId,
         url: window.location.href,
-        widgetVersion: window.__A11Y_WIDGET_BUILD__ || "a11y-widget-v1.7.5.js",
+        widgetVersion: window.__A11Y_WIDGET_BUILD__ || "a11y-widget-v1.7.6.js",
         licenseKey: cfg.licenseKey || null,
         apiKey: cfg.apiKey || null
       }, payload || {}))
@@ -1853,7 +1856,7 @@
     }
     setUpdateStatus(statusEl, "Checking latest version...", false);
 
-    var probeUrl = CDN_BASE + "a11y-widget-v1.7.5.js?_a11y_check=" + Date.now();
+    var probeUrl = CDN_BASE + "a11y-widget-v1.7.6.js?_a11y_check=" + Date.now();
     var supportsFetch = typeof fetch !== "undefined";
 
     function finish(buttonText) {
@@ -3547,7 +3550,7 @@
     
     var shortcutText = cfg.keyboardShortcut ? " (" + cfg.keyboardShortcut + ")" : "";
     var shortcutHint = cfg.keyboardShortcut ? "Press " + cfg.keyboardShortcut + " to open" : "";
-    var toggleTooltipText = (shortcutHint || "Accessibility Settings") + " - Widget v1.7.5";
+    var toggleTooltipText = (shortcutHint || "Accessibility Settings") + " - Widget v1.7.6";
     var toggle = el("button", {
       id: "a11y-widget-toggle",
       type: "button",
@@ -3556,7 +3559,7 @@
       "aria-label": "Open accessibility settings" + shortcutText,
       "aria-haspopup": "dialog",
       "aria-keyshortcuts": cfg.keyboardShortcut || undefined,
-      "data-a11y-widget-version": "1.7.5",
+      "data-a11y-widget-version": "1.7.6",
       html: logoSVG
     });
     bindA11yTooltip(toggle, toggleTooltipText);
@@ -6678,7 +6681,7 @@
     activeWidgetConfig = cfg;
 
     // QA / deploy verification: check in console `window.__A11Y_WIDGET_BUILD__` and Network for this filename (not legacy a11y-widget.js).
-    window.__A11Y_WIDGET_BUILD__ = "a11y-widget-v1.7.5.js";
+    window.__A11Y_WIDGET_BUILD__ = "a11y-widget-v1.7.6.js";
 
     // Namespace guard
     if (window.__a11yWidget && window.__a11yWidget.__loaded) return;
@@ -6858,7 +6861,7 @@
         open: function () { widget.open(); },
         close: function () { widget.close(); },
         toggle: function () { widget.toggle(); },
-        getBuild: function () { return window.__A11Y_WIDGET_BUILD__ || "a11y-widget-v1.7.5.js"; },
+        getBuild: function () { return window.__A11Y_WIDGET_BUILD__ || "a11y-widget-v1.7.6.js"; },
         getPrefs: function () { return assign({}, prefs); },
         setPrefs: function (next) {
           prefs = normalizePrefs(assign(prefs, next || {}));

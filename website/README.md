@@ -74,9 +74,9 @@ website/
 
 **Release tag for docs and copy-paste snippets:** update `src/constants.ts` (`WIDGET_VERSION`, `WIDGET_CDN_REF`, `WIDGET_LOADER_FILENAME`, `WIDGET_RUNTIME_FILENAME`, and `WIDGET_CSS_URL` if paths change) so Home, Getting Started, Tutorials, Examples, WordPress, Download, and `Layout` stay aligned with the GitHub branch/tag you ship on jsDelivr.
 
-**Runtime on this site:** Production (Vercel) loads the versioned runtime and CSS from jsDelivr using the URLs in `constants.ts` (same as customer install snippets). Local `npm run dev` still serves widget files from the repo via Vite middleware for faster iteration. The build still copies widget assets into `dist/` for direct URLs and downloads; run `npm run sync-widget` before release builds so those copies stay aligned with GitHub.
+**Runtime on this site:** Production (Vercel) injects the **zero-config loader** from jsDelivr (`WIDGET_LOADER_URL` in `constants.ts`)—the same snippet customers paste. The loader pulls versioned runtime + CSS. Local `npm run dev` serves loader/runtime/CSS from the repo via Vite (`__A11Y_ASSET_BASE__` points at the dev origin). Run `npm run sync-widget` before release builds so copied assets match GitHub.
 
-The website includes the widget for demonstration. The Layout component loads the widget script dynamically:
+The website includes the widget for demonstration. The Layout component sets `window.__A11Y_WIDGET__` then loads the loader:
 
 ```typescript
 // Widget is loaded in Layout.tsx
