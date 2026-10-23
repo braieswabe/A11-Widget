@@ -124,9 +124,11 @@ export default function Layout({ children }: LayoutProps) {
         delete window.__A11Y_ASSET_BASE__
       }
 
+      // Production uses the same jsDelivr loader URL as install docs (see constants.ts).
+      const canonicalLoaderUrl = WIDGET_LOADER_URL
       const loaderUrl = isDevelopment
         ? `/${WIDGET_LOADER_FILENAME}?v=${Date.now()}`
-        : `${WIDGET_LOADER_URL}?v=${Date.now()}`
+        : `${canonicalLoaderUrl}?v=${Date.now()}`
 
       const loaderScript = document.createElement('script')
       loaderScript.id = 'a11y-widget-loader-script'
@@ -134,6 +136,18 @@ export default function Layout({ children }: LayoutProps) {
       loaderScript.defer = true
       loaderScript.crossOrigin = 'anonymous'
       loaderScript.onerror = () => {
+        // Retry canonical URL without cache-buster, then same-origin loader + assets (Vercel dist copy).
+        if (!isDevelopment && loaderScript.dataset.cdnRetry !== '1') {
+          loaderScript.dataset.cdnRetry = '1'
+          loaderScript.src = canonicalLoaderUrl
+          return
+        }
+        if (!isDevelopment && loaderScript.dataset.originFallback !== '1') {
+          loaderScript.dataset.originFallback = '1'
+          window.__A11Y_ASSET_BASE__ = `${window.location.origin}/`
+          loaderScript.src = `/${WIDGET_LOADER_FILENAME}?v=${Date.now()}`
+          return
+        }
         setWidgetError('Failed to load widget loader from CDN.')
       }
 
