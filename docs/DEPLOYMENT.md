@@ -4,7 +4,7 @@ This document describes the workflow for deploying updates to the A11Y Widget. *
 
 ## Why This Matters
 
-The widget is served via **jsDelivr CDN** which aggressively caches files referenced by branch names (like `@main`). Simply pushing to GitHub won't update the live widget for existing users. You **must** create version tags to bypass CDN caching.
+The canonical install URL is the **hosted deploy** (`https://a11-widget.vercel.app/…`, or your custom domain via `VITE_WIDGET_PUBLIC_ORIGIN`). Each Vercel production deploy copies loader, runtime, and CSS into `website/dist`. **GitHub/jsDelivr `@tag`** URLs are optional and require a **public** repository; private repos should rely on the hosted origin or self-hosting.
 
 ## Deployment Steps
 

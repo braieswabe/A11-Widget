@@ -15,7 +15,7 @@ This guide covers installing the Accessibility Widget v1 on static HTML sites or
 Add this single line to your HTML files before `</head>` or before `</body>`:
 
 ```html
-<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.7.6/a11y-widget-loader-v1.7.6.js" defer></script>
+<script src="https://a11-widget.vercel.app/a11y-widget-loader-v1.7.6.js" defer></script>
 ```
 
 That's it! The widget loads automatically from GitHub. No configuration needed.
@@ -34,7 +34,7 @@ If you want to configure surfaces or backend tracking, add configuration before 
     telemetryEndpoint: "https://your-widget-backend.com/api/telemetry"
   };
 </script>
-<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.7.6/a11y-widget-loader-v1.7.6.js" defer></script>
+<script src="https://a11-widget.vercel.app/a11y-widget-loader-v1.7.6.js" defer></script>
 ```
 
 When `telemetryEndpoint` is set, heartbeat, widget error, support case, and translation endpoints are derived from the same backend unless you override them directly.
@@ -91,13 +91,13 @@ If using a templating system (Jekyll, Hugo, etc.), add to your base template:
 **Jekyll** (`_includes/head.html` or `_layouts/default.html`):
 ```liquid
 <!-- Just one line - widget loads automatically! -->
-<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.7.6/a11y-widget-loader-v1.7.6.js" defer></script>
+<script src="https://a11-widget.vercel.app/a11y-widget-loader-v1.7.6.js" defer></script>
 ```
 
 **Hugo** (`layouts/partials/head.html`):
 ```go
 <!-- Just one line - widget loads automatically! -->
-<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.7.6/a11y-widget-loader-v1.7.6.js" defer></script>
+<script src="https://a11-widget.vercel.app/a11y-widget-loader-v1.7.6.js" defer></script>
 ```
 
 ## Troubleshooting
@@ -148,7 +148,7 @@ If you see CSP errors:
   <title>My Site</title>
   
   <!-- Accessibility Widget - Just one line! -->
-  <script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.7.6/a11y-widget-loader-v1.7.6.js" defer></script>
+  <script src="https://a11-widget.vercel.app/a11y-widget-loader-v1.7.6.js" defer></script>
 </head>
 <body>
   <main>

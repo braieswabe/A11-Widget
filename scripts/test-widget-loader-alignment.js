@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Ensures website constants and built SPA bundle use the canonical jsDelivr loader URL.
+ * Ensures website constants and built SPA bundle use the canonical hosted loader URL.
  */
 
 import { readFileSync, existsSync, readdirSync } from 'fs';
@@ -16,7 +16,8 @@ const pkg = JSON.parse(
 const version = pkg.version;
 const tag = `v${version}`;
 const loaderFile = `a11y-widget-loader-v${version}.js`;
-const CANONICAL_LOADER_URL = `https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@${tag}/${loaderFile}`;
+const HOSTED_ORIGIN = 'https://a11-widget.vercel.app';
+const CANONICAL_LOADER_URL = `${HOSTED_ORIGIN}/${loaderFile}`;
 
 const constantsPath = join(root, 'website', 'src', 'constants.ts');
 const constantsSrc = readFileSync(constantsPath, 'utf8');
@@ -34,9 +35,12 @@ function pass(msg) {
 
 const hasConstants =
   constantsSrc.includes(`WIDGET_CDN_REF = '${tag}'`) &&
-  constantsSrc.includes(`WIDGET_LOADER_FILENAME = '${loaderFile}'`);
+  constantsSrc.includes(`WIDGET_LOADER_FILENAME = '${loaderFile}'`) &&
+  constantsSrc.includes('WIDGET_HOSTED_ORIGIN') &&
+  constantsSrc.includes(HOSTED_ORIGIN) &&
+  constantsSrc.includes(loaderFile);
 if (!hasConstants) {
-  fail(`constants.ts not aligned to ${tag} / ${loaderFile}`);
+  fail(`constants.ts not aligned to hosted loader ${CANONICAL_LOADER_URL}`);
 } else {
   pass(`constants.ts targets ${CANONICAL_LOADER_URL}`);
 }
@@ -60,16 +64,12 @@ if (distAssets.length === 0) {
   fail('No website build found. Run: cd website && npm run build');
 } else {
   const bundle = readFileSync(distAssets[0], 'utf8');
-  if (
-    !bundle.includes('cdn.jsdelivr.net/gh/braieswabe/A11-Widget') ||
-    !bundle.includes(tag) ||
-    !bundle.includes(loaderFile)
-  ) {
-    fail(`Built SPA bundle missing jsDelivr loader reference (rebuild website)`);
+  if (!bundle.includes(loaderFile)) {
+    fail(`Built SPA bundle missing loader filename (rebuild website)`);
   } else {
-    pass(`Built bundle (${distAssets[0].split('/').pop()}) uses jsDelivr @${tag} loader`);
+    pass(`Built bundle (${distAssets[0].split('/').pop()}) references ${loaderFile}`);
   }
-  if (bundle.includes('a11y-widget-loader-script') && bundle.includes(loaderFile)) {
+  if (bundle.includes('a11y-widget-loader-script')) {
     pass('Built bundle injects loader script (not direct runtime-only path)');
   } else {
     fail('Built bundle does not appear to use loader injection');

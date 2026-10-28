@@ -9,10 +9,10 @@ import {
   WIDGET_LOADER_FILENAME,
   WIDGET_RUNTIME_FILENAME
 } from '../constants'
-
-const WIDGET_SCRIPT_MARKERS = [WIDGET_LOADER_FILENAME, WIDGET_RUNTIME_FILENAME, 'a11y-widget.js']
 import A11yLogo from './A11yLogo'
 import './Layout.css'
+
+const WIDGET_SCRIPT_MARKERS = [WIDGET_LOADER_FILENAME, WIDGET_RUNTIME_FILENAME, 'a11y-widget.js']
 
 interface LayoutProps {
   children: ReactNode
@@ -113,51 +113,34 @@ export default function Layout({ children }: LayoutProps) {
 
       teardownA11yWidget()
 
-      const isDevelopment =
-        import.meta.env.DEV ||
-        window.location.hostname === 'localhost' ||
-        window.location.hostname === '127.0.0.1'
+      const hostedLoaderUrl = WIDGET_LOADER_URL
 
-      if (isDevelopment) {
-        window.__A11Y_ASSET_BASE__ = `${window.location.origin}/`
-      } else {
-        delete window.__A11Y_ASSET_BASE__
+      const appendLoaderScript = (loaderUrl: string) => {
+        const loaderScript = document.createElement('script')
+        loaderScript.id = 'a11y-widget-loader-script'
+        loaderScript.src = loaderUrl
+        loaderScript.defer = true
+        loaderScript.crossOrigin = 'anonymous'
+        loaderScript.onerror = () => {
+          if (loaderScript.dataset.hostedFallback !== '1') {
+            loaderScript.dataset.hostedFallback = '1'
+            delete window.__A11Y_ASSET_BASE__
+            loaderScript.src = `${hostedLoaderUrl}?v=${Date.now()}`
+            return
+          }
+          setWidgetError('Failed to load widget loader.')
+        }
+        document.head.appendChild(loaderScript)
       }
 
-      // Production uses the same jsDelivr loader URL as install docs (see constants.ts).
-      const canonicalLoaderUrl = WIDGET_LOADER_URL
-      const loaderUrl = isDevelopment
-        ? `/${WIDGET_LOADER_FILENAME}?v=${Date.now()}`
-        : `${canonicalLoaderUrl}?v=${Date.now()}`
-
-      const loaderScript = document.createElement('script')
-      loaderScript.id = 'a11y-widget-loader-script'
-      loaderScript.src = loaderUrl
-      loaderScript.defer = true
-      loaderScript.crossOrigin = 'anonymous'
-      loaderScript.onerror = () => {
-        // Retry canonical URL without cache-buster, then same-origin loader + assets (Vercel dist copy).
-        if (!isDevelopment && loaderScript.dataset.cdnRetry !== '1') {
-          loaderScript.dataset.cdnRetry = '1'
-          loaderScript.src = canonicalLoaderUrl
-          return
-        }
-        if (!isDevelopment && loaderScript.dataset.originFallback !== '1') {
-          loaderScript.dataset.originFallback = '1'
-          window.__A11Y_ASSET_BASE__ = `${window.location.origin}/`
-          loaderScript.src = `/${WIDGET_LOADER_FILENAME}?v=${Date.now()}`
-          return
-        }
-        setWidgetError('Failed to load widget loader from CDN.')
-      }
-
-      document.head.appendChild(loaderScript)
-      return waitForWidgetReady()
+      window.__A11Y_ASSET_BASE__ = `${window.location.origin}/`
+      appendLoaderScript(`/${WIDGET_LOADER_FILENAME}?v=${Date.now()}`)
     }
 
     let stopWaiting: (() => void) | undefined
     const timer = setTimeout(() => {
-      stopWaiting = loadWidget()
+      loadWidget()
+      stopWaiting = waitForWidgetReady()
     }, 100)
 
     return () => {

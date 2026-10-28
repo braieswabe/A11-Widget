@@ -74,7 +74,7 @@ website/
 
 **Release tag for docs and copy-paste snippets:** update `src/constants.ts` (`WIDGET_VERSION`, `WIDGET_CDN_REF`, `WIDGET_LOADER_FILENAME`, `WIDGET_RUNTIME_FILENAME`, and `WIDGET_CSS_URL` if paths change) so Home, Getting Started, Tutorials, Examples, WordPress, Download, and `Layout` stay aligned with the GitHub branch/tag you ship on jsDelivr.
 
-**Runtime on this site:** Production (Vercel) injects the **zero-config loader** from jsDelivr (`WIDGET_LOADER_URL` in `constants.ts`)—the same snippet customers paste. The loader pulls versioned runtime + CSS. Local `npm run dev` serves loader/runtime/CSS from the repo via Vite (`__A11Y_ASSET_BASE__` points at the dev origin). Run `npm run sync-widget` before release builds so copied assets match GitHub.
+**Runtime on this site:** Production loads the loader from **same-origin** `/a11y-widget-loader-vX.Y.Z.js` (files copied into `dist/` at build). Install docs and `WIDGET_LOADER_URL` in `constants.ts` use the **hosted public origin** (`https://a11-widget.vercel.app` or `VITE_WIDGET_PUBLIC_ORIGIN`). GitHub/jsDelivr `@tag` URLs remain optional when the repo is public. Run `npm run sync-widget` before release builds.
 
 The website includes the widget for demonstration. The Layout component sets `window.__A11Y_WIDGET__` then loads the loader:
 

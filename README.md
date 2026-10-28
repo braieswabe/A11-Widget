@@ -34,7 +34,7 @@ Just add this single line to your HTML:
 
 ```html
 <!-- Use versioned tag to ensure you get the latest stable version -->
-<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.7.6/a11y-widget-loader-v1.7.6.js" defer></script>
+<script src="https://a11-widget.vercel.app/a11y-widget-loader-v1.7.6.js" defer></script>
 ```
 
 **Note:** We use version tags (for example `@v1.7.6`) instead of branch names (`@main`) because jsDelivr CDN aggressively caches branch URLs for up to 7 days. Version tags are served immediately and ensure you always get the exact version you specify.
@@ -85,7 +85,7 @@ If you want to configure surfaces, telemetry, monitoring, or support routing, ad
     telemetryEndpoint: "https://your-widget-backend.com/api/telemetry"
   };
 </script>
-<script src="https://cdn.jsdelivr.net/gh/braieswabe/A11-Widget@v1.7.6/a11y-widget-loader-v1.7.6.js" defer></script>
+<script src="https://a11-widget.vercel.app/a11y-widget-loader-v1.7.6.js" defer></script>
 ```
 
 #### NPM Method
